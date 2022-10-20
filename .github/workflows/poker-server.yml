@@ -16,7 +16,7 @@ jobs:
           script: |
             cd code/
             rm -rf poker-server/
-            git clone https://${{ secrets.POKER_TOKEN_SSH }}@github.com/zuno90/news-api.git
+            git clone git@github.com:zuno90/poker-server.git
             cd poker-server/
             DOCKER_BUILDKIT=1 docker build -t poker-server:$GITHUB_RUN_NUMBER .
             docker stop poker-server || echo "OK"
