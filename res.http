@@ -1,7 +1,0 @@
-POST http://localhost:9000/auth/check
-Content-Type: application/json
-
-{
-    "email": "pnlan1406@gmail.com",
-    "password": "111111"
-}
