@@ -1,0 +1,32 @@
+name: deploy poker-server by ZUNO
+on: [workflow_dispatch]
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: executing remote ssh commands using password
+        uses: supnobita/ssh-action@master
+        with:
+          host: 175.41.154.239
+          username: ubuntu
+          key: ${{ secrets.POKER_SECRET }}
+          port: 22
+          envs: GITHUB_RUN_NUMBER
+          script: |
+            cd code/
+            rm -rf poker-server/
+            git clone https://${{ secrets.POKER_TOKEN_SSH }}@github.com/zuno90/news-api.git
+            cd poker-server/
+            DOCKER_BUILDKIT=1 docker build -t poker-server:$GITHUB_RUN_NUMBER .
+            docker stop poker-server || echo "OK"
+            docker rm poker-server || echo "OK"
+            docker run -d --name poker-server -p 9000:9000 \
+                -e NODE_ENV=production \
+                -e HOST=172.31.31.206 \
+                -e MONGO_HOST=${{ secrets.MONGO_HOST }} \
+                -e MONGO_PORT=${{ secrets.MONGO_PORT }} \
+                -e MONGO_USERNAME=${{ secrets.MONGO_USERNAME }} \
+                -e MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }} \
+                -e MONGO_DATABASE_NAME=${{ secrets.MONGO_DATABASE_NAME }} \
+                poker-server:$GITHUB_RUN_NUMBER
