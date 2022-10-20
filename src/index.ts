@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Express, Request, Response } from "express";
 import dotenv from "dotenv";
 dotenv.config();
 import cors from "cors";
@@ -12,7 +12,7 @@ import { authRouter } from "./routers/auth.router";
 
 async function bootstrap() {
   const PORT = process.env.PORT || 9000;
-  const app = express();
+  const app: Express = express();
 
   await initDatabase(); // init DB
 
@@ -25,6 +25,10 @@ async function bootstrap() {
 
   // auth router
   app.use("/auth", authRouter);
+
+  app.use("/", (req: Request, res: Response) => {
+    return res.send("Hello from ZUNO");
+  });
 
   // init game server
   const gameServer = new Server({
