@@ -1,4 +1,5 @@
 node_modules
 dist
 mongo_data
+docker-compose.yml
 # .env
