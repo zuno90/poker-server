@@ -79,12 +79,11 @@ export const signinService = async (data: any, res: Response) => {
             avatar: ggAvatar,
           }).save();
         }
-        console.log(user);
         break;
       default:
         break;
     }
-    console.log(user);
+    // console.log(user);
     return res.status(200).json({
       success: true,
       msg: "Login successfully!",

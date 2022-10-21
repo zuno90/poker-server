@@ -1,5 +1,5 @@
 name: deploy poker-server by ZUNO
-on: [workflow_dispatch]
+on: push
 jobs:
   build:
     name: Build

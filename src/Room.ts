@@ -5,7 +5,8 @@ interface User {
   id: number;
   email?: string;
   username?: string;
-  displayName: string;
+  name: string;
+  avatar: string;
 }
 
 export default class GameRoom extends Room<RoomState> {
@@ -19,31 +20,34 @@ export default class GameRoom extends Room<RoomState> {
   // }
 
   onAuth(client: Client, options: any) {
-    console.log(options);
-    const { id, email, displayName } = JSON.parse(options);
-    return { id, email, displayName };
+    // console.log(options);
+    const { _id, email, username, name, avatar } = JSON.parse(options);
+    return { _id, email, username, name, avatar };
   }
 
   onCreate(options: any) {
-    console.log(
-      `room is created with id: ${this.roomId} and max playyer = ${this.maxClients}`
-    );
-    this.setState(new RoomState());
-    // chatting
-    this.onMessage("chat", (client, data) => {
-      console.log(data);
-    });
-    // sitting
-    this.onMessage("sit-down", (client, data) => {
-      console.log({ client, data });
-    });
+    try {
+      console.log(
+        `room is created with id: ${this.roomId} and max player = ${this.maxClients}`
+      );
+      this.setState(new RoomState());
+      // // chatting
+      // this.onMessage("chat", (client, data) => {
+      //   console.log(data);
+      // });
+      // // sitting
+      // this.onMessage("sit-down", (client, data) => {
+      //   console.log({ client, data });
+      // });
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   onJoin(client: Client, options: any, user: User) {
-    console.log(this.maxClients);
-    const player = new Player();
+    const player = new Player(user);
     this.state.players.set(client.sessionId, player);
-    console.log(`${user.displayName} has joined!!!!`);
+    console.log(`${user.name} has joined!!!!`);
     console.log("new player =>", player.toJSON());
   }
 
