@@ -20,7 +20,7 @@ export default class GameRoom extends Room<RoomState> {
   // }
 
   onAuth(client: Client, options: any) {
-    // console.log(options);
+    console.log(options);
     const { _id, email, username, name, avatar } = JSON.parse(options);
     return { _id, email, username, name, avatar };
   }
@@ -47,8 +47,8 @@ export default class GameRoom extends Room<RoomState> {
   onJoin(client: Client, options: any, user: User) {
     const player = new Player(user);
     this.state.players.set(client.sessionId, player);
-    console.log(`${user.name} has joined!!!!`);
-    console.log("new player =>", player.toJSON());
+    // console.log(`${user.name} has joined!!!!`);
+    // console.log("new player =>", player.toJSON());
   }
 
   // async onLeave(client: Client, consented?: boolean | undefined) {
