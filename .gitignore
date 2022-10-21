@@ -3,5 +3,4 @@ dist
 mongo_data
 docker-compose.yml
 res.http
-
 .env
