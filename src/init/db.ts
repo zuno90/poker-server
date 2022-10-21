@@ -5,16 +5,16 @@ const initDatabase = async () => {
   try {
     await mongoose.connect(uri, {
       authSource: "admin",
-      user: process.env.MONGO_USERNAME,
-      pass: process.env.MONGO_PASSWORD,
+      auth: {
+        username: process.env.MONGO_USERNAME,
+        password: process.env.MONGO_PASSWORD,
+      },
       dbName: process.env.MONGO_DATABASE_NAME,
     });
-    console.log(
-      "⚡️⚡️⚡️⚡️⚡️⚡️⚡️⚡️⚡️⚡️ Connect to MONGODB inside docker ⚡️⚡️⚡️⚡️⚡️⚡️⚡️⚡️⚡️⚡️"
-    );
+    console.log("⚡️⚡️ Connect to MONGODB inside docker ⚡️⚡️");
   } catch (error) {
     console.error(error);
-    // process.exit(1);
+    process.exit(1);
   }
 };
 
