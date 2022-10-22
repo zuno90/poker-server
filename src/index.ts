@@ -9,6 +9,7 @@ import { createServer } from "http";
 import GameRoom from "./Room";
 import initDatabase from "./init/db";
 import { authRouter } from "./routers/auth.router";
+import { userRouter } from "./routers/user.router";
 
 async function bootstrap() {
   const PORT = process.env.PORT || 9000;
@@ -25,6 +26,7 @@ async function bootstrap() {
 
   // auth router
   app.use("/auth", authRouter);
+  app.use("/user", userRouter);
 
   app.use("/", (req: Request, res: Response) => {
     return res.send("Hello from ZUNO");

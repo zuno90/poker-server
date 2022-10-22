@@ -1,5 +1,6 @@
 import { Response } from "express";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 import { User } from "../models/user.model";
 import { ObjectId } from "mongoose";
 import { handleError } from "../util/handleError";
@@ -7,6 +8,8 @@ import { handleError } from "../util/handleError";
 export const signupService = async (data: any, res: Response) => {
   try {
     const { type, payload } = data;
+    if (type !== "normal")
+      throw new Error("Credential is available for Account Sign Up!");
     const { username, password } = payload;
     const existedUser = await User.findOne({ username, loginType: type });
     if (existedUser) throw new Error("Email is existing!");
@@ -31,6 +34,7 @@ export const signupService = async (data: any, res: Response) => {
 
 export const signinService = async (data: any, res: Response) => {
   let user;
+  let accessToken;
   const { type, payload } = data;
   try {
     switch (type) {
@@ -45,6 +49,20 @@ export const signinService = async (data: any, res: Response) => {
         );
         if (!isMatchPassword) throw new Error("Password is not correct");
         user = existedUser;
+        accessToken = jwt.sign(
+          { id: existedUser.id, username: existedUser.username },
+          `${process.env.SECRET}`,
+          {
+            expiresIn: "1d",
+          }
+        );
+        accessToken = jwt.sign(
+          { id: existedUser.id, username: existedUser.username },
+          `${process.env.SECRET}`,
+          {
+            expiresIn: "1d",
+          }
+        );
         break;
       // fb login
       case "facebook":
@@ -61,6 +79,13 @@ export const signinService = async (data: any, res: Response) => {
             avatar: fbAvatar,
           }).save();
         }
+        accessToken = jwt.sign(
+          { id: user.id, email: user.email },
+          `${process.env.SECRET}`,
+          {
+            expiresIn: "1d",
+          }
+        );
         break;
       // gg login
       case "google":
@@ -79,6 +104,13 @@ export const signinService = async (data: any, res: Response) => {
             avatar: ggAvatar,
           }).save();
         }
+        accessToken = jwt.sign(
+          { _id: user._id, email: user.email },
+          `${process.env.SECRET}`,
+          {
+            expiresIn: "1d",
+          }
+        );
         break;
       default:
         break;
@@ -87,7 +119,7 @@ export const signinService = async (data: any, res: Response) => {
     return res.status(200).json({
       success: true,
       msg: "Login successfully!",
-      data: user,
+      accessToken,
     });
   } catch (error: any) {
     console.error(error);
