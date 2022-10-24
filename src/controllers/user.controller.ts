@@ -1,10 +1,6 @@
 import { Request, Response } from "express";
+import { userInfoService } from "../services/user.service";
 
-export const getUsers = async (req: Request, res: Response) => {
-  res.send("get all users");
-};
-
-export const getUser = async (req: Request, res: Response) => {
-  const { id } = req.params;
-  console.log(id);
+export const getUserInfo = async (req: Request, res: Response) => {
+  userInfoService(req.user, res);
 };

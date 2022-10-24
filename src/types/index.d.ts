@@ -1,4 +1,4 @@
-type TDecode = {
+export type TDecode = {
   id: ObjectId;
   email?: string;
   username?: string;

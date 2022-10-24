@@ -67,7 +67,7 @@ export const signinService = async (data: any, res: Response) => {
       // fb login
       case "facebook":
         const { fbEmail, fbName, fbAvatar } = payload;
-        const fbUser = await User.findOne({ fbEmail, loginType: type });
+        const fbUser = await User.findOne({ email: fbEmail, loginType: type });
         if (fbUser) {
           user = fbUser;
         } else {
@@ -90,8 +90,7 @@ export const signinService = async (data: any, res: Response) => {
       // gg login
       case "google":
         const { ggEmail, ggName, ggAvatar } = payload;
-        console.log(payload);
-        const ggUser = await User.findOne({ ggEmail, loginType: type });
+        const ggUser = await User.findOne({ email: ggEmail, loginType: type });
         console.log(ggUser);
         if (ggUser) {
           user = ggUser;
@@ -105,7 +104,7 @@ export const signinService = async (data: any, res: Response) => {
           }).save();
         }
         accessToken = jwt.sign(
-          { _id: user._id, email: user.email },
+          { id: user.id, email: user.email },
           `${process.env.SECRET}`,
           {
             expiresIn: "1d",
@@ -115,7 +114,6 @@ export const signinService = async (data: any, res: Response) => {
       default:
         break;
     }
-    // console.log(user);
     return res.status(200).json({
       success: true,
       msg: "Login successfully!",
