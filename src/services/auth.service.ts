@@ -9,10 +9,10 @@ export const signupService = async (data: any, res: Response) => {
   try {
     const { type, payload } = data;
     if (type !== "normal")
-      throw new Error("Credential is available for Account Sign Up!");
+      throw new Error("Credential is not available for Account Sign Up!");
     const { username, password } = payload;
     const existedUser = await User.findOne({ username, loginType: type });
-    if (existedUser) throw new Error("Email is existing!");
+    if (existedUser) throw new Error("User name is existing!");
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await new User({
       username,
@@ -21,11 +21,11 @@ export const signupService = async (data: any, res: Response) => {
       loginType: type,
     }).save();
 
-    return {
+    return res.status(200).json({
       success: true,
-      msg: "Created new player!",
+      msg: "Successfully Created new user!",
       data: newUser,
-    };
+    });
   } catch (error: any) {
     console.error(error);
     return res.status(400).json(handleError(error.message));
@@ -52,16 +52,12 @@ export const signinService = async (data: any, res: Response) => {
         accessToken = jwt.sign(
           { id: existedUser.id, username: existedUser.username },
           `${process.env.SECRET}`,
-          {
-            expiresIn: "1d",
-          }
+          { expiresIn: "1d" }
         );
         accessToken = jwt.sign(
           { id: existedUser.id, username: existedUser.username },
           `${process.env.SECRET}`,
-          {
-            expiresIn: "1d",
-          }
+          { expiresIn: "1d" }
         );
         break;
       // fb login
@@ -82,9 +78,7 @@ export const signinService = async (data: any, res: Response) => {
         accessToken = jwt.sign(
           { id: user.id, email: user.email },
           `${process.env.SECRET}`,
-          {
-            expiresIn: "1d",
-          }
+          { expiresIn: "1d" }
         );
         break;
       // gg login
@@ -106,9 +100,7 @@ export const signinService = async (data: any, res: Response) => {
         accessToken = jwt.sign(
           { id: user.id, email: user.email },
           `${process.env.SECRET}`,
-          {
-            expiresIn: "1d",
-          }
+          { expiresIn: "1d" }
         );
         break;
       default:
