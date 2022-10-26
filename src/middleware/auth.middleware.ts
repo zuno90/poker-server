@@ -25,7 +25,7 @@ const authMiddleware = async (
     const { id, email, username } = decoded;
 
     // check user
-    const user = await User.findOne({ id, email, username });
+    const user = await User.findOne({ id, email, username }, "-password");
     if (!user) throw new Error("You have unauthorized!...");
 
     req.user = { id: user.id, email: user.email, username: user.username };

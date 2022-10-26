@@ -51,12 +51,12 @@ export const signinService = async (data: any, res: Response) => {
         user = existedUser;
         accessToken = jwt.sign(
           { id: existedUser.id, username: existedUser.username },
-          `${process.env.SECRET}`,
+          `${process.env.JWT_SECRET}`,
           { expiresIn: "1d" }
         );
         accessToken = jwt.sign(
           { id: existedUser.id, username: existedUser.username },
-          `${process.env.SECRET}`,
+          `${process.env.JWT_SECRET}`,
           { expiresIn: "1d" }
         );
         break;
@@ -77,7 +77,7 @@ export const signinService = async (data: any, res: Response) => {
         }
         accessToken = jwt.sign(
           { id: user.id, email: user.email },
-          `${process.env.SECRET}`,
+          `${process.env.JWT_SECRET}`,
           { expiresIn: "1d" }
         );
         break;
@@ -99,7 +99,7 @@ export const signinService = async (data: any, res: Response) => {
         }
         accessToken = jwt.sign(
           { id: user.id, email: user.email },
-          `${process.env.SECRET}`,
+          `${process.env.JWT_SECRET}`,
           { expiresIn: "1d" }
         );
         break;
@@ -124,8 +124,6 @@ export const signoutService = async (id: ObjectId, res: Response) => {
     return res.status(400).json(handleError(error.message));
   }
 };
-
-// export const checkService = async (data: any) => {
 //   // const { email, password } = data;
 //   try {
 //     // const existedUser = await User.findOne({ email });
@@ -139,7 +137,7 @@ export const signoutService = async (id: ObjectId, res: Response) => {
 //         email: existedUser.email,
 //         name: existedUser.name,
 //       },
-//       `${process.env.SECRET}`,
+//       `${process.env.JWT_SECRET}`,
 //       { expiresIn: "24h" }
 //     );
 

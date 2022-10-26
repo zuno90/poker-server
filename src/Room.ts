@@ -21,8 +21,8 @@ export default class GameRoom extends Room<RoomState> {
 
   onAuth(client: Client, options: any) {
     console.log(options);
-    const { _id, email, username, name, avatar } = JSON.parse(options);
-    return { _id, email, username, name, avatar };
+    const { id, email, username, name, avatar } = JSON.parse(options);
+    return { id, email, username, name, avatar };
   }
 
   onCreate(options: any) {
