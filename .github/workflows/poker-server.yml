@@ -29,5 +29,5 @@ jobs:
                 -e MONGO_USERNAME=${{ secrets.MONGO_USERNAME }} \
                 -e MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }} \
                 -e MONGO_DATABASE_NAME=${{ secrets.MONGO_DATABASE_NAME }} \
-                -e JWT_SECRET=${{ secrets.JWT_SECRET }}
+                -e JWT_SECRET=${{ secrets.JWT_SECRET }} \
                 poker-server:$GITHUB_RUN_NUMBER
