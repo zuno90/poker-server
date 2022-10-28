@@ -85,7 +85,6 @@ export const signinService = async (data: any, res: Response) => {
       case "google":
         const { ggEmail, ggName, ggAvatar } = payload;
         const ggUser = await User.findOne({ email: ggEmail, loginType: type });
-        console.log(ggUser);
         if (ggUser) {
           user = ggUser;
         } else {

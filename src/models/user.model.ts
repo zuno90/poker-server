@@ -4,8 +4,8 @@ const UserModel: Schema = new Schema(
   {
     username: { type: String, trim: true, default: null },
     password: { type: String, trim: true, default: null },
-    email: { type: String, trim: true },
-    name: { type: String },
+    email: { type: String, trim: true, default: null },
+    name: { type: String, default: null },
     status: { type: String, required: true, enum: ["active", "inactive"] },
     chips: { type: Number, default: 10000 },
     loginType: {
