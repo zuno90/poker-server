@@ -28,7 +28,7 @@ export const signupService = async (data: any, res: Response) => {
     });
   } catch (error: any) {
     console.error(error);
-    return res.status(401).json(handleError(error.message));
+    return res.json(handleError(error.message));
   }
 };
 
@@ -109,7 +109,7 @@ export const signinService = async (data: any, res: Response) => {
     });
   } catch (error: any) {
     console.error(error);
-    return res.status(403).json(handleError(error.message));
+    return res.json(handleError(error.message));
   }
 };
 
@@ -117,7 +117,7 @@ export const signoutService = async (id: ObjectId, res: Response) => {
   try {
   } catch (error: any) {
     console.error(error);
-    return res.status(400).json(handleError(error.message));
+    return res.json(handleError(error.message));
   }
 };
 //   // const { email, password } = data;
