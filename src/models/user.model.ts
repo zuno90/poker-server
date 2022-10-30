@@ -14,7 +14,7 @@ const UserModel: Schema = new Schema(
       enum: ["normal", "facebook", "google"],
       index: true,
     },
-    avatar: { type: String, default: "./user.png" },
+    avatar: { type: String, default: "user.png" },
   },
   { timestamps: true }
 );

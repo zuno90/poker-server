@@ -28,7 +28,7 @@ export const signupService = async (data: any, res: Response) => {
     });
   } catch (error: any) {
     console.error(error);
-    return res.status(400).json(handleError(error.message));
+    return res.status(401).json(handleError(error.message));
   }
 };
 
@@ -36,6 +36,7 @@ export const signinService = async (data: any, res: Response) => {
   let user;
   let accessToken;
   const { type, payload } = data;
+  console.log(data);
   try {
     switch (type) {
       // username + pass login
@@ -43,17 +44,13 @@ export const signinService = async (data: any, res: Response) => {
         const { username, password } = payload;
         const existedUser = await User.findOne({ username, loginType: type });
         if (!existedUser) throw new Error("User is not existing!");
+
         const isMatchPassword = await bcrypt.compare(
           password,
           existedUser.password
         );
         if (!isMatchPassword) throw new Error("Password is not correct");
         user = existedUser;
-        accessToken = jwt.sign(
-          { id: existedUser.id, username: existedUser.username },
-          `${process.env.JWT_SECRET}`,
-          { expiresIn: "1d" }
-        );
         accessToken = jwt.sign(
           { id: existedUser.id, username: existedUser.username },
           `${process.env.JWT_SECRET}`,

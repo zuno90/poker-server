@@ -20,7 +20,7 @@ async function bootstrap() {
   app.use(cors());
   app.use(express.json());
 
-  app.use(express.static("./src/public")); // public file if need
+  app.use("/assets", express.static("./src/assets")); // public file if need
 
   app.use("/monitor", monitor()); // room monitor
 
