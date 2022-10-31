@@ -27,6 +27,10 @@ const authMiddleware = async (
     // check user
     const user = await User.findOne({ id, email, username }, "-password");
     if (!user) throw new Error("You have unauthorized!...");
+    if (user.isLogged)
+      throw new Error(
+        "User is logged in another device! Please log out from it first!"
+      );
 
     req.user = { id: user.id, email: user.email, username: user.username };
     next();

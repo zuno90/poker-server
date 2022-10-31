@@ -21,7 +21,7 @@ export const signupService = async (data: any, res: Response) => {
       loginType: type,
     }).save();
 
-    return res.status(200).json({
+    return res.status(201).json({
       success: true,
       msg: "Successfully Created new user!",
       data: newUser,
@@ -44,13 +44,21 @@ export const signinService = async (data: any, res: Response) => {
         const { username, password } = payload;
         const existedUser = await User.findOne({ username, loginType: type });
         if (!existedUser) throw new Error("User is not existing!");
-
         const isMatchPassword = await bcrypt.compare(
           password,
           existedUser.password
         );
         if (!isMatchPassword) throw new Error("Password is not correct");
-        user = existedUser;
+        if (existedUser.isLogged)
+          throw new Error(
+            "User is logged in an other device. Please log out it first if you want to keep logging in this device!"
+          );
+        console.log(existedUser);
+        await User.findOneAndUpdate(
+          { _id: existedUser._id },
+          { isLogged: true },
+          { new: true }
+        );
         accessToken = jwt.sign(
           { id: existedUser.id, username: existedUser.username },
           `${process.env.JWT_SECRET}`,
@@ -72,6 +80,15 @@ export const signinService = async (data: any, res: Response) => {
             avatar: fbAvatar,
           }).save();
         }
+        if (user.isLogged)
+          throw new Error(
+            "Facebook User is logged in an other device. Please log out it first if you want to keep logging in this device!"
+          );
+        await User.findOneAndUpdate(
+          { _id: user._id },
+          { isLogged: true },
+          { new: true }
+        );
         accessToken = jwt.sign(
           { id: user.id, email: user.email },
           `${process.env.JWT_SECRET}`,
@@ -93,6 +110,15 @@ export const signinService = async (data: any, res: Response) => {
             avatar: ggAvatar,
           }).save();
         }
+        if (user.isLogged)
+          throw new Error(
+            "Google User is logged in an other device. Please log out it first if you want to keep logging in this device!"
+          );
+        await User.findOneAndUpdate(
+          { _id: user._id },
+          { isLogged: true },
+          { new: true }
+        );
         accessToken = jwt.sign(
           { id: user.id, email: user.email },
           `${process.env.JWT_SECRET}`,
@@ -115,6 +141,7 @@ export const signinService = async (data: any, res: Response) => {
 
 export const signoutService = async (id: ObjectId, res: Response) => {
   try {
+    
   } catch (error: any) {
     console.error(error);
     return res.json(handleError(error.message));

@@ -6,7 +6,7 @@ import { Server } from "colyseus";
 import { monitor } from "@colyseus/monitor";
 import { WebSocketTransport } from "@colyseus/ws-transport";
 import { createServer } from "http";
-import GameRoom from "./Room";
+import GameRoom from "./game/Room";
 import initDatabase from "./init/db";
 import { authRouter } from "./routers/auth.router";
 import { userRouter } from "./routers/user.router";

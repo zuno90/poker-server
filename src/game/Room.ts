@@ -1,5 +1,5 @@
 import { Client, Room } from "colyseus";
-import { Player, RoomState } from "./schema/room.state";
+import { Player, RoomState } from "./RoomState";
 
 interface User {
   id: number;
@@ -44,11 +44,23 @@ export default class GameRoom extends Room<RoomState> {
     }
   }
 
-  onJoin(client: Client, options: any, user: User) {
+  onJoin(client: Client, options: any, user: User): void | Promise<any> {
     const player = new Player(user);
-    this.state.players.set(client.sessionId, player);
+    this.state.players.set(client.sessionId, player); // set player moi lan join
+    console.log(client.sessionId);
     // console.log(`${user.name} has joined!!!!`);
-    // console.log("new player =>", player.toJSON());
+    console.log("new player =>", player.toJSON());
+  }
+
+  onLeave(
+    client: Client,
+    consented?: boolean | undefined
+  ): void | Promise<any> {
+    console.log(client.sessionId + "leave room...");
+  }
+
+  onDispose(): void | Promise<any> {
+    console.log("room", this.roomId, "disposing...");
   }
 
   // async onLeave(client: Client, consented?: boolean | undefined) {

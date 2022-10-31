@@ -14,6 +14,7 @@ const UserModel: Schema = new Schema(
       enum: ["normal", "facebook", "google"],
       index: true,
     },
+    isLogged: { type: Boolean, default: false },
     avatar: { type: String, default: "user.png" },
   },
   { timestamps: true }
