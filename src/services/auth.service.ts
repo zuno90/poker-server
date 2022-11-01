@@ -49,16 +49,16 @@ export const signinService = async (data: any, res: Response) => {
           existedUser.password
         );
         if (!isMatchPassword) throw new Error("Password is not correct");
-        if (existedUser.isLogged)
-          throw new Error(
-            "User is logged in an other device. Please log out it first if you want to keep logging in this device!"
-          );
-        console.log(existedUser);
-        await User.findOneAndUpdate(
-          { _id: existedUser._id },
-          { isLogged: true },
-          { new: true }
-        );
+        // if (existedUser.isLogged)
+        //   throw new Error(
+        //     "User is logged in an other device. Please log out it first if you want to keep logging in this device!"
+        //   );
+
+        // await User.findOneAndUpdate(
+        //   { _id: existedUser._id },
+        //   { isLogged: true },
+        //   { new: true }
+        // );
         accessToken = jwt.sign(
           { id: existedUser.id, username: existedUser.username },
           `${process.env.JWT_SECRET}`,
@@ -80,15 +80,15 @@ export const signinService = async (data: any, res: Response) => {
             avatar: fbAvatar,
           }).save();
         }
-        if (user.isLogged)
-          throw new Error(
-            "Facebook User is logged in an other device. Please log out it first if you want to keep logging in this device!"
-          );
-        await User.findOneAndUpdate(
-          { _id: user._id },
-          { isLogged: true },
-          { new: true }
-        );
+        // if (user.isLogged)
+        //   throw new Error(
+        //     "Facebook User is logged in an other device. Please log out it first if you want to keep logging in this device!"
+        //   );
+        // await User.findOneAndUpdate(
+        //   { _id: user._id },
+        //   { isLogged: true },
+        //   { new: true }
+        // );
         accessToken = jwt.sign(
           { id: user.id, email: user.email },
           `${process.env.JWT_SECRET}`,
@@ -110,15 +110,15 @@ export const signinService = async (data: any, res: Response) => {
             avatar: ggAvatar,
           }).save();
         }
-        if (user.isLogged)
-          throw new Error(
-            "Google User is logged in an other device. Please log out it first if you want to keep logging in this device!"
-          );
-        await User.findOneAndUpdate(
-          { _id: user._id },
-          { isLogged: true },
-          { new: true }
-        );
+        // if (user.isLogged)
+        //   throw new Error(
+        //     "Google User is logged in an other device. Please log out it first if you want to keep logging in this device!"
+        //   );
+        // await User.findOneAndUpdate(
+        //   { _id: user._id },
+        //   { isLogged: true },
+        //   { new: true }
+        // );
         accessToken = jwt.sign(
           { id: user.id, email: user.email },
           `${process.env.JWT_SECRET}`,
@@ -141,7 +141,7 @@ export const signinService = async (data: any, res: Response) => {
 
 export const signoutService = async (id: ObjectId, res: Response) => {
   try {
-    
+
   } catch (error: any) {
     console.error(error);
     return res.json(handleError(error.message));

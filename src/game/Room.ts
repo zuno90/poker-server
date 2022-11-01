@@ -1,5 +1,8 @@
 import { Client, Room } from "colyseus";
-import { Player, RoomState } from "./RoomState";
+import { deal } from "./modules/handleCard";
+import { Card } from "./schema/card.schema";
+import { Player } from "./schema/player.schema";
+import { RoomState } from "./schema/room.schema";
 
 interface User {
   id: number;
@@ -10,7 +13,7 @@ interface User {
 }
 
 export default class GameRoom extends Room<RoomState> {
-  public maxClients = 5;
+  readonly maxClients = 5;
   // private bots: Map<string, BotClient> | null = new Map<string, BotClient>();
 
   // async addBot() {
@@ -21,45 +24,46 @@ export default class GameRoom extends Room<RoomState> {
 
   onAuth(client: Client, options: any) {
     console.log(options);
-    const { id, email, username, name, avatar } = JSON.parse(options);
-    return { id, email, username, name, avatar };
+    const { id } = JSON.parse(options);
+    console.log(id);
+    return { id };
   }
 
   onCreate(options: any) {
-    try {
-      console.log(
-        `room is created with id: ${this.roomId} and max player = ${this.maxClients}`
-      );
-      this.setState(new RoomState());
-      // // chatting
-      // this.onMessage("chat", (client, data) => {
-      //   console.log(data);
-      // });
-      // // sitting
-      // this.onMessage("sit-down", (client, data) => {
-      //   console.log({ client, data });
-      // });
-    } catch (error) {
-      console.error(error);
-    }
+    console.log(
+      `room is created with id: ${this.roomId} and max player = ${this.maxClients}`
+    );
+    this.setState(new RoomState());
+    // chatting
+    this.onMessage("update-state", (client, data) => {
+      console.log(data);
+    });
+    // chatting
+    this.onMessage("chat", (client, data) => {
+      console.log({ client, data });
+    });
   }
 
-  onJoin(client: Client, options: any, user: User): void | Promise<any> {
+  onJoin(client: Client, options: any, user: User) {
+    const hand = deal(3);
+    console.log(hand);
     const player = new Player(user);
+    const { id, state, cards } = player;
+    const c = new Card("A", "co");
+    cards.push(c);
+
+    // console.log("max player", this.hasReachedMaxClients());
+    // set state of player for ROOM
     this.state.players.set(client.sessionId, player); // set player moi lan join
-    console.log(client.sessionId);
-    // console.log(`${user.name} has joined!!!!`);
-    console.log("new player =>", player.toJSON());
+    this.state.onReady = false;
   }
 
-  onLeave(
-    client: Client,
-    consented?: boolean | undefined
-  ): void | Promise<any> {
+  onLeave(client: Client, consented: boolean) {
     console.log(client.sessionId + "leave room...");
+    this.state.players.delete(client.sessionId);
   }
 
-  onDispose(): void | Promise<any> {
+  onDispose() {
     console.log("room", this.roomId, "disposing...");
   }
 
