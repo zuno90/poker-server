@@ -36,7 +36,6 @@ export const signinService = async (data: any, res: Response) => {
   let user;
   let accessToken;
   const { type, payload } = data;
-  console.log(data);
   try {
     switch (type) {
       // username + pass login
@@ -141,7 +140,6 @@ export const signinService = async (data: any, res: Response) => {
 
 export const signoutService = async (id: ObjectId, res: Response) => {
   try {
-
   } catch (error: any) {
     console.error(error);
     return res.json(handleError(error.message));

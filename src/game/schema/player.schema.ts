@@ -1,9 +1,6 @@
-import { Schema, ArraySchema, type } from "@colyseus/schema";
-import { Card } from "./card.schema";
+import { Schema, type } from "@colyseus/schema";
 
 enum PlayerState {
-  NOTREADY = "NOTREADY",
-  READY = "READY",
   CALL = "CALL",
   CHECK = "CHECK",
   RAISE = "RAISE",
@@ -15,9 +12,18 @@ export class Player extends Schema {
   @type("string")
   id: string;
 
-  @type("string")
-  state: string = PlayerState.NOTREADY;
+  @type("boolean")
+  isHost: true;
 
-  @type([Card])
-  cards = new ArraySchema<Card>();
+  @type("number")
+  chips: number;
+
+  @type("number")
+  turn: number;
+
+  @type("string")
+  state: PlayerState;
+
+  @type(["string"])
+  cards: Array<string>;
 }

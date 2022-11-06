@@ -16,8 +16,7 @@ export const createADeck = (ranks: Array<string>, suits: Array<string>) => {
 };
 
 export const shuffle = (numberOfShuffle: number) => {
-  const d = new Deck();
-  const deck = d.createDeck();
+  const deck = new Deck().createDeck();
   for (let i = 0; i < numberOfShuffle; i++) {
     let location1 = Math.floor(Math.random() * deck.length);
     let location2 = Math.floor(Math.random() * deck.length);
@@ -30,14 +29,14 @@ export const shuffle = (numberOfShuffle: number) => {
 
 export const deal = (numberOfPlayer: number) => {
   const deck = shuffle(100);
-  console.log("bộ bài full", deck);
+  console.log("bộ bài full sau khi sốc lọ 100 lần", deck);
   const remainingDeck: Array<string> = deck.splice(numberOfPlayer * 2);
 
   console.log("bộ bài sau khi cắt", deck);
   console.log("bộ bài còn lại", remainingDeck);
 
   for (let i = 0; i < numberOfPlayer; i++) {
-    console.log(`thằng thứ ${i + 1}`, chiabai(deck, i, numberOfPlayer));
+    console.log(`thằng thứ ${i + 1}`, chiabai(deck, i, numberOfPlayer + i));
   }
   return {
     onHandCard: deck,
