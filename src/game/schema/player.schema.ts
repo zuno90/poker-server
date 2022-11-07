@@ -13,7 +13,7 @@ export class Player extends Schema {
   id: string;
 
   @type("boolean")
-  isHost: true;
+  isHost: boolean;
 
   @type("number")
   chips: number;
@@ -22,7 +22,7 @@ export class Player extends Schema {
   turn: number;
 
   @type("string")
-  state: PlayerState;
+  state: PlayerState | undefined;
 
   @type(["string"])
   cards: Array<string>;

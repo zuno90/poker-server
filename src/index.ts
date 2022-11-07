@@ -10,6 +10,7 @@ import GameRoom from "./game/Room";
 import initDatabase from "./init/db";
 import { authRouter } from "./routers/auth.router";
 import { userRouter } from "./routers/user.router";
+import { deal } from "./game/modules/handleCard";
 
 async function bootstrap() {
   const PORT = process.env.PORT || 9000;
@@ -38,6 +39,8 @@ async function bootstrap() {
   });
 
   gameServer.define("desk", GameRoom);
+
+  deal(2);
 
   gameServer.listen(+PORT);
   console.log(

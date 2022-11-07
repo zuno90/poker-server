@@ -1,3 +1,4 @@
+import { IPlayerCard } from "../../types/game.type";
 import { Deck } from "../schema/deck.schema";
 
 // const cards = new Array(52);
@@ -29,18 +30,23 @@ export const shuffle = (numberOfShuffle: number) => {
 
 export const deal = (numberOfPlayer: number) => {
   const deck = shuffle(100);
-  console.log("bộ bài full sau khi sốc lọ 100 lần", deck);
+  // console.log("bộ bài full sau khi sốc lọ 100 lần", deck);
   const remainingDeck: Array<string> = deck.splice(numberOfPlayer * 2);
+  const banker5Cards: Array<string> = remainingDeck.slice(0, 5);
 
-  console.log("bộ bài sau khi cắt", deck);
-  console.log("bộ bài còn lại", remainingDeck);
+  // console.log("bộ bài sau khi cắt", deck);
+  // console.log("bộ bài của banker", banker5Cards);
+  // console.log("bộ bài còn lại", remainingDeck);
 
+  let onHandCards: Array<Array<string>> = [];
   for (let i = 0; i < numberOfPlayer; i++) {
-    console.log(`thằng thứ ${i + 1}`, chiabai(deck, i, numberOfPlayer + i));
+    // console.log(`thằng thứ ${i + 1}`, chiabai(deck, i, numberOfPlayer + i));
+    onHandCards.push([...chiabai(deck, i, numberOfPlayer + i)]);
   }
+  console.log(onHandCards[1])
   return {
-    onHandCard: deck,
-    remainingDeck,
+    onHandCards,
+    banker5Cards,
   };
 };
 
