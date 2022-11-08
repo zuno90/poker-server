@@ -26,4 +26,7 @@ export class Player extends Schema {
 
   @type(["string"])
   cards: Array<string>;
+
+  @type("boolean")
+  connected: boolean = true;
 }

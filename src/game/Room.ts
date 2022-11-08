@@ -1,16 +1,16 @@
 import { Client, Room } from "colyseus";
-import { READY } from "./constants/action.constant";
-import { ROOM_CHAT, ROOM_DISPOSE, START_GAME } from "./constants/room.constant";
 import { RoomState } from "./schema/room.schema";
 import { Player } from "./schema/player.schema";
-import { deal } from "./modules/handleCard";
 import { Card } from "./schema/card.schema";
+import { READY } from "./constants/action.constant";
+import { ROOM_CHAT, ROOM_DISPOSE, START_GAME } from "./constants/room.constant";
+import { deal } from "./modules/handleCard";
 
 export default class GameRoom extends Room<RoomState> {
   readonly maxClients = 5;
 
-  onAuth(client: Client, user: any) {
-    return JSON.parse(user);
+  onAuth(client: Client, player: Player) {
+    return player;
   }
 
   onCreate(options: any) {
@@ -24,24 +24,35 @@ export default class GameRoom extends Room<RoomState> {
     this.handlePlayerState();
   }
 
-  onJoin(client: Client, options: any, user: any) {
+  onJoin(client: Client, options: any, player: Player) {
     // SET INITIAL PLAYER STATE
-    this.state.players.set(client.sessionId, new Player(user)); // set player moi lan join
+    this.state.players.set(client.sessionId, new Player(player)); // set player moi lan join
+  }
 
-    // CHECK PLAYER INSTANCE
+  async onLeave(client: Client, consented: boolean) {
+    // flag client as inactive for other users
+    console.log(client.sessionId + " leave room...");
     if (!this.state.players.has(client.sessionId)) return;
     const playerInstance = this.state.players.get(client.sessionId);
     if (!playerInstance) return;
+    playerInstance.connected = false;
+    try {
+      if (consented) throw new Error("consented leave");
+
+      // allow disconnected client to reconnect into this room until 20 seconds
+      await this.allowReconnection(client, 20);
+
+      // client returned! let's re-activate it.
+      playerInstance.connected = true;
+    } catch (error) {
+      // 20 seconds expired. let's remove the client.
+      this.state.players.delete(client.sessionId);
+    }
   }
 
-  onLeave(client: Client, consented: boolean) {
-    console.log(client.sessionId + " leave room...");
-    this.state.players.delete(client.sessionId);
-  }
-
-  onDispose() {
+  async onDispose() {
     console.log("room", this.roomId, "disposing...");
-    this.broadcast(ROOM_DISPOSE, { data: true });
+    await this.broadcast(ROOM_DISPOSE, "room bi dispose");
   }
 
   // handle function

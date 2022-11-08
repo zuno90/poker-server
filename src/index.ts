@@ -40,7 +40,7 @@ async function bootstrap() {
 
   gameServer.define("desk", GameRoom);
 
-  deal(2);
+  // deal(2);
 
   gameServer.listen(+PORT);
   console.log(
