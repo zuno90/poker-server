@@ -10,10 +10,10 @@ import GameRoom from "./game/Room";
 import initDatabase from "./init/db";
 import { authRouter } from "./routers/auth.router";
 import { userRouter } from "./routers/user.router";
-import { deal } from "./game/modules/handleCard";
+
+const Hand = require("pokersolver").Hand;
 
 async function bootstrap() {
-  const PORT = process.env.PORT || 9000;
   const app: Express = express();
 
   await initDatabase(); // init DB
@@ -25,10 +25,11 @@ async function bootstrap() {
 
   app.use("/monitor", monitor()); // room monitor
 
-  // auth router
+  // router
   app.use("/auth", authRouter);
   app.use("/user", userRouter);
 
+  // welcome
   app.use("/", (req: Request, res: Response) => {
     return res.send("Hello from ZUNO");
   });
@@ -40,11 +41,21 @@ async function bootstrap() {
 
   gameServer.define("desk", GameRoom);
 
-  // deal(2);
+  // const hand1 = Hand.solve(["2♠", "T♥", "5♣", "Q♥", "6♦", "6♠", "8♥"]);
+  // const hand2 = Hand.solve(["A♠", "K♥", "8♣", "Q♥", "6♦", "6♠", "8♥"]);
 
+  // hand1.id = 1;
+  // hand2.id = 2;
+
+  // const winner = Hand.winners([hand1, hand2]);
+
+  // console.log({ hand1, hand2, winner });
+
+  const SERVER_IP = process.env.SERVER_IP;
+  const PORT = process.env.PORT || 9000;
   gameServer.listen(+PORT);
   console.log(
-    `🚀 Server is ready at htpp://localhost:${PORT} and ws://localhost:${PORT} 🚀`
+    `🚀 Server is ready at htpp://${SERVER_IP}:${PORT} and ws://${SERVER_IP}:${PORT} 🚀`
   );
 }
 

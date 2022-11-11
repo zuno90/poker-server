@@ -1,6 +1,6 @@
-import { Schema, type } from "@colyseus/schema";
+import { Schema, MapSchema, type } from "@colyseus/schema";
 
-enum PlayerState {
+export enum EPlayerAction {
   CALL = "CALL",
   CHECK = "CHECK",
   RAISE = "RAISE",
@@ -22,11 +22,17 @@ export class Player extends Schema {
   turn: number;
 
   @type("string")
-  state: PlayerState | undefined;
+  action: EPlayerAction | undefined;
 
   @type(["string"])
   cards: Array<string>;
 
   @type("boolean")
-  connected: boolean = true;
+  connected: boolean;
+
+  @type("boolean")
+  isWinner: boolean = false;
+
+  @type("string")
+  cardRank: string | undefined;
 }

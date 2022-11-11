@@ -1,10 +1,4 @@
-import { IPlayerCard } from "../../types/game.type";
 import { Deck } from "../schema/deck.schema";
-
-// const cards = new Array(52);
-// for (let i = 0; i < cards.length; i++) {
-//   cards[i] = i % 52;
-// }
 
 export const createADeck = (ranks: Array<string>, suits: Array<string>) => {
   let fullDeck: Array<string> = [];
@@ -34,16 +28,11 @@ export const deal = (numberOfPlayer: number) => {
   const remainingDeck: Array<string> = deck.splice(numberOfPlayer * 2);
   const banker5Cards: Array<string> = remainingDeck.slice(0, 5);
 
-  // console.log("bộ bài sau khi cắt", deck);
-  // console.log("bộ bài của banker", banker5Cards);
-  // console.log("bộ bài còn lại", remainingDeck);
-
   let onHandCards: Array<Array<string>> = [];
   for (let i = 0; i < numberOfPlayer; i++) {
     // console.log(`thằng thứ ${i + 1}`, chiabai(deck, i, numberOfPlayer + i));
     onHandCards.push([...chiabai(deck, i, numberOfPlayer + i)]);
   }
-  console.log(onHandCards[1])
   return {
     onHandCards,
     banker5Cards,
