@@ -19,6 +19,9 @@ export class Player extends Schema {
   chips: number;
 
   @type("number")
+  betChips: number;
+
+  @type("number")
   turn: number;
 
   @type("string")
@@ -31,7 +34,7 @@ export class Player extends Schema {
   connected: boolean;
 
   @type("boolean")
-  isWinner: boolean = false;
+  isWinner: boolean;
 
   @type("string")
   cardRank: string | undefined;

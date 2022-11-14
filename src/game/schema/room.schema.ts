@@ -8,6 +8,9 @@ export class RoomState extends Schema {
   @type({ map: Player })
   players = new MapSchema<Player>();
 
+  @type("number")
+  highestBet: number;
+
   @type(["string"])
   banker5Cards: Array<string>;
 }

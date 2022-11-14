@@ -16,6 +16,8 @@ export default class GameRoom extends Room<RoomState> {
   readonly maxClients = 5;
 
   onAuth(_: Client, player: Player) {
+    player.connected = true;
+    player.isWinner = false;
     return player;
   }
 
@@ -35,8 +37,6 @@ export default class GameRoom extends Room<RoomState> {
 
   onJoin(client: Client, options: any, player: Player) {
     // SET INITIAL PLAYER STATE
-    player.connected = true;
-    player.isWinner = false;
     this.state.players.set(client.sessionId, new Player(player)); // set player moi lan join
   }
 
@@ -80,7 +80,11 @@ export default class GameRoom extends Room<RoomState> {
     this.onMessage(START_GAME, (_, data) => {
       if (this.clients.length < 2) return false;
       const { onHandCards, banker5Cards } = deal(this.clients.length);
+      this.state.players.forEach(
+        (playerMap: Player, sessionId: string) => (playerMap.isWinner = false)
+      );
       this.state.onReady = true; // change room state -> TRUE
+      this.state.highestBet = 0; // highestBet = 0 at initial game
       this.state.banker5Cards = banker5Cards; // change cards of banker -> [...]
 
       let arrWinner: Array<any> = [];
@@ -146,10 +150,11 @@ export default class GameRoom extends Room<RoomState> {
     // RAISE
     this.onMessage(EPlayerAction.RAISE, (client: Client, chips: number) => {
       if (!this.state.onReady) return false;
-      console.log(chips);
       const player = <Player>this.state.players.get(client.sessionId);
       if (!player) return false;
+      player.betChips = chips;
       player.chips -= chips;
+      this.state.highestBet <= chips && (this.state.highestBet = chips);
     });
 
     // ALL-IN
