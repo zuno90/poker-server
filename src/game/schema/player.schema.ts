@@ -39,7 +39,7 @@ export class Player extends Schema {
   role: ERole;
 
   @type("boolean")
-  isFold: boolean;
+  isFold: boolean = false;
 
   @type("boolean")
   connected: boolean;
