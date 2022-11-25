@@ -2,7 +2,7 @@ import express, { Express, Request, Response } from "express";
 import dotenv from "dotenv";
 dotenv.config();
 import cors from "cors";
-import Colyseus, { Server } from "colyseus";
+import { Server } from "colyseus";
 import { monitor } from "@colyseus/monitor";
 import { WebSocketTransport } from "@colyseus/ws-transport";
 import { createServer } from "http";
