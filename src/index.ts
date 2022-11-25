@@ -16,7 +16,7 @@ const Hand = require("pokersolver").Hand;
 async function bootstrap() {
   const app: Express = express();
 
-  await initDatabase(); // init DB
+  // await initDatabase(); // init DB
 
   app.use(cors());
   app.use(express.json());
@@ -24,6 +24,23 @@ async function bootstrap() {
   app.use("/assets", express.static("./src/assets")); // public file if need
 
   app.use("/monitor", monitor()); // room monitor
+
+  const Hand = require("pokersolver").Hand;
+
+  // var hand1 = Hand.solve(["Ad", "As", "Jc", "Th", "2d", "3c", "Kd"]);
+  // var hand2 = Hand.solve(["Ad", "As", "Jc", "Th", "2d", "Qs", "Qd"]);
+  // var hand3 = Hand.solve(["Ad", "As", "Ac", "Th", "2d", "Qs", "Qd"]);
+  // var hand4 = Hand.solve(["Ad", "As", "Qc", "Th", "2d", "Qs", "Qd"]);
+  // var hand5 = Hand.solve(["Ad", "As", "Jc", "Qh", "2d", "Qs", "Qd"]);
+  // var winner = Hand.winners([hand1, hand2, hand3, hand4, hand5]); // hand2
+  // console.log({
+  //   h1: hand1.rank,
+  //   h2: hand2.rank,
+  //   h3: hand3.rank,
+  //   h4: hand4.rank,
+  //   h5: hand5.rank,
+  // });
+  // console.log(winner);
 
   // router
   app.use("/auth", authRouter);
@@ -40,16 +57,6 @@ async function bootstrap() {
   });
 
   gameServer.define("desk", GameRoom);
-
-  // const hand1 = Hand.solve(["2♠", "T♥", "5♣", "Q♥", "6♦", "6♠", "8♥"]);
-  // const hand2 = Hand.solve(["A♠", "K♥", "8♣", "Q♥", "6♦", "6♠", "8♥"]);
-
-  // hand1.id = 1;
-  // hand2.id = 2;
-
-  // const winner = Hand.winners([hand1, hand2]);
-
-  // console.log({ hand1, hand2, winner });
 
   const SERVER_IP = process.env.SERVER_IP;
   const PORT = process.env.PORT || 9000;

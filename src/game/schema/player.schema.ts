@@ -1,5 +1,10 @@
 import { Schema, MapSchema, type } from "@colyseus/schema";
 
+export enum ERole {
+  Player = "Player",
+  Bot = "Bot",
+}
+
 export enum EPlayerAction {
   CALL = "CALL",
   CHECK = "CHECK",
@@ -29,6 +34,12 @@ export class Player extends Schema {
 
   @type(["string"])
   cards: Array<string>;
+
+  @type("string")
+  role: ERole;
+
+  @type("boolean")
+  isFold: boolean;
 
   @type("boolean")
   connected: boolean;

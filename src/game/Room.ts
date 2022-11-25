@@ -1,6 +1,6 @@
 import { Client, Room } from "colyseus";
 import { RoomState } from "./schema/room.schema";
-import { Player, EPlayerAction } from "./schema/player.schema";
+import { Player, ERole, EPlayerAction } from "./schema/player.schema";
 import {
   ROOM_CHAT,
   ROOM_DISPOSE,
@@ -14,8 +14,10 @@ const Hand = require("pokersolver").Hand;
 
 export default class GameRoom extends Room<RoomState> {
   readonly maxClients = 5;
+  private readonly botSessionId: string = "zuno-bot";
 
   onAuth(_: Client, player: Player) {
+    player.role = ERole.Player;
     player.connected = true;
     player.isWinner = false;
     return player;
@@ -66,8 +68,7 @@ export default class GameRoom extends Room<RoomState> {
     this.broadcast(ROOM_DISPOSE, "room bi dispose");
   }
 
-  // handle function
-
+  // handle chat
   private handleChat() {
     this.onMessage(ROOM_CHAT, (_, data) => {
       console.log(data);
@@ -75,10 +76,23 @@ export default class GameRoom extends Room<RoomState> {
     });
   }
 
+  // handle Room State
   private handleRoomState() {
     // START GAME
     this.onMessage(START_GAME, (_, data) => {
-      if (this.clients.length < 2) return false;
+      // if (this.clients.length < 2) return false;
+      if (this.clients.length < 5) {
+        const botPlayer = <Player>{
+          id: "zuno-bot",
+          isHost: false,
+          chips: 10000,
+          turn: this.clients.length + 1,
+          role: ERole.Bot,
+          connected: true,
+          isWinner: false,
+        };
+        this.state.players.set(this.botSessionId, new Player(botPlayer));
+      }
       const { onHandCards, banker5Cards } = deal(this.clients.length);
       this.state.players.forEach(
         (playerMap: Player, sessionId: string) => (playerMap.isWinner = false)
@@ -126,6 +140,7 @@ export default class GameRoom extends Room<RoomState> {
       console.log(chips);
       const player = <Player>this.state.players.get(client.sessionId);
       if (!player) return false;
+      player.isFold = true;
       player.isWinner = false;
     });
 
