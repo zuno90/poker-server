@@ -16,7 +16,7 @@ const Hand = require("pokersolver").Hand;
 async function bootstrap() {
   const app: Express = express();
 
-  // await initDatabase(); // init DB
+  await initDatabase(); // init DB
 
   app.use(cors());
   app.use(express.json());
