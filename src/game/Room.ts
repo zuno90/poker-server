@@ -1,6 +1,6 @@
 import { Client, Room } from "colyseus";
 import { RoomState } from "./schema/room.schema";
-import { Player, ERole, EPlayerAction } from "./schema/player.schema";
+import { Player, EPlayerAction } from "./schema/player.schema";
 import {
   ROOM_CHAT,
   ROOM_DISPOSE,
@@ -66,21 +66,8 @@ export default class GameRoom extends Room<RoomState> {
     this.broadcast(ROOM_DISPOSE, "room bi dispose");
   }
 
-  // handle Bot Client
-  // private createBot() {
-    // const botPlayer = <Player>{
-    //   id: "zuno-bot",
-    //   isHost: false,
-    //   chips: 10000,
-    //   turn: this.clients.length + 1,
-    //   role: ERole.Bot,
-    //   connected: true,
-    //   isWinner: false,
-    // };
-  //   this.state.players.set(this.botSessionId, new Player(botPlayer));
-  // }
+  // handle function
 
-  // handle chat
   private handleChat() {
     this.onMessage(ROOM_CHAT, (_, data) => {
       console.log(data);
@@ -88,15 +75,10 @@ export default class GameRoom extends Room<RoomState> {
     });
   }
 
-  // handle Room State
   private handleRoomState() {
     // START GAME
     this.onMessage(START_GAME, (_, data) => {
-      // if (this.clients.length < 2) return false;
-      // if (this.clients.length < 5) this.createBot(); // create new bot if real player < 5
-
-      console.log("sau khi co bot", this.clients.length);
-
+      if (this.clients.length < 1) return false;
       const { onHandCards, banker5Cards } = deal(this.clients.length);
       this.state.players.forEach(
         (playerMap: Player, sessionId: string) => (playerMap.isWinner = false)
@@ -144,7 +126,6 @@ export default class GameRoom extends Room<RoomState> {
       console.log(chips);
       const player = <Player>this.state.players.get(client.sessionId);
       if (!player) return false;
-      player.isFold = true;
       player.isWinner = false;
     });
 
