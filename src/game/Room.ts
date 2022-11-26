@@ -79,6 +79,10 @@ export default class GameRoom extends Room<RoomState> {
     // START GAME
     this.onMessage(START_GAME, (_, data) => {
       if (this.clients.length < 1) return false;
+      console.log({
+        cliens: this.clients.length,
+        players: this.state.players.size,
+      });
       const { onHandCards, banker5Cards } = deal(this.state.players.size);
       this.state.players.forEach(
         (playerMap: Player, sessionId: string) => (playerMap.isWinner = false)
