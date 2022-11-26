@@ -1,6 +1,6 @@
 import { Response } from "express";
 import { User } from "../models/user.model";
-import { handleError } from "../util/handleError";
+import { handleError } from "../utils/handleError";
 
 export const userInfoService = async (user: any, res: Response) => {
   try {

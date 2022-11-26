@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { User } from "../models/user.model";
-import { handleError } from "../util/handleError";
+import { TDecode } from "../types";
+import { handleError } from "../utils/handleError";
 
 const authMiddleware = async (
   req: Request,
@@ -31,11 +32,14 @@ const authMiddleware = async (
     //   throw new Error(
     //     "User is logged in another device! Please log out from it first!"
     //   );
+    req.user = <TDecode>{
+      id: user.id,
+      email: user.email,
+      username: user.username,
+    };
 
-    req.user = { id: user.id, email: user.email, username: user.username };
     next();
   } catch (error: any) {
-    console.log("middleware error111", error);
     res.status(401).json(handleError(error.message));
   }
 };

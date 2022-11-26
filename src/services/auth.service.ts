@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { User } from "../models/user.model";
 import { ObjectId } from "mongoose";
-import { handleError } from "../util/handleError";
+import { handleError } from "../utils/handleError";
 
 export const signupService = async (data: any, res: Response) => {
   try {

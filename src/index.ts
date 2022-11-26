@@ -10,11 +10,12 @@ import GameRoom from "./game/Room";
 import initDatabase from "./init/db";
 import { authRouter } from "./routers/auth.router";
 import { userRouter } from "./routers/user.router";
+import { bestHands } from "./game/modules/rank";
 
 async function bootstrap() {
   const app: Express = express();
 
-  await initDatabase(); // init DB
+  // await initDatabase(); // init DB
 
   app.use(cors());
   app.use(express.json());
@@ -23,7 +24,7 @@ async function bootstrap() {
 
   app.use("/monitor", monitor()); // room monitor
 
-  const Hand = require("pokersolver").Hand;
+  // const Hand = require("pokersolver").Hand;
 
   // var hand1 = Hand.solve(["Ad", "As", "Jc", "Th", "2d", "3c", "Kd"]);
   // var hand2 = Hand.solve(["Ad", "As", "Jc", "Th", "2d", "Qs", "Qd"]);
@@ -39,6 +40,9 @@ async function bootstrap() {
   //   h5: hand5.rank,
   // });
   // console.log(winner);
+
+  const x = bestHands(["Ad As Jc Th 2d 5c Kd", "Ad As 4c Th Qd Qs 3d"]);
+  console.log("result", x);
 
   // router
   app.use("/auth", authRouter);
