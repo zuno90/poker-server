@@ -15,7 +15,7 @@ import { bestHands } from "./game/modules/rank";
 async function bootstrap() {
   const app: Express = express();
 
-  // await initDatabase(); // init DB
+  await initDatabase(); // init DB
 
   app.use(cors());
   app.use(express.json());
