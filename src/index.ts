@@ -24,7 +24,7 @@ async function bootstrap() {
 
   app.use("/monitor", monitor()); // room monitor
 
-  // const Hand = require("pokersolver").Hand;
+  const Hand = require("pokersolver").Hand;
 
   // var hand1 = Hand.solve(["Ad", "As", "Jc", "Th", "2d", "3c", "Kd"]);
   // var hand2 = Hand.solve(["Ad", "As", "Jc", "Th", "2d", "Qs", "Qd"]);
@@ -33,16 +33,16 @@ async function bootstrap() {
   // var hand5 = Hand.solve(["Ad", "As", "Jc", "Qh", "2d", "Qs", "Qd"]);
   // var winner = Hand.winners([hand1, hand2, hand3, hand4, hand5]); // hand2
   // console.log({
-  //   h1: hand1.rank,
-  //   h2: hand2.rank,
-  //   h3: hand3.rank,
-  //   h4: hand4.rank,
-  //   h5: hand5.rank,
+  //   h1: hand1,
+  //   h2: hand2,
+  //   h3: hand3,
+  //   h4: hand4,
+  //   h5: hand5,
   // });
   // console.log(winner);
 
-  const x = bestHands(["Ad As Jc Th 2d 5c Kd", "Ad As 4c Th Qd Qs 3d"]);
-  console.log("result", x);
+  // const x = bestHands(["Ad As Jc Th 2d 5c Kd", "Ad As 4c Th Qd Qs 3d"]);
+  // console.log("result", x);
 
   // router
   app.use("/auth", authRouter);

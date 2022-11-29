@@ -84,7 +84,6 @@ export default class GameRoom extends Room<RoomState> {
         players: this.state.players.size,
       });
       const { onHandCards, banker5Cards } = deal(this.state.players.size);
-      console.log({ onHandCards, banker5Cards });
       this.state.players.forEach(
         (playerMap: Player, sessionId: string) => (playerMap.isWinner = false)
       );
@@ -107,7 +106,7 @@ export default class GameRoom extends Room<RoomState> {
         const playerCardRanks = pickWinner(arrWinner);
         // detail card rank each player
         playerCardRanks.forEach((v, _) => {
-          if (v.sessionId === sessionId) playerMap.cardRank = v.descr;
+          if (v.sessionId === sessionId) playerMap.cardRank = v.name;
         });
         arrCardRanks = playerCardRanks;
       });
