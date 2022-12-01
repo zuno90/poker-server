@@ -14,6 +14,7 @@ const Hand = require("pokersolver").Hand;
 
 export default class GameRoom extends Room<RoomState> {
   readonly maxClients = 5;
+  private initBetChip: number = 100;
 
   onAuth(_: Client, player: Player) {
     player.connected = true;
@@ -79,14 +80,10 @@ export default class GameRoom extends Room<RoomState> {
     // START GAME
     this.onMessage(START_GAME, (_, data) => {
       if (this.clients.length < 1) return false;
-      console.log({
-        cliens: this.clients.length,
-        players: this.state.players.size,
-      });
       const { onHandCards, banker5Cards } = deal(this.state.players.size);
-      this.state.players.forEach(
-        (playerMap: Player, sessionId: string) => (playerMap.isWinner = false)
-      );
+      // this.state.players.forEach(
+      //   (playerMap: Player, sessionId: string) => (playerMap.isWinner = false)
+      // );
       this.state.onReady = true; // change room state -> TRUE
       this.state.highestBet = 0; // highestBet = 0 at initial game
       this.state.banker5Cards = banker5Cards; // change cards of banker -> [...]
@@ -95,6 +92,12 @@ export default class GameRoom extends Room<RoomState> {
       let arrCardRanks: Array<any> = [];
 
       this.state.players.forEach((playerMap: Player, sessionId: string) => {
+        // init state of player
+        playerMap.isWinner = false;
+        playerMap.betChips = this.initBetChip;
+        playerMap.chips -= this.initBetChip;
+
+        // pick winner
         playerMap.cards = onHandCards[playerMap.turn - 1];
         arrWinner.push({
           sessionId,
@@ -106,7 +109,7 @@ export default class GameRoom extends Room<RoomState> {
         const playerCardRanks = pickWinner(arrWinner);
         // detail card rank each player
         playerCardRanks.forEach((v, _) => {
-          if (v.sessionId === sessionId) playerMap.cardRank = v.name;
+          if (v.sessionId === sessionId) playerMap.cardRank = v.name; // v.descr
         });
         arrCardRanks = playerCardRanks;
       });
@@ -114,9 +117,9 @@ export default class GameRoom extends Room<RoomState> {
       // pick winner and set isWinner -> true
       const winner = Hand.winners(arrCardRanks)[0];
       // get winner session
-      const player = <Player>this.state.players.get(winner.sessionId);
-      if (!player) return false;
-      player.isWinner = true;
+      const winPlayer = <Player>this.state.players.get(winner.sessionId);
+      if (!winPlayer) return false;
+      winPlayer.isWinner = true;
     });
 
     // FINISH GAME
@@ -124,9 +127,9 @@ export default class GameRoom extends Room<RoomState> {
   }
 
   private handlePlayerAction() {
+    if (!this.state.onReady) return false;
     // FOLD
     this.onMessage(EPlayerAction.FOLD, (client: Client, chips: number) => {
-      if (!this.state.onReady) return false;
       console.log(chips);
       const player = <Player>this.state.players.get(client.sessionId);
       if (!player) return false;
@@ -135,7 +138,6 @@ export default class GameRoom extends Room<RoomState> {
 
     // CALL
     this.onMessage(EPlayerAction.CALL, (client: Client, chips: number) => {
-      if (!this.state.onReady) return false;
       console.log(chips);
       const player = <Player>this.state.players.get(client.sessionId);
       if (!player) return false;
@@ -144,7 +146,6 @@ export default class GameRoom extends Room<RoomState> {
 
     // CHECK
     this.onMessage(EPlayerAction.CHECK, (client: Client, chips: number) => {
-      if (!this.state.onReady) return false;
       console.log(chips);
       const player = <Player>this.state.players.get(client.sessionId);
       if (!player) return false;
@@ -153,7 +154,6 @@ export default class GameRoom extends Room<RoomState> {
 
     // RAISE
     this.onMessage(EPlayerAction.RAISE, (client: Client, chips: number) => {
-      if (!this.state.onReady) return false;
       const player = <Player>this.state.players.get(client.sessionId);
       if (!player) return false;
       player.betChips = chips;
@@ -163,7 +163,6 @@ export default class GameRoom extends Room<RoomState> {
 
     // ALL-IN
     this.onMessage(EPlayerAction.ALLIN, (client: Client, chips: number) => {
-      if (!this.state.onReady) return false;
       console.log(chips);
       const player = <Player>this.state.players.get(client.sessionId);
       if (!player) return false;
