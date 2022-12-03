@@ -31,14 +31,18 @@ export default class GameRoom extends Room<RoomState> {
     // CREATE AN INITIAL ROOM STATE
     this.setState(new RoomState());
 
-    // HANDLE ROOM CHAT
-    this.handleChat();
-
     // CHANGE ROOM STATE WHEN ALL USERS GET READY
     this.handleRoomState();
 
+    // HANDLE ROOM CHAT
+    this.handleChat();
+
     // HANDLE ALL ACTION FROM PLAYER
-    this.handlePlayerAction();
+    this.handleFOLD();
+    this.handleCALL();
+    this.handleCHECK();
+    this.handleRAISE();
+    this.handleALLIN();
   }
 
   onJoin(client: Client, options: any, player: Player) {
@@ -70,15 +74,6 @@ export default class GameRoom extends Room<RoomState> {
   async onDispose() {
     console.log("room", this.roomId, "disposing...");
     this.broadcast(ROOM_DISPOSE, "room bi dispose");
-  }
-
-  // handle function
-
-  private handleChat() {
-    this.onMessage(ROOM_CHAT, (_, data) => {
-      console.log(data);
-      this.broadcast(ROOM_CHAT, data);
-    });
   }
 
   private handleRoomState() {
@@ -128,33 +123,49 @@ export default class GameRoom extends Room<RoomState> {
     this.onMessage(FINISH_GAME, (_, data) => {});
   }
 
-  private handlePlayerAction() {
+  // handle chat
+  private handleChat() {
+    this.onMessage(ROOM_CHAT, (_, data) => {
+      console.log(data);
+      this.broadcast(ROOM_CHAT, data);
+    });
+  }
+
+  // handle action - FOLD
+  private handleFOLD() {
     if (!this.state.onReady) return false;
-    // FOLD
     this.onMessage(FOLD, (client: Client, chips: number) => {
       console.log(chips);
       const player = <Player>this.state.players.get(client.sessionId);
       if (!player) return false;
       player.isWinner = false;
     });
-
-    // CALL
+  }
+  // handle action - CALL
+  private handleCALL() {
+    if (!this.state.onReady) return false;
     this.onMessage(CALL, (client: Client, chips: number) => {
       console.log(chips);
       const player = <Player>this.state.players.get(client.sessionId);
       if (!player) return false;
       player.chips -= chips;
     });
+  }
 
-    // CHECK
+  // handle action - CHECK
+  private handleCHECK() {
+    if (!this.state.onReady) return false;
     this.onMessage(CHECK, (client: Client, chips: number) => {
       console.log(chips);
       const player = <Player>this.state.players.get(client.sessionId);
       if (!player) return false;
       player.chips -= chips;
     });
+  }
 
-    // RAISE
+  // handle action - RAISE
+  private handleRAISE() {
+    if (!this.state.onReady) return false;
     this.onMessage(RAISE, (client: Client, chips: number) => {
       const player = <Player>this.state.players.get(client.sessionId);
       if (!player) return false;
@@ -162,8 +173,11 @@ export default class GameRoom extends Room<RoomState> {
       player.chips -= chips;
       this.state.highestBet <= chips && (this.state.highestBet = chips);
     });
+  }
 
-    // ALL-IN
+  // handle action - ALL-IN
+  private handleALLIN() {
+    if (!this.state.onReady) return false;
     this.onMessage(ALLIN, (client: Client, chips: number) => {
       console.log(chips);
       const player = <Player>this.state.players.get(client.sessionId);
