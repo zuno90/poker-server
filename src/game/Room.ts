@@ -28,42 +28,45 @@ export default class GameRoom extends Room<RoomState> {
   }
 
   onCreate(options: any) {
-    // CREATE AN INITIAL ROOM STATE
-    this.setState(new RoomState());
+    try {
+      // CREATE AN INITIAL ROOM STATE
+      this.setState(new RoomState());
 
-    // CHANGE ROOM STATE WHEN ALL USERS GET READY
-    this.handleRoomState();
+      // CHANGE ROOM STATE WHEN ALL USERS GET READY
+      this.handleRoomState();
 
-    // HANDLE ROOM CHAT
+      // HANDLE ROOM CHAT
 
-    // HANDLE ALL ACTION FROM PLAYER
-    this.onMessage("*", (client: Client, type, data: any) => {
-      switch (type) {
-        // chat room
-        case ROOM_CHAT:
-          this.handleChat(client, data);
-          break;
-
-        // player action
-        case FOLD:
-          this.handleFOLD(client, data);
-          break;
-        case CALL:
-          this.handleCALL(client, data);
-          break;
-        case CHECK:
-          this.handleCHECK(client, data);
-          break;
-        case RAISE:
-          this.handleRAISE(client, data);
-          break;
-        case ALLIN:
-          this.handleALLIN(client, data);
-          break;
-        default:
-          break;
-      }
-    });
+      // HANDLE ALL ACTION FROM PLAYER
+      this.onMessage("*", (client: Client, type, data: any) => {
+        switch (type) {
+          // chat room
+          case ROOM_CHAT:
+            this.handleChat(client, data);
+            break;
+          // player action
+          case FOLD:
+            this.handleFOLD(client, data);
+            break;
+          case CALL:
+            this.handleCALL(client, data);
+            break;
+          case CHECK:
+            this.handleCHECK(client, data);
+            break;
+          case RAISE:
+            this.handleRAISE(client, data);
+            break;
+          case ALLIN:
+            this.handleALLIN(client, data);
+            break;
+          default:
+            break;
+        }
+      });
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   onJoin(client: Client, options: any, player: Player) {
@@ -150,14 +153,16 @@ export default class GameRoom extends Room<RoomState> {
   }
 
   // handle action - FOLD
-  private handleFOLD(client: Client, { chips }: { chips: number }) {
+  private handleFOLD(client: Client, _: any) {
     if (!this.state.onReady) return false;
     const player = <Player>this.state.players.get(client.sessionId);
     if (!player) return false;
     player.isWinner = false;
   }
   // handle action - CALL
-  private handleCALL(client: Client, { chips }: { chips: number }) {
+  private handleCALL(client: Client, data: any) {
+    const { chips } = data;
+    if (!chips) return false;
     if (!this.state.onReady) return false;
     const player = <Player>this.state.players.get(client.sessionId);
     if (!player) return false;
@@ -165,8 +170,9 @@ export default class GameRoom extends Room<RoomState> {
   }
 
   // handle action - CHECK
-  private handleCHECK(client: Client, { chips }: { chips: number }) {
-    console.log(chips);
+  private handleCHECK(client: Client, data: any) {
+    const { chips } = data;
+    if (!chips) return false;
     if (!this.state.onReady) return false;
     const player = <Player>this.state.players.get(client.sessionId);
     if (!player) return false;
@@ -174,7 +180,9 @@ export default class GameRoom extends Room<RoomState> {
   }
 
   // handle action - RAISE
-  private handleRAISE(client: Client, { chips }: { chips: number }) {
+  private handleRAISE(client: Client, data: any) {
+    const { chips } = data;
+    if (!chips) return false;
     if (!this.state.onReady) return false;
     const player = <Player>this.state.players.get(client.sessionId);
     if (!player) return false;
@@ -184,9 +192,10 @@ export default class GameRoom extends Room<RoomState> {
   }
 
   // handle action - ALL-IN
-  private handleALLIN(client: Client, { chips }: { chips: number }) {
+  private handleALLIN(client: Client, data: any) {
+    const { chips } = data;
+    if (!chips) return false;
     if (!this.state.onReady) return false;
-    console.log(chips);
     const player = <Player>this.state.players.get(client.sessionId);
     if (!player) return false;
     player.chips -= chips;
