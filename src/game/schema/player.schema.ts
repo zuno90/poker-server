@@ -30,7 +30,7 @@ export class Player extends Schema {
   turn: number;
 
   @type("string")
-  action: EPlayerAction | undefined;
+  action: EPlayerAction;
 
   @type(["string"])
   cards: Array<string>;
