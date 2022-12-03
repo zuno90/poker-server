@@ -1,11 +1,16 @@
 import { Client, Room } from "colyseus";
 import { RoomState } from "./schema/room.schema";
-import { Player, EPlayerAction } from "./schema/player.schema";
+import { Player } from "./schema/player.schema";
 import {
   ROOM_CHAT,
   ROOM_DISPOSE,
   START_GAME,
   FINISH_GAME,
+  FOLD,
+  CALL,
+  CHECK,
+  RAISE,
+  ALLIN,
 } from "./constants/room.constant";
 import { deal } from "./modules/handleCard";
 import { pickWinner } from "./modules/handleRank";
@@ -81,9 +86,6 @@ export default class GameRoom extends Room<RoomState> {
     this.onMessage(START_GAME, (_, data) => {
       if (this.clients.length < 1) return false;
       const { onHandCards, banker5Cards } = deal(this.state.players.size);
-      // this.state.players.forEach(
-      //   (playerMap: Player, sessionId: string) => (playerMap.isWinner = false)
-      // );
       this.state.onReady = true; // change room state -> TRUE
       this.state.highestBet = 0; // highestBet = 0 at initial game
       this.state.banker5Cards = banker5Cards; // change cards of banker -> [...]
@@ -129,7 +131,7 @@ export default class GameRoom extends Room<RoomState> {
   private handlePlayerAction() {
     if (!this.state.onReady) return false;
     // FOLD
-    this.onMessage(EPlayerAction.FOLD, (client: Client, chips: number) => {
+    this.onMessage(FOLD, (client: Client, chips: number) => {
       console.log(chips);
       const player = <Player>this.state.players.get(client.sessionId);
       if (!player) return false;
@@ -137,7 +139,7 @@ export default class GameRoom extends Room<RoomState> {
     });
 
     // CALL
-    this.onMessage(EPlayerAction.CALL, (client: Client, chips: number) => {
+    this.onMessage(CALL, (client: Client, chips: number) => {
       console.log(chips);
       const player = <Player>this.state.players.get(client.sessionId);
       if (!player) return false;
@@ -145,7 +147,7 @@ export default class GameRoom extends Room<RoomState> {
     });
 
     // CHECK
-    this.onMessage(EPlayerAction.CHECK, (client: Client, chips: number) => {
+    this.onMessage(CHECK, (client: Client, chips: number) => {
       console.log(chips);
       const player = <Player>this.state.players.get(client.sessionId);
       if (!player) return false;
@@ -153,7 +155,7 @@ export default class GameRoom extends Room<RoomState> {
     });
 
     // RAISE
-    this.onMessage(EPlayerAction.RAISE, (client: Client, chips: number) => {
+    this.onMessage(RAISE, (client: Client, chips: number) => {
       const player = <Player>this.state.players.get(client.sessionId);
       if (!player) return false;
       player.betChips = chips;
@@ -162,7 +164,7 @@ export default class GameRoom extends Room<RoomState> {
     });
 
     // ALL-IN
-    this.onMessage(EPlayerAction.ALLIN, (client: Client, chips: number) => {
+    this.onMessage(ALLIN, (client: Client, chips: number) => {
       console.log(chips);
       const player = <Player>this.state.players.get(client.sessionId);
       if (!player) return false;

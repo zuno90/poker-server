@@ -5,14 +5,6 @@ export enum ERole {
   Bot = "Bot",
 }
 
-export enum EPlayerAction {
-  CALL = "CALL",
-  CHECK = "CHECK",
-  RAISE = "RAISE",
-  ALLIN = "ALLIN",
-  FOLD = "FOLD",
-}
-
 export class Player extends Schema {
   @type("string")
   id: string;
@@ -28,9 +20,6 @@ export class Player extends Schema {
 
   @type("number")
   turn: number;
-
-  @type("string")
-  action: EPlayerAction;
 
   @type(["string"])
   cards: Array<string>;
