@@ -44,10 +44,6 @@ export default class GameRoom extends Room<RoomState> {
           return this.handleBet(client, data);
         // handle fold option
         if (type === FOLD) return this.handleFOLD(client);
-        // if (type === CALL) this.handleCALL(client, data);
-        // if (type === CHECK) this.handleCHECK(client, data);
-        // if (type === RAISE) this.handleRAISE(client, data);
-        // if (type === ALLIN) this.handleALLIN(client, data);
       });
     } catch (e) {
       console.error(e);
@@ -154,7 +150,17 @@ export default class GameRoom extends Room<RoomState> {
     if (!player) return false;
     player.betChips = chips;
     player.chips -= chips;
-    this.state.highestBet <= chips && (this.state.highestBet = chips);
+    this.state.highestBet <= chips
+      ? (this.state.highestBet = chips)
+      : this.state.highestBet;
+
+    return this.broadcast("BET", {
+      fromZUNO: {
+        sessionId: client.sessionId,
+        id: player.id,
+        chips,
+      },
+    });
   }
 
   // handle action - CALL
