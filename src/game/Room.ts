@@ -153,14 +153,6 @@ export default class GameRoom extends Room<RoomState> {
     this.state.highestBet <= chips
       ? (this.state.highestBet = chips)
       : this.state.highestBet;
-
-    return this.broadcast("BET", {
-      fromZUNO: {
-        sessionId: client.sessionId,
-        id: player.id,
-        chips,
-      },
-    });
   }
 
   // handle action - CALL
