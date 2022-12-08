@@ -11,9 +11,11 @@ import {
   CHECK,
   RAISE,
   ALLIN,
+  RESET_GAME,
 } from "./constants/room.constant";
 import { deal } from "./modules/handleCard";
 import { pickWinner } from "./modules/handleRank";
+import { updateChip } from "../services/game.service";
 
 const Hand = require("pokersolver").Hand;
 
@@ -56,12 +58,14 @@ export default class GameRoom extends Room<RoomState> {
   }
 
   async onLeave(client: Client, consented: boolean) {
+    // update chips before leaving room
+    if (!this.state.players.has(client.sessionId)) return false;
+    const leavingPlayer = <Player>this.state.players.get(client.sessionId);
+    await updateChip(leavingPlayer.id, leavingPlayer.chips);
     // flag client as inactive for other users
     console.log(client.sessionId + " leave room...");
-    if (!this.state.players.has(client.sessionId)) return;
-    const playerInstance = this.state.players.get(client.sessionId);
-    if (!playerInstance) return;
-    playerInstance.connected = false;
+
+    leavingPlayer.connected = false;
     try {
       if (consented) throw new Error("consented leave");
 
@@ -69,7 +73,7 @@ export default class GameRoom extends Room<RoomState> {
       await this.allowReconnection(client, 20);
 
       // client returned! let's re-activate it.
-      playerInstance.connected = true;
+      leavingPlayer.connected = true;
     } catch (error) {
       // 20 seconds expired. let's remove the client.
       this.state.players.delete(client.sessionId);
@@ -84,11 +88,14 @@ export default class GameRoom extends Room<RoomState> {
   private handleRoomState() {
     // START GAME
     this.onMessage(START_GAME, (_, data) => {
-      if (this.clients.length < 1) return false;
+      // if (this.clients.length < 1) return false;
       const { onHandCards, banker5Cards } = deal(this.state.players.size);
       this.state.onReady = true; // change room state -> TRUE
       this.state.highestBet = 0; // highestBet = 0 at initial game
       this.state.banker5Cards = banker5Cards; // change cards of banker -> [...]
+
+      // console.log("mảng player cards:::::", [...onHandCards[0].values()]);
+      // console.log("mảng banker cards:::::", [...banker5Cards.values()]);
 
       let arrWinner: Array<any> = [];
       let arrCardRanks: Array<any> = [];
@@ -125,7 +132,22 @@ export default class GameRoom extends Room<RoomState> {
     });
 
     // FINISH GAME
-    this.onMessage(FINISH_GAME, (_, data) => {});
+    this.onMessage(FINISH_GAME, (_, data) => {
+      this.broadcast(FINISH_GAME, "finish lai game ne.....");
+      if (this.clients.length < 1) return false;
+      this.state.players.forEach(async (player: Player, _) => {
+        await updateChip(player.id, player.chips);
+      });
+    });
+
+    // RESET GAME
+    this.onMessage(RESET_GAME, (_, data) => {
+      if (this.clients.length < 1) return false;
+      // CREATE AN INITIAL ROOM STATE AGAIN
+      this.setState(new RoomState());
+
+      this.broadcast(RESET_GAME, "reset game, log thử state xem ");
+    });
   }
 
   // handle chat
@@ -137,8 +159,37 @@ export default class GameRoom extends Room<RoomState> {
   private handleFOLD(client: Client) {
     if (!this.state.onReady) return false;
     const player = <Player>this.state.players.get(client.sessionId);
-    if (!player) return false;
-    player.isWinner = false;
+    if (!player || player.isFold) return false;
+    player.isFold = true; // player fold
+
+    // check if this player is winner
+    if (player.isWinner) {
+      const remainingPlayers = new Map<string, Player>(
+        JSON.parse(JSON.stringify(Array.from(this.state.players)))
+      );
+      remainingPlayers.delete(client.sessionId);
+      // pick winner in remaining players
+      let arrWinner: Array<any> = [];
+      let arrCardRanks: Array<any> = [];
+      remainingPlayers.forEach((remainingPlayer: Player, sessionId: string) => {
+        arrWinner.push({
+          sessionId,
+          sevenCards: [...remainingPlayer.cards.values()].concat([
+            ...this.state.banker5Cards,
+          ]),
+        });
+        arrCardRanks = pickWinner(arrWinner);
+      });
+
+      // pick winner and set isWinner -> true
+      const winner = Hand.winners(arrCardRanks)[0];
+      // get winner session
+      const winPlayer = <Player>this.state.players.get(winner.sessionId);
+      if (!winPlayer) return false;
+      winPlayer.isWinner = true;
+      // set loser to player
+      player.isWinner = false;
+    }
   }
 
   // handle action without FOLD
@@ -153,53 +204,5 @@ export default class GameRoom extends Room<RoomState> {
     this.state.highestBet <= chips
       ? (this.state.highestBet = chips)
       : this.state.highestBet;
-  }
-
-  // handle action - CALL
-  private handleCALL(client: Client, data: any) {
-    const { chips } = data;
-    if (!chips) return false;
-    if (!this.state.onReady) return false;
-    const player = <Player>this.state.players.get(client.sessionId);
-    if (!player) return false;
-    player.betChips = chips;
-    player.chips -= chips;
-    this.state.highestBet <= chips && (this.state.highestBet = chips);
-  }
-
-  // handle action - CHECK
-  private handleCHECK(client: Client, data: any) {
-    const { chips } = data;
-    if (!chips) return false;
-    if (!this.state.onReady) return false;
-    const player = <Player>this.state.players.get(client.sessionId);
-    if (!player) return false;
-    player.betChips = chips;
-    player.chips -= chips;
-    this.state.highestBet <= chips && (this.state.highestBet = chips);
-  }
-
-  // handle action - RAISE
-  private handleRAISE(client: Client, data: any) {
-    const { chips } = data;
-    if (!chips) return false;
-    if (!this.state.onReady) return false;
-    const player = <Player>this.state.players.get(client.sessionId);
-    if (!player) return false;
-    player.betChips = chips;
-    player.chips -= chips;
-    this.state.highestBet <= chips && (this.state.highestBet = chips);
-  }
-
-  // handle action - ALL-IN
-  private handleALLIN(client: Client, data: any) {
-    const { chips } = data;
-    if (!chips) return false;
-    if (!this.state.onReady) return false;
-    const player = <Player>this.state.players.get(client.sessionId);
-    if (!player) return false;
-    player.betChips = chips;
-    player.chips -= chips;
-    this.state.highestBet <= chips && (this.state.highestBet = chips);
   }
 }

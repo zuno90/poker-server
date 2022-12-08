@@ -11,6 +11,9 @@ export class RoomState extends Schema {
   @type("number")
   highestBet: number;
 
+  @type("number")
+  totalBet: number
+
   @type(["string"])
   banker5Cards: Array<string>;
 }
