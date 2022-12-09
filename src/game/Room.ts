@@ -159,17 +159,18 @@ export default class GameRoom extends Room<RoomState> {
     if (!player || player.isFold) return false;
     player.isFold = true;
 
-    const totalPlayers = new Map<string, Player>(
-      JSON.parse(JSON.stringify(Array.from(this.state.players)))
+    const remainingPlayers = new Map<string, Player>(
+      Array.from(this.state.players).filter(
+        ([sessionId, player]) => !player.isFold && [sessionId, player]
+      )
     );
 
     if (player.isWinner) {
-      totalPlayers.delete(client.sessionId);
-
-      console.log("số player còn lại:::::", totalPlayers.size);
+      remainingPlayers.delete(client.sessionId);
+      console.log("số player còn lại:::::", remainingPlayers.size);
       // check if only 1 player
-      if (totalPlayers.size === 1) {
-        for (let winner of totalPlayers.values()) {
+      if (remainingPlayers.size === 1) {
+        for (let winner of remainingPlayers.values()) {
           console.log("winner cuối cùng:::::", winner);
           winner.isWinner = true;
           return this.broadcast(
@@ -182,7 +183,7 @@ export default class GameRoom extends Room<RoomState> {
       // pick new winner in remaining players
       let arrWinner: Array<any> = [];
       let arrCardRanks: Array<any> = [];
-      totalPlayers.forEach((remainingPlayer: Player, sessionId: string) => {
+      remainingPlayers.forEach((remainingPlayer: Player, sessionId: string) => {
         arrWinner.push({
           sessionId,
           sevenCards: [...remainingPlayer.cards.values()].concat([
@@ -204,13 +205,13 @@ export default class GameRoom extends Room<RoomState> {
 
   // handle action without FOLD
   private handleBet(client: Client, data: any) {
-    const { chips } = data;
-    if (!chips) return false;
     if (!this.state.onReady) return false;
+    const { chips } = data;
     const player = <Player>this.state.players.get(client.sessionId);
     if (!player) return false;
-    player.betChips = chips;
+    player.betChips += chips;
     player.chips -= chips;
+    this.state.totalBet += chips;
     this.state.highestBet <= chips
       ? (this.state.highestBet = chips)
       : this.state.highestBet;
