@@ -94,9 +94,6 @@ export default class GameRoom extends Room<RoomState> {
       this.state.highestBet = 0; // highestBet = 0 at initial game
       this.state.banker5Cards = banker5Cards; // change cards of banker -> [...]
 
-      // console.log("mảng player cards:::::", [...onHandCards[0].values()]);
-      // console.log("mảng banker cards:::::", [...banker5Cards.values()]);
-
       let arrWinner: Array<any> = [];
       let arrCardRanks: Array<any> = [];
 
@@ -162,17 +159,17 @@ export default class GameRoom extends Room<RoomState> {
     if (!player || player.isFold) return false;
     player.isFold = true;
 
-    // const totalPlayers = new Map<string, Player>(
-    //   JSON.parse(JSON.stringify(Array.from(this.state.players)))
-    // );
+    const totalPlayers = new Map<string, Player>(
+      JSON.parse(JSON.stringify(Array.from(this.state.players)))
+    );
 
     if (player.isWinner) {
-      this.state.players.delete(client.sessionId);
+      totalPlayers.delete(client.sessionId);
 
-      console.log("số player còn lại:::::", this.state.players.size);
+      console.log("số player còn lại:::::", totalPlayers.size);
       // check if only 1 player
-      if (this.state.players.size === 1) {
-        for (let winner of this.state.players.values()) {
+      if (totalPlayers.size === 1) {
+        for (let winner of totalPlayers.values()) {
           console.log("winner cuối cùng:::::", winner);
           winner.isWinner = true;
           return this.broadcast(
@@ -185,17 +182,15 @@ export default class GameRoom extends Room<RoomState> {
       // pick new winner in remaining players
       let arrWinner: Array<any> = [];
       let arrCardRanks: Array<any> = [];
-      this.state.players.forEach(
-        (remainingPlayer: Player, sessionId: string) => {
-          arrWinner.push({
-            sessionId,
-            sevenCards: [...remainingPlayer.cards.values()].concat([
-              ...this.state.banker5Cards,
-            ]),
-          });
-          arrCardRanks = pickWinner(arrWinner);
-        }
-      );
+      totalPlayers.forEach((remainingPlayer: Player, sessionId: string) => {
+        arrWinner.push({
+          sessionId,
+          sevenCards: [...remainingPlayer.cards.values()].concat([
+            ...this.state.banker5Cards,
+          ]),
+        });
+        arrCardRanks = pickWinner(arrWinner);
+      });
 
       // pick winner and set isWinner -> true
       const winner = Hand.winners(arrCardRanks)[0];
