@@ -167,9 +167,11 @@ export default class GameRoom extends Room<RoomState> {
         JSON.parse(JSON.stringify(Array.from(this.state.players)))
       );
       remainingPlayers.delete(client.sessionId);
+      console.log("số player còn lại:::::", remainingPlayers.size);
       // check if only 1 player
       if (remainingPlayers.size === 1) {
         for (let winner of remainingPlayers.values()) {
+          console.log("winner cuối cùng:::::", winner);
           winner.isWinner = true;
           return this.broadcast(
             "CONGRATULATION",
