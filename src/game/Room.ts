@@ -160,15 +160,25 @@ export default class GameRoom extends Room<RoomState> {
     if (!this.state.onReady) return false;
     const player = <Player>this.state.players.get(client.sessionId);
     if (!player || player.isFold) return false;
-    player.isFold = true; // player fold
+    player.isFold = true;
 
-    // check if this player is winner
     if (player.isWinner) {
       const remainingPlayers = new Map<string, Player>(
         JSON.parse(JSON.stringify(Array.from(this.state.players)))
       );
       remainingPlayers.delete(client.sessionId);
-      // pick winner in remaining players
+      // check if only 1 player
+      if (remainingPlayers.size === 1) {
+        for (let winner of remainingPlayers.values()) {
+          winner.isWinner = true;
+          return this.broadcast(
+            "CONGRATULATION",
+            `ĐCM chúc mừng anh zai có id:::${winner.id} đã dành chiến thắng!`
+          );
+        }
+      }
+
+      // pick new winner in remaining players
       let arrWinner: Array<any> = [];
       let arrCardRanks: Array<any> = [];
       remainingPlayers.forEach((remainingPlayer: Player, sessionId: string) => {
@@ -187,7 +197,6 @@ export default class GameRoom extends Room<RoomState> {
       const winPlayer = <Player>this.state.players.get(winner.sessionId);
       if (!winPlayer) return false;
       winPlayer.isWinner = true;
-      // set loser to player
       player.isWinner = false;
     }
   }

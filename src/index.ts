@@ -60,7 +60,7 @@ async function bootstrap() {
 
   gameServer.define("desk", GameRoom);
 
-  const SERVER_IP = process.env.SERVER_IP;
+  const SERVER_IP = process.env.SERVER_IP || "175.41.154.239";
   const PORT = process.env.PORT || 9000;
   gameServer.listen(+PORT);
   console.log(
