@@ -162,15 +162,17 @@ export default class GameRoom extends Room<RoomState> {
     if (!player || player.isFold) return false;
     player.isFold = true;
 
+    // const totalPlayers = new Map<string, Player>(
+    //   JSON.parse(JSON.stringify(Array.from(this.state.players)))
+    // );
+
     if (player.isWinner) {
-      const remainingPlayers = new Map<string, Player>(
-        JSON.parse(JSON.stringify(Array.from(this.state.players)))
-      );
-      remainingPlayers.delete(client.sessionId);
-      console.log("số player còn lại:::::", remainingPlayers.size);
+      this.state.players.delete(client.sessionId);
+
+      console.log("số player còn lại:::::", this.state.players.size);
       // check if only 1 player
-      if (remainingPlayers.size === 1) {
-        for (let winner of remainingPlayers.values()) {
+      if (this.state.players.size === 1) {
+        for (let winner of this.state.players.values()) {
           console.log("winner cuối cùng:::::", winner);
           winner.isWinner = true;
           return this.broadcast(
@@ -183,15 +185,17 @@ export default class GameRoom extends Room<RoomState> {
       // pick new winner in remaining players
       let arrWinner: Array<any> = [];
       let arrCardRanks: Array<any> = [];
-      remainingPlayers.forEach((remainingPlayer: Player, sessionId: string) => {
-        arrWinner.push({
-          sessionId,
-          sevenCards: [...remainingPlayer.cards.values()].concat([
-            ...this.state.banker5Cards,
-          ]),
-        });
-        arrCardRanks = pickWinner(arrWinner);
-      });
+      this.state.players.forEach(
+        (remainingPlayer: Player, sessionId: string) => {
+          arrWinner.push({
+            sessionId,
+            sevenCards: [...remainingPlayer.cards.values()].concat([
+              ...this.state.banker5Cards,
+            ]),
+          });
+          arrCardRanks = pickWinner(arrWinner);
+        }
+      );
 
       // pick winner and set isWinner -> true
       const winner = Hand.winners(arrCardRanks)[0];
