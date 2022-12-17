@@ -24,8 +24,6 @@ export default class GameRoom extends Room<RoomState> {
   private initBetChip: number = 100;
 
   onAuth(_: Client, player: Player) {
-    player.connected = true;
-    player.isWinner = false;
     return player;
   }
 
@@ -99,7 +97,7 @@ export default class GameRoom extends Room<RoomState> {
 
       this.state.players.forEach((playerMap: Player, sessionId: string) => {
         // init state of player
-        playerMap.isWinner = false;
+        // playerMap.isWinner = false;
         playerMap.betChips = this.initBetChip;
         playerMap.chips -= this.initBetChip;
 
@@ -142,6 +140,21 @@ export default class GameRoom extends Room<RoomState> {
       if (this.clients.length < 1) return false;
       // CREATE AN INITIAL ROOM STATE AGAIN
       this.setState(new RoomState());
+      // CREATE AN INITIAL PLAYER STATE AFTER A GAME
+      this.state.players.forEach((playerMap: Player, sessionId: string) => {
+        this.state.players.set(
+          sessionId,
+          new Player({
+            id: playerMap.id,
+            isHost: playerMap.isHost,
+            chips: playerMap.chips,
+            turn: playerMap.turn,
+            role: playerMap.role,
+            betChips: 0,
+            cards: [],
+          })
+        );
+      });
 
       this.broadcast(RESET_GAME, "reset game, log thử state xem ");
     });

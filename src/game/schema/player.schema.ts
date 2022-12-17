@@ -31,10 +31,10 @@ export class Player extends Schema {
   isFold: boolean = false;
 
   @type("boolean")
-  connected: boolean;
+  isWinner: boolean = false;
 
   @type("boolean")
-  isWinner: boolean;
+  connected: boolean = true;
 
   @type("string")
   cardRank: string | undefined;
