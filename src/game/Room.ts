@@ -57,7 +57,8 @@ export default class GameRoom extends Room<RoomState> {
 
   async onLeave(client: Client, consented: boolean) {
     // update chips before leaving room
-    if (!this.state.players.has(client.sessionId)) return false;
+    if (!this.state.players.has(client.sessionId))
+      throw new Error("Have no any sessionId!");
     const leavingPlayer = <Player>this.state.players.get(client.sessionId);
     await updateChip(leavingPlayer.id, leavingPlayer.chips);
     // flag client as inactive for other users
@@ -86,7 +87,7 @@ export default class GameRoom extends Room<RoomState> {
   private handleRoomState() {
     // START GAME
     this.onMessage(START_GAME, (_, data) => {
-      // if (this.clients.length < 1) return false;
+      // if (this.clients.length < 1) throw new Error("Have cheat! Player number is < 1")
       const { onHandCards, banker5Cards } = deal(this.state.players.size);
       this.state.onReady = true; // change room state -> TRUE
       this.state.highestBet = 0; // highestBet = 0 at initial game
@@ -122,14 +123,15 @@ export default class GameRoom extends Room<RoomState> {
       const winner = Hand.winners(arrCardRanks)[0];
       // get winner session
       const winPlayer = <Player>this.state.players.get(winner.sessionId);
-      if (!winPlayer) return false;
+      if (!winPlayer) throw new Error("Have no any winner! Please check");
       winPlayer.isWinner = true;
     });
 
     // FINISH GAME
     this.onMessage(FINISH_GAME, (_, data) => {
       this.broadcast(FINISH_GAME, "finish lai game ne.....");
-      if (this.clients.length < 1) return false;
+      if (this.clients.length < 1)
+        throw new Error("Have cheat! Player number is < 1");
       this.state.players.forEach(async (player: Player, _) => {
         await updateChip(player.id, player.chips);
       });
@@ -137,7 +139,8 @@ export default class GameRoom extends Room<RoomState> {
 
     // RESET GAME
     this.onMessage(RESET_GAME, (_, data) => {
-      if (this.clients.length < 1) return false;
+      if (this.clients.length < 1)
+        throw new Error("Have cheat! Player number is < 1");
       // CREATE AN INITIAL ROOM STATE AGAIN
       this.setState(new RoomState());
       // CREATE AN INITIAL PLAYER STATE AFTER A GAME
@@ -167,9 +170,10 @@ export default class GameRoom extends Room<RoomState> {
 
   // handle action - FOLD
   private handleFOLD(client: Client) {
-    if (!this.state.onReady) return false;
+    if (!this.state.onReady) throw new Error("Game is not ready!");
     const player = <Player>this.state.players.get(client.sessionId);
-    if (!player || player.isFold) return false;
+    if (!player || player.isFold)
+      throw new Error("Can not find any sessionId or any FOLDED player!");
     player.isFold = true;
 
     const remainingPlayers = new Map<string, Player>(
@@ -210,7 +214,10 @@ export default class GameRoom extends Room<RoomState> {
       const winner = Hand.winners(arrCardRanks)[0];
       // get winner session
       const winPlayer = <Player>this.state.players.get(winner.sessionId);
-      if (!winPlayer) return false;
+      if (!winPlayer)
+        throw new Error(
+          "Have no winner! Please re-check function winner picking!"
+        );
       winPlayer.isWinner = true;
       player.isWinner = false;
     }
@@ -218,10 +225,10 @@ export default class GameRoom extends Room<RoomState> {
 
   // handle action without FOLD
   private handleBet(client: Client, data: any) {
-    if (!this.state.onReady) return false;
+    if (!this.state.onReady) throw new Error("Game is not ready!");
     const { chips } = data;
     const player = <Player>this.state.players.get(client.sessionId);
-    if (!player) return false;
+    if (!player) throw new Error("Can not find any sessionId!");
     player.betChips += chips;
     player.chips -= chips;
     this.state.totalBet += chips;
