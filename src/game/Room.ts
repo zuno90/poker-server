@@ -77,7 +77,7 @@ export default class GameRoom extends Room<RoomState> {
     //   // 20 seconds expired. let's remove the client.
     //   this.state.players.delete(client.sessionId);
     // }
-    console.log("client" + client.sessionId + "left");
+    console.log("client " + client.sessionId + " has left");
   }
 
   async onDispose() {
@@ -143,7 +143,7 @@ export default class GameRoom extends Room<RoomState> {
       if (this.clients.length < 1)
         throw new Error("Have cheat! Player number is < 1");
       // CREATE AN INITIAL ROOM STATE AGAIN
-      this.setState(new RoomState());
+      // this.setState(new RoomState());
       // CREATE AN INITIAL PLAYER STATE AFTER A GAME
       this.state.players.forEach((playerMap: Player, sessionId: string) => {
         this.state.players.set(
