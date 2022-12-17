@@ -57,26 +57,27 @@ export default class GameRoom extends Room<RoomState> {
 
   async onLeave(client: Client, consented: boolean) {
     // update chips before leaving room
-    if (!this.state.players.has(client.sessionId))
-      throw new Error("Have no any sessionId!");
-    const leavingPlayer = <Player>this.state.players.get(client.sessionId);
-    await updateChip(leavingPlayer.id, leavingPlayer.chips);
-    // flag client as inactive for other users
-    console.log(client.sessionId + " leave room...");
+    // if (!this.state.players.has(client.sessionId))
+    //   throw new Error("Have no any sessionId!");
+    // const leavingPlayer = <Player>this.state.players.get(client.sessionId);
+    // await updateChip(leavingPlayer.id, leavingPlayer.chips);
+    // // flag client as inactive for other users
+    // console.log(client.sessionId + " leave room...");
 
-    leavingPlayer.connected = false;
-    try {
-      if (consented) throw new Error("consented leave");
+    // leavingPlayer.connected = false;
+    // try {
+    //   if (consented) throw new Error("consented leave");
 
-      // allow disconnected client to reconnect into this room until 20 seconds
-      await this.allowReconnection(client, 20);
+    //   // allow disconnected client to reconnect into this room until 20 seconds
+    //   await this.allowReconnection(client, 20);
 
-      // client returned! let's re-activate it.
-      leavingPlayer.connected = true;
-    } catch (error) {
-      // 20 seconds expired. let's remove the client.
-      this.state.players.delete(client.sessionId);
-    }
+    //   // client returned! let's re-activate it.
+    //   leavingPlayer.connected = true;
+    // } catch (error) {
+    //   // 20 seconds expired. let's remove the client.
+    //   this.state.players.delete(client.sessionId);
+    // }
+    console.log("client" + client.sessionId + "left");
   }
 
   async onDispose() {
