@@ -9,7 +9,7 @@ export class RoomState extends Schema {
   players = new MapSchema<Player>();
 
   @type("number")
-  highestBet: number;
+  highestBet: number = 0;
 
   @type("number")
   totalBet: number = 0;

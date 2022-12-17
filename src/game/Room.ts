@@ -91,7 +91,6 @@ export default class GameRoom extends Room<RoomState> {
       // if (this.clients.length < 1) throw new Error("Have cheat! Player number is < 1")
       const { onHandCards, banker5Cards } = deal(this.state.players.size);
       this.state.onReady = true; // change room state -> TRUE
-      this.state.highestBet = 0; // highestBet = 0 at initial game
       this.state.banker5Cards = banker5Cards; // change cards of banker -> [...]
 
       let arrWinner: Array<any> = [];
@@ -143,7 +142,11 @@ export default class GameRoom extends Room<RoomState> {
       if (this.clients.length < 1)
         throw new Error("Have cheat! Player number is < 1");
       // CREATE AN INITIAL ROOM STATE AGAIN
-      // this.setState(new RoomState());
+      this.state.onReady = false;
+      this.state.highestBet = 0;
+      this.state.totalBet = 0;
+      this.state.banker5Cards = [];
+
       // CREATE AN INITIAL PLAYER STATE AFTER A GAME
       this.state.players.forEach((playerMap: Player, sessionId: string) => {
         this.state.players.set(
