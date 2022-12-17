@@ -12,7 +12,7 @@ export class RoomState extends Schema {
   highestBet: number;
 
   @type("number")
-  totalBet: number;
+  totalBet: number = 0;
 
   @type(["string"])
   banker5Cards: Array<string>;
