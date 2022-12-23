@@ -125,13 +125,15 @@ export default class GameRoom extends Room<RoomState> {
       const winPlayer = <Player>this.state.players.get(winner.sessionId);
       if (!winPlayer) throw new Error("Have no any winner! Please check");
       winPlayer.isWinner = true;
+      console.log("player state is:::::", this.state.players);
+      console.log("winner is:::::", winPlayer);
     });
 
     // FINISH GAME
     this.onMessage(FINISH_GAME, (_, data) => {
       this.broadcast(FINISH_GAME, "finish lai game ne.....");
       this.state.players.forEach(async (player: Player, _) => {
-        await updateChip(player.id, player.chips);
+        player.role === "Player" && (await updateChip(player.id, player.chips));
       });
     });
 
