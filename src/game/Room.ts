@@ -125,8 +125,8 @@ export default class GameRoom extends Room<RoomState> {
       const winPlayer = <Player>this.state.players.get(winner.sessionId);
       if (!winPlayer) throw new Error("Have no any winner! Please check");
       winPlayer.isWinner = true;
-      console.log("player state is:::::", this.state.players);
-      console.log("winner is:::::", winPlayer);
+      console.log("player state is:::::", this.state.players.toJSON());
+      console.log("winner is:::::", winPlayer.toJSON());
     });
 
     // FINISH GAME
