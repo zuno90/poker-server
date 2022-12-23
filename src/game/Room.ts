@@ -77,7 +77,7 @@ export default class GameRoom extends Room<RoomState> {
     //   // 20 seconds expired. let's remove the client.
     //   this.state.players.delete(client.sessionId);
     // }
-    console.log("client " + client.sessionId + " has left");
+    console.log("client " + client.sessionId + " has just left");
   }
 
   async onDispose() {
@@ -88,9 +88,9 @@ export default class GameRoom extends Room<RoomState> {
   private handleRoomState() {
     // START GAME
     this.onMessage(START_GAME, (_, data) => {
-      // if (this.clients.length < 1) throw new Error("Have cheat! Player number is < 1")
       const { onHandCards, banker5Cards } = deal(this.state.players.size);
       this.state.onReady = true; // change room state -> TRUE
+      this.state.totalBet = this.state.players.size * this.initBetChip;
       this.state.banker5Cards = banker5Cards; // change cards of banker -> [...]
 
       let arrWinner: Array<any> = [];
@@ -130,8 +130,6 @@ export default class GameRoom extends Room<RoomState> {
     // FINISH GAME
     this.onMessage(FINISH_GAME, (_, data) => {
       this.broadcast(FINISH_GAME, "finish lai game ne.....");
-      if (this.clients.length < 1)
-        throw new Error("Have cheat! Player number is < 1");
       this.state.players.forEach(async (player: Player, _) => {
         await updateChip(player.id, player.chips);
       });
