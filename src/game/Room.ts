@@ -120,6 +120,7 @@ export default class GameRoom extends Room<RoomState> {
       });
 
       // pick winner and set isWinner -> true
+      console.log("array winner:::::", Hand.winners(arrCardRanks));
       const winner = Hand.winners(arrCardRanks)[0];
       // get winner session
       const winPlayer = <Player>this.state.players.get(winner.sessionId);
