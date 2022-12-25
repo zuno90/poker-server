@@ -5,7 +5,10 @@ import { handleError } from "../utils/handleError";
 export const userInfoService = async (user: any, res: Response) => {
   try {
     const { id, email, username } = user;
-    const userInfo = await User.findOne({ id, email, username }, "-password");
+    const userInfo = await User.findOne(
+      { _id: id, email, username },
+      "-password"
+    );
     if (!userInfo) throw new Error("User is not existing!");
     return res.status(200).json({ success: true, data: userInfo });
   } catch (error: any) {
