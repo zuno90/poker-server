@@ -130,7 +130,7 @@ export default class GameRoom extends Room<RoomState> {
     // FINISH GAME
     this.onMessage(FINISH_GAME, (_, data) => {
       this.state.players.forEach(async (player: Player, _) => {
-        console.log("player is playing:::::", player.toJSON());
+        if (player.isWinner) player.chips = player.chips + this.state.totalBet;
         player.role === "Player" && (await updateChip(player.id, player.chips));
       });
       this.broadcast(
