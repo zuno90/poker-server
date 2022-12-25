@@ -120,22 +120,22 @@ export default class GameRoom extends Room<RoomState> {
       });
 
       // pick winner and set isWinner -> true
-      console.log("array winner:::::", Hand.winners(arrCardRanks));
       const winner = Hand.winners(arrCardRanks)[0];
       // get winner session
       const winPlayer = <Player>this.state.players.get(winner.sessionId);
       if (!winPlayer) throw new Error("Have no any winner! Please check");
       winPlayer.isWinner = true;
-      console.log("player state is:::::", this.state.players.toJSON());
-      console.log("winner is:::::", winPlayer.toJSON());
     });
 
     // FINISH GAME
     this.onMessage(FINISH_GAME, (_, data) => {
-      this.broadcast(FINISH_GAME, "finish lai game ne.....");
       this.state.players.forEach(async (player: Player, _) => {
         player.role === "Player" && (await updateChip(player.id, player.chips));
       });
+      this.broadcast(
+        FINISH_GAME,
+        "Finish, updated owned chips of user into database!!!!!"
+      );
     });
 
     // RESET GAME
@@ -164,7 +164,7 @@ export default class GameRoom extends Room<RoomState> {
         );
       });
 
-      this.broadcast(RESET_GAME, "reset game, log thử state xem ");
+      this.broadcast(RESET_GAME, "reset game, log thử state xem");
     });
   }
 

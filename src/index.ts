@@ -11,6 +11,7 @@ import initDatabase from "./init/db";
 import { authRouter } from "./routers/auth.router";
 import { userRouter } from "./routers/user.router";
 import { bestHands } from "./game/modules/rank";
+import { User } from "./models/user.model";
 
 async function bootstrap() {
   const app: Express = express();
@@ -24,32 +25,18 @@ async function bootstrap() {
 
   app.use("/monitor", monitor()); // room monitor
 
-  const Hand = require("pokersolver").Hand;
-
-  // var hand1 = Hand.solve(["Ad", "As", "Jc", "Th", "2d", "3c", "Kd"]);
-  // var hand2 = Hand.solve(["Ad", "As", "Jc", "Th", "2d", "Qs", "Qd"]);
-  // var hand3 = Hand.solve(["Ad", "As", "Ac", "Th", "2d", "Qs", "Qd"]);
-  // var hand4 = Hand.solve(["Ad", "As", "Qc", "Th", "2d", "Qs", "Qd"]);
-  // var hand5 = Hand.solve(["Ad", "As", "Jc", "Qh", "2d", "Qs", "Qd"]);
-  // var winner = Hand.winners([hand1, hand2, hand3, hand4, hand5]); // hand2
-  // console.log({
-  //   h1: hand1,
-  //   h2: hand2,
-  //   h3: hand3,
-  //   h4: hand4,
-  //   h5: hand5,
-  // });
-  // console.log(winner);
-
-  // const x = bestHands(["Ad As Jc Th 2d 5c Kd", "Ad As 4c Th Qd Qs 3d"]);
-  // console.log("result", x);
-
   // router
   app.use("/auth", authRouter);
   app.use("/user", userRouter);
 
   // welcome
-  app.use("/", (req: Request, res: Response) => {
+  app.use("/", async (req: Request, res: Response) => {
+    const user = await User.findOne({ id: "6364abbafc4d6ce8fc644c4d" });
+    const x = await User.updateOne(
+      { id: "6364abbafc4d6ce8fc644c4d" },
+      { chips: 9000 }
+    );
+    console.log(x);
     return res.send("Hello from ZUNO");
   });
 
@@ -64,7 +51,7 @@ async function bootstrap() {
   const PORT = process.env.PORT || 9000;
   gameServer.listen(+PORT);
   console.log(
-    `🚀 Server is ready at htpp://${SERVER_IP}:${PORT} and ws://${SERVER_IP}:${PORT} 🚀`
+    `🚀 Server is ready at http://${SERVER_IP}:${PORT} and ws://${SERVER_IP}:${PORT} 🚀`
   );
 }
 

@@ -7,7 +7,7 @@ const UserModel: Schema = new Schema(
     email: { type: String, trim: true, default: null },
     name: { type: String, default: null },
     status: { type: String, required: true, enum: ["active", "inactive"] },
-    chips: { type: Number, default: 10000 },
+    chips: { type: Number, default: 10000, index: true },
     loginType: {
       type: String,
       required: true,
