@@ -50,7 +50,10 @@ export default class GameRoom extends Room<RoomState> {
         // handle game action CALL | RAISE | CHECK
         if (type === CALL || type === CHECK || type === RAISE)
           return this.handleBet(client, data);
+        // handle ALL IN
         if (type === ALLIN) return this.handleALLIN(client, data);
+        // handle ALL IN DONE
+        if (type === ALLIN_DONE) return this.handleALLIN_DONE();
         // handle FOLD option
         if (type === FOLD) return this.handleFOLD(client);
       });
