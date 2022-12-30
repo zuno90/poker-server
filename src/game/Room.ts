@@ -11,17 +11,25 @@ import {
   CHECK,
   RAISE,
   ALLIN,
+  ALLIN_DONE,
   RESET_GAME,
 } from "./constants/room.constant";
 import { deal } from "./modules/handleCard";
 import { pickWinner } from "./modules/handleRank";
 import { updateChip } from "../services/game.service";
 
-const Hand = require("pokersolver").Hand;
+const Hand = require("pokersolver").Hand; // func handle winner
+
+type TAllinState = {
+  total: number;
+  minAllin: number;
+};
 
 export default class GameRoom extends Room<RoomState> {
   readonly maxClients = 5;
   private initBetChip: number = 100;
+  private allinArr: number[] = [];
+  private allinState: TAllinState;
 
   onAuth(_: Client, player: Player) {
     return player;
@@ -37,12 +45,13 @@ export default class GameRoom extends Room<RoomState> {
 
       // HANDLE ALL ACTION FROM PLAYER
       this.onMessage("*", (client: Client, type, data: any) => {
-        // handle room_chat
+        // handle CHAT ROOM
         if (type === ROOM_CHAT) return this.handleChat(client, data);
-        // handle game action
-        if (type === CALL || type === CHECK || type === RAISE || type === ALLIN)
+        // handle game action CALL | RAISE | CHECK
+        if (type === CALL || type === CHECK || type === RAISE)
           return this.handleBet(client, data);
-        // handle fold option
+        if (type === ALLIN) return this.handleALLIN(client, data);
+        // handle FOLD option
         if (type === FOLD) return this.handleFOLD(client);
       });
     } catch (e) {
@@ -128,9 +137,13 @@ export default class GameRoom extends Room<RoomState> {
     });
 
     // FINISH GAME
-    this.onMessage(FINISH_GAME, (_, data) => {
+    this.onMessage(FINISH_GAME, (_, __) => {
       this.state.players.forEach(async (player: Player, _) => {
-        if (player.isWinner) player.chips = player.chips + this.state.totalBet;
+        if (player.isWinner)
+          player.chips =
+            player.chips +
+            this.state.totalBet -
+            this.allinState.minAllin * this.allinState.total;
         player.role === "Player" && (await updateChip(player.id, player.chips));
       });
       this.broadcast(
@@ -140,7 +153,7 @@ export default class GameRoom extends Room<RoomState> {
     });
 
     // RESET GAME
-    this.onMessage(RESET_GAME, (_, data) => {
+    this.onMessage(RESET_GAME, (_, __) => {
       if (this.clients.length < 1)
         throw new Error("Have cheat! Player number is < 1");
       // CREATE AN INITIAL ROOM STATE AGAIN
@@ -172,6 +185,25 @@ export default class GameRoom extends Room<RoomState> {
   // handle chat
   private handleChat(client: Client, data: any) {
     this.broadcast(ROOM_CHAT, data);
+  }
+
+  // handle action - ALLIN
+  private handleALLIN(client: Client, data: any) {
+    if (!this.state.onReady) throw new Error("Game is not ready!");
+    const { chips } = data;
+    const player = <Player>this.state.players.get(client.sessionId);
+    if (!player) throw new Error("Can not find any sessionId!");
+    this.allinArr.push(chips);
+  }
+
+  // handle action - ALLIN_DONE
+  private handleALLIN_DONE() {
+    if (!this.state.onReady) throw new Error("Game is not ready!");
+    if (!this.allinArr.length) throw new Error("Opps! No one call ALL IN!");
+    this.allinState = {
+      total: this.allinArr.length,
+      minAllin: Math.min(...this.allinArr),
+    };
   }
 
   // handle action - FOLD
