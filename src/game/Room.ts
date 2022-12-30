@@ -48,12 +48,12 @@ export default class GameRoom extends Room<RoomState> {
         // handle CHAT ROOM
         if (type === ROOM_CHAT) return this.handleChat(client, data);
         // handle game action CALL | RAISE | CHECK
-        if (type === CALL || type === CHECK || type === RAISE)
+        if (type === CALL || type === CHECK || type === RAISE || type === ALLIN)
           return this.handleBet(client, data);
-        // handle ALL IN
-        if (type === ALLIN) return this.handleALLIN(client, data);
-        // handle ALL IN DONE
-        if (type === ALLIN_DONE) return this.handleALLIN_DONE();
+        // // handle ALL IN
+        // if (type === ALLIN) return this.handleALLIN(client, data);
+        // // handle ALL IN DONE
+        // if (type === ALLIN_DONE) return this.handleALLIN_DONE();
         // handle FOLD option
         if (type === FOLD) return this.handleFOLD(client);
       });
@@ -197,6 +197,12 @@ export default class GameRoom extends Room<RoomState> {
     const player = <Player>this.state.players.get(client.sessionId);
     if (!player) throw new Error("Can not find any sessionId!");
     this.allinArr.push(chips);
+    player.betChips += chips;
+    player.chips -= chips;
+    this.state.totalBet += chips;
+    this.state.highestBet <= chips
+      ? (this.state.highestBet = chips)
+      : this.state.highestBet;
   }
 
   // handle action - ALLIN_DONE
