@@ -31,7 +31,7 @@ export const deal = (numberOfPlayer: number) => {
   let onHandCards: Array<Array<string>> = [];
   for (let i = 0; i < numberOfPlayer; i++) {
     // console.log(`thằng thứ ${i + 1}`, chiabai(deck, i, numberOfPlayer + i));
-    onHandCards.push([...chiabai(deck, i, numberOfPlayer + i)]);
+    onHandCards.push([...dealHelper(deck, i, numberOfPlayer + i)]);
   }
   return {
     onHandCards,
@@ -39,7 +39,7 @@ export const deal = (numberOfPlayer: number) => {
   };
 };
 
-const chiabai = (
+const dealHelper = (
   deck: Array<string>,
   index: number,
   numberOfPlayer: number

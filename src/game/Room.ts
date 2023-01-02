@@ -1,6 +1,6 @@
-import { Client, Room } from "colyseus";
-import { RoomState } from "./schema/room.schema";
-import { Player } from "./schema/player.schema";
+import { Client, Room } from 'colyseus';
+import { RoomState } from './schema/room.schema';
+import { Player } from './schema/player.schema';
 import {
   ROOM_CHAT,
   ROOM_DISPOSE,
@@ -13,16 +13,22 @@ import {
   ALLIN,
   ALLIN_DONE,
   RESET_GAME,
-} from "./constants/room.constant";
-import { deal } from "./modules/handleCard";
-import { pickWinner } from "./modules/handleRank";
-import { updateChip } from "../services/game.service";
+} from './constants/room.constant';
+import { deal } from './modules/handleCard';
+import { pickWinner } from './modules/handleRank';
+import { updateChip } from '../services/game.service';
 
-const Hand = require("pokersolver").Hand; // func handle winner
+const Hand = require('pokersolver').Hand; // func handle winner
 
 type TAllinState = {
   total: number;
   minAllin: number;
+};
+
+type TRoomChat = {
+  username: string;
+  avatar: string;
+  message: string;
 };
 
 export default class GameRoom extends Room<RoomState> {
@@ -44,19 +50,22 @@ export default class GameRoom extends Room<RoomState> {
       this.handleRoomState();
 
       // HANDLE ALL ACTION FROM PLAYER
-      this.onMessage("*", (client: Client, type, data: any) => {
-        // handle CHAT ROOM
-        if (type === ROOM_CHAT) return this.handleChat(client, data);
+      this.onMessage('*', (client: Client, type, data: any) => {
         // handle game action CALL | RAISE | CHECK
         if (type === CALL || type === CHECK || type === RAISE || type === ALLIN)
           return this.handleBet(client, data);
+
         // // handle ALL IN
         // if (type === ALLIN) return this.handleALLIN(client, data);
         // // handle ALL IN DONE
         // if (type === ALLIN_DONE) return this.handleALLIN_DONE();
+
         // handle FOLD option
         if (type === FOLD) return this.handleFOLD(client);
       });
+
+      // handle CHAT ROOM
+      this.handleChat();
     } catch (e) {
       console.error(e);
     }
@@ -64,7 +73,7 @@ export default class GameRoom extends Room<RoomState> {
 
   onJoin(client: Client, options: any, player: Player) {
     // SET INITIAL PLAYER STATE
-    this.state.players.set(client.sessionId, new Player(player)); // set player moi lan join
+    this.state.players.set(client.sessionId, new Player(player)); // set player every joining
   }
 
   async onLeave(client: Client, consented: boolean) {
@@ -89,17 +98,17 @@ export default class GameRoom extends Room<RoomState> {
     //   // 20 seconds expired. let's remove the client.
     //   this.state.players.delete(client.sessionId);
     // }
-    console.log("client " + client.sessionId + " has just left");
+    console.log('client ' + client.sessionId + ' has just left');
   }
 
   async onDispose() {
-    console.log("room", this.roomId, "disposing...");
-    this.broadcast(ROOM_DISPOSE, "room bi dispose");
+    console.log('room', this.roomId, 'disposing...');
+    this.broadcast(ROOM_DISPOSE, 'room bi dispose');
   }
 
   private handleRoomState() {
     // START GAME
-    this.onMessage(START_GAME, (_, data) => {
+    this.onMessage(START_GAME, (_, __) => {
       const { onHandCards, banker5Cards } = deal(this.state.players.size);
       this.state.onReady = true; // change room state -> TRUE
       this.state.totalBet = this.state.players.size * this.initBetChip;
@@ -110,17 +119,15 @@ export default class GameRoom extends Room<RoomState> {
 
       this.state.players.forEach((playerMap: Player, sessionId: string) => {
         // init state of player
-        // playerMap.isWinner = false;
         playerMap.betChips = this.initBetChip;
         playerMap.chips -= this.initBetChip;
 
-        // pick winner
+        // handle player cards
         playerMap.cards = onHandCards[playerMap.turn - 1];
+        // pick winner
         arrWinner.push({
           sessionId,
-          sevenCards: [...playerMap.cards.values()].concat([
-            ...banker5Cards.values(),
-          ]),
+          sevenCards: [...playerMap.cards.values()].concat([...banker5Cards.values()]),
         });
 
         const playerCardRanks = pickWinner(arrWinner);
@@ -135,7 +142,7 @@ export default class GameRoom extends Room<RoomState> {
       const winner = Hand.winners(arrCardRanks)[0];
       // get winner session
       const winPlayer = <Player>this.state.players.get(winner.sessionId);
-      if (!winPlayer) throw new Error("Have no any winner! Please check");
+      if (!winPlayer) throw new Error('Have no any winner! Please check');
       winPlayer.isWinner = true;
     });
 
@@ -144,21 +151,15 @@ export default class GameRoom extends Room<RoomState> {
       this.state.players.forEach(async (player: Player, _) => {
         if (player.isWinner)
           player.chips =
-            player.chips +
-            this.state.totalBet -
-            this.allinState.minAllin * this.allinState.total;
-        player.role === "Player" && (await updateChip(player.id, player.chips));
+            player.chips + this.state.totalBet - this.allinState.minAllin * this.allinState.total;
+        player.role === 'Player' && (await updateChip(player.id, player.chips));
       });
-      this.broadcast(
-        FINISH_GAME,
-        "Finish, updated owned chips of user into database!!!!!"
-      );
+      this.broadcast(FINISH_GAME, 'Finish, updated owned chips of user into database!!!!!');
     });
 
     // RESET GAME
     this.onMessage(RESET_GAME, (_, __) => {
-      if (this.clients.length < 1)
-        throw new Error("Have cheat! Player number is < 1");
+      if (this.clients.length < 1) throw new Error('Have cheat! Player number is < 1');
       // CREATE AN INITIAL ROOM STATE AGAIN
       this.state.onReady = false;
       this.state.highestBet = 0;
@@ -166,49 +167,53 @@ export default class GameRoom extends Room<RoomState> {
       this.state.banker5Cards = [];
 
       // CREATE AN INITIAL PLAYER STATE AFTER A GAME
+      let turnArr: number[] = [];
       this.state.players.forEach((playerMap: Player, sessionId: string) => {
-        this.state.players.set(
-          sessionId,
-          new Player({
-            id: playerMap.id,
-            isHost: playerMap.isHost,
-            chips: playerMap.chips,
-            turn: playerMap.turn,
-            role: playerMap.role,
-            betChips: 0,
-            cards: [],
-          })
-        );
+        turnArr.push(playerMap.turn);
+        const newPlayer = {
+          id: playerMap.id,
+          isHost: playerMap.isHost,
+          chips: playerMap.chips,
+          betChips: 0,
+          turn: this.arrangeTurn(playerMap.turn, turnArr),
+          seat: playerMap.seat,
+          cards: [],
+          role: playerMap.role,
+        };
+        this.state.players.set(sessionId, new Player(newPlayer));
+
+        // ARRANGE TURN FOR EACH PLAYER
+        // turn : 1,2,4 -- seat: 1,2,4
       });
 
-      this.broadcast(RESET_GAME, "reset game, log thử state xem");
+      this.broadcast(RESET_GAME, 'reset game, log thử state xem');
     });
   }
 
   // handle chat
-  private handleChat(client: Client, data: any) {
-    this.broadcast(ROOM_CHAT, data);
+  private handleChat() {
+    this.onMessage(ROOM_CHAT, (client: Client, data: TRoomChat) => {
+      this.broadcast(ROOM_CHAT, data);
+    });
   }
 
   // handle action - ALLIN
   private handleALLIN(client: Client, data: any) {
-    if (!this.state.onReady) throw new Error("Game is not ready!");
+    if (!this.state.onReady) throw new Error('Game is not ready!');
     const { chips } = data;
     const player = <Player>this.state.players.get(client.sessionId);
-    if (!player) throw new Error("Can not find any sessionId!");
+    if (!player) throw new Error('Can not find any sessionId!');
     this.allinArr.push(chips);
     player.betChips += chips;
     player.chips -= chips;
     this.state.totalBet += chips;
-    this.state.highestBet <= chips
-      ? (this.state.highestBet = chips)
-      : this.state.highestBet;
+    this.state.highestBet <= chips ? (this.state.highestBet = chips) : this.state.highestBet;
   }
 
   // handle action - ALLIN_DONE
   private handleALLIN_DONE() {
-    if (!this.state.onReady) throw new Error("Game is not ready!");
-    if (!this.allinArr.length) throw new Error("Opps! No one call ALL IN!");
+    if (!this.state.onReady) throw new Error('Game is not ready!');
+    if (!this.allinArr.length) throw new Error('Opps! No one call ALL IN!');
     this.allinState = {
       total: this.allinArr.length,
       minAllin: Math.min(...this.allinArr),
@@ -217,29 +222,29 @@ export default class GameRoom extends Room<RoomState> {
 
   // handle action - FOLD
   private handleFOLD(client: Client) {
-    if (!this.state.onReady) throw new Error("Game is not ready!");
+    if (!this.state.onReady) throw new Error('Game is not ready!');
     const player = <Player>this.state.players.get(client.sessionId);
     if (!player || player.isFold)
-      throw new Error("Can not find any sessionId or any FOLDED player!");
+      throw new Error('Can not find any sessionId or any FOLDED player!');
     player.isFold = true;
 
     const remainingPlayers = new Map<string, Player>(
       Array.from(this.state.players).filter(
-        ([sessionId, player]) => !player.isFold && [sessionId, player]
-      )
+        ([sessionId, player]) => !player.isFold && [sessionId, player],
+      ),
     );
 
     if (player.isWinner) {
       remainingPlayers.delete(client.sessionId);
-      console.log("số player còn lại:::::", remainingPlayers.size);
+      console.log('số player còn lại:::::', remainingPlayers.size);
       // check if only 1 player
       if (remainingPlayers.size === 1) {
         for (let winner of remainingPlayers.values()) {
-          console.log("winner cuối cùng:::::", winner);
+          console.log('winner cuối cùng:::::', winner);
           winner.isWinner = true;
           return this.broadcast(
-            "CONGRATULATION",
-            `ĐCM chúc mừng anh zai có id:::${winner.id} đã dành chiến thắng!`
+            'CONGRATULATION',
+            `ĐCM chúc mừng anh zai có id:::${winner.id} đã dành chiến thắng!`,
           );
         }
       }
@@ -250,9 +255,7 @@ export default class GameRoom extends Room<RoomState> {
       remainingPlayers.forEach((remainingPlayer: Player, sessionId: string) => {
         arrWinner.push({
           sessionId,
-          sevenCards: [...remainingPlayer.cards.values()].concat([
-            ...this.state.banker5Cards,
-          ]),
+          sevenCards: [...remainingPlayer.cards.values()].concat([...this.state.banker5Cards]),
         });
         arrCardRanks = pickWinner(arrWinner);
       });
@@ -261,10 +264,7 @@ export default class GameRoom extends Room<RoomState> {
       const winner = Hand.winners(arrCardRanks)[0];
       // get winner session
       const winPlayer = <Player>this.state.players.get(winner.sessionId);
-      if (!winPlayer)
-        throw new Error(
-          "Have no winner! Please re-check function winner picking!"
-        );
+      if (!winPlayer) throw new Error('Have no winner! Please re-check function winner picking!');
       winPlayer.isWinner = true;
       player.isWinner = false;
     }
@@ -272,15 +272,20 @@ export default class GameRoom extends Room<RoomState> {
 
   // handle action without FOLD
   private handleBet(client: Client, data: any) {
-    if (!this.state.onReady) throw new Error("Game is not ready!");
+    if (!this.state.onReady) throw new Error('Game is not ready!');
     const { chips } = data;
     const player = <Player>this.state.players.get(client.sessionId);
-    if (!player) throw new Error("Can not find any sessionId!");
+    if (!player) throw new Error('Can not find any sessionId!');
     player.betChips += chips;
     player.chips -= chips;
     this.state.totalBet += chips;
-    this.state.highestBet <= chips
-      ? (this.state.highestBet = chips)
-      : this.state.highestBet;
+    this.state.highestBet <= chips ? (this.state.highestBet = chips) : this.state.highestBet;
+  }
+
+  // helper re-arrange turn after finishing a round
+  private arrangeTurn(turn: number, turnArr: number[]) {
+    for (let i = 0; i < turnArr.length; i++) {
+      if (turn === turnArr[i]) return i + 1;
+    }
   }
 }

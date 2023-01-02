@@ -1,4 +1,3 @@
-import { Schema, type } from "@colyseus/schema";
 import { createADeck } from "../modules/handleCard";
 
 export class Deck {
