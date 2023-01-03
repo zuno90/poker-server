@@ -19,6 +19,9 @@ export class Player extends Schema {
   betChips: number;
 
   @type('number')
+  turn: number;
+
+  @type('number')
   seat: number;
 
   @type(['string'])

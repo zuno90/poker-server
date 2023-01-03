@@ -38,6 +38,7 @@ export default class GameRoom extends Room<RoomState> {
   private allinState: TAllinState;
 
   onAuth(_: Client, player: Player) {
+    player.turn = player.seat;
     return player;
   }
 
@@ -121,15 +122,17 @@ export default class GameRoom extends Room<RoomState> {
       let turnArr: number[] = [];
       this.state.players.forEach((playerMap: Player, sessionId: string) => {
         turnArr.push(playerMap.seat); // push turn array
+        // handle player turn
+        playerMap.turn = this.arrangeTurn(playerMap.turn, turnArr) as number;
 
         // init state of player
         playerMap.betChips = this.initBetChip;
         playerMap.chips -= this.initBetChip;
 
         // handle player cards
-        const turn = this.arrangeTurn(playerMap.seat, turnArr); // handle turn
-        if (!turn) throw new Error('Turn can not be arranged!');
-        playerMap.cards = onHandCards[turn];
+
+        console.log(playerMap.seat, turnArr);
+        playerMap.cards = onHandCards[playerMap.turn];
 
         // pick winner
         arrWinner.push({
@@ -180,6 +183,7 @@ export default class GameRoom extends Room<RoomState> {
           isHost: playerMap.isHost,
           chips: playerMap.chips,
           betChips: 0,
+          turn: playerMap.turn,
           seat: playerMap.seat,
           cards: [],
           role: playerMap.role,
@@ -284,9 +288,9 @@ export default class GameRoom extends Room<RoomState> {
   }
 
   // helper re-arrange turn after finishing a round
-  private arrangeTurn(seat: number, turnArr: number[]) {
+  private arrangeTurn(turn: number, turnArr: number[]) {
     for (let i = 0; i < turnArr.length; i++) {
-      if (seat === turnArr[i]) return i;
+      if (turn === turnArr[i]) return i;
     }
   }
 }
