@@ -5,6 +5,7 @@ import {
   ROOM_CHAT,
   ROOM_DISPOSE,
   START_GAME,
+  PRE_FINISH_GAME,
   FINISH_GAME,
   RESET_GAME,
   FOLD,
@@ -12,7 +13,6 @@ import {
   CHECK,
   RAISE,
   ALLIN,
-  ALLIN_DONE,
 } from './constants/room.constant';
 import { deal } from './modules/handleCard';
 import { pickWinner } from './modules/handleRank';
@@ -53,11 +53,10 @@ export default class GameRoom extends Room<RoomState> {
       // HANDLE ALL ACTION FROM PLAYER
       this.onMessage('*', (client: Client, type, data: any) => {
         // handle game action CALL | RAISE | CHECK
-        if (type === CALL || type === CHECK || type === RAISE || type === ALLIN)
-          return this.handleBet(client, data);
+        if (type === CALL || type === CHECK || type === RAISE) return this.handleBet(client, data);
 
         // // handle ALL IN
-        // if (type === ALLIN) return this.handleALLIN(client, data);
+        if (type === ALLIN) return this.handleALLIN(client, data);
         // // handle ALL IN DONE
         // if (type === ALLIN_DONE) return this.handleALLIN_DONE();
 
@@ -119,19 +118,17 @@ export default class GameRoom extends Room<RoomState> {
       let arrCardRanks: Array<any> = [];
 
       // handle arranging turn for player
-      let turnArr: number[] = [];
+      let seatArr: number[] = [];
       this.state.players.forEach((playerMap: Player, sessionId: string) => {
-        turnArr.push(playerMap.seat); // push turn array
+        seatArr.push(playerMap.seat); // push turn array
         // handle player turn
-        playerMap.turn = this.arrangeTurn(playerMap.turn, turnArr) as number;
+        playerMap.turn = this.arrangeTurn(playerMap.turn, seatArr) as number;
 
         // init state of player
         playerMap.betChips = this.initBetChip;
         playerMap.chips -= this.initBetChip;
 
         // handle player cards
-
-        console.log(playerMap.seat, turnArr);
         playerMap.cards = onHandCards[playerMap.turn];
 
         // pick winner
@@ -156,12 +153,25 @@ export default class GameRoom extends Room<RoomState> {
       winPlayer.isWinner = true;
     });
 
+    // PRE_FINISH_GAME - finalize player chip
+    this.onMessage(PRE_FINISH_GAME, (_, data: any) => {
+      const { state } = data;
+      if (!state) {
+        this.state.players.forEach((player: Player, _) => {
+          if (player.isWinner) player.chips += this.state.totalBet;
+        });
+      }
+      if (state === 'allin') {
+      }
+    });
+
     // FINISH GAME
     this.onMessage(FINISH_GAME, (_, __) => {
       this.state.players.forEach(async (player: Player, _) => {
-        if (player.isWinner)
-          player.chips =
-            player.chips + this.state.totalBet - this.allinState.minAllin * this.allinState.total;
+        // if (player.isWinner)
+        //   player.chips =
+        //     player.chips + this.state.totalBet - this.allinState.minAllin * this.allinState.total;
+        if (player.isWinner) player.chips += this.state.totalBet;
         player.role === 'Player' && (await updateChip(player.id, player.chips));
       });
       this.broadcast(FINISH_GAME, 'Finish, updated owned chips of user into database!!!!!');
@@ -288,9 +298,9 @@ export default class GameRoom extends Room<RoomState> {
   }
 
   // helper re-arrange turn after finishing a round
-  private arrangeTurn(turn: number, turnArr: number[]) {
-    for (let i = 0; i < turnArr.length; i++) {
-      if (turn === turnArr[i]) return i;
+  private arrangeTurn(turn: number, seatArr: number[]) {
+    for (let i = 0; i < seatArr.length; i++) {
+      if (turn === seatArr[i]) return i;
     }
   }
 }
