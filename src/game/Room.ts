@@ -6,13 +6,13 @@ import {
   ROOM_DISPOSE,
   START_GAME,
   FINISH_GAME,
+  RESET_GAME,
   FOLD,
   CALL,
   CHECK,
   RAISE,
   ALLIN,
   ALLIN_DONE,
-  RESET_GAME,
 } from './constants/room.constant';
 import { deal } from './modules/handleCard';
 import { pickWinner } from './modules/handleRank';
@@ -64,7 +64,7 @@ export default class GameRoom extends Room<RoomState> {
         if (type === FOLD) return this.handleFOLD(client);
       });
 
-      // handle CHAT ROOM
+      // HANDLE CHAT ROOM
       this.handleChat();
     } catch (e) {
       console.error(e);
@@ -117,13 +117,19 @@ export default class GameRoom extends Room<RoomState> {
       let arrWinner: Array<any> = [];
       let arrCardRanks: Array<any> = [];
 
+      // handle arranging turn for player
+      let turnArr: number[] = [];
       this.state.players.forEach((playerMap: Player, sessionId: string) => {
+        turnArr.push(playerMap.seat); // push turn array
         // init state of player
         playerMap.betChips = this.initBetChip;
         playerMap.chips -= this.initBetChip;
 
+        // handle turn
+        const turn = this.arrangeTurn(playerMap.seat, turnArr);
         // handle player cards
-        playerMap.cards = onHandCards[playerMap.turn - 1];
+        playerMap.cards = onHandCards[turn];
+
         // pick winner
         arrWinner.push({
           sessionId,
@@ -167,15 +173,13 @@ export default class GameRoom extends Room<RoomState> {
       this.state.banker5Cards = [];
 
       // CREATE AN INITIAL PLAYER STATE AFTER A GAME
-      let turnArr: number[] = [];
+
       this.state.players.forEach((playerMap: Player, sessionId: string) => {
-        turnArr.push(playerMap.turn);
         const newPlayer = {
           id: playerMap.id,
           isHost: playerMap.isHost,
           chips: playerMap.chips,
           betChips: 0,
-          turn: this.arrangeTurn(playerMap.turn, turnArr),
           seat: playerMap.seat,
           cards: [],
           role: playerMap.role,
@@ -283,9 +287,9 @@ export default class GameRoom extends Room<RoomState> {
   }
 
   // helper re-arrange turn after finishing a round
-  private arrangeTurn(turn: number, turnArr: number[]) {
+  private arrangeTurn(seat: number, turnArr: number[]) {
     for (let i = 0; i < turnArr.length; i++) {
-      if (turn === turnArr[i]) return i + 1;
+      if (seat === turnArr[i]) return i;
     }
   }
 }
