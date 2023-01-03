@@ -1,4 +1,5 @@
 // room
+export const RESERVE_SEAT = 'RESERVE_SEAT';
 export const START_GAME = 'START_GAME';
 export const PRE_FINISH_GAME = 'PRE_FINISH_GAME';
 export const FINISH_GAME = 'FINISH_GAME';

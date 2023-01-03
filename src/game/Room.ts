@@ -4,6 +4,7 @@ import { Player } from './schema/player.schema';
 import {
   ROOM_CHAT,
   ROOM_DISPOSE,
+  RESERVE_SEAT,
   START_GAME,
   PRE_FINISH_GAME,
   FINISH_GAME,
@@ -38,7 +39,6 @@ export default class GameRoom extends Room<RoomState> {
   private allinState: TAllinState;
 
   onAuth(_: Client, player: Player) {
-    player.turn = player.seat;
     return player;
   }
 
@@ -106,7 +106,15 @@ export default class GameRoom extends Room<RoomState> {
     this.broadcast(ROOM_DISPOSE, 'room bi dispose');
   }
 
+  // ROOM STATE
   private handleRoomState() {
+    // RESERVE SEAT
+    this.onMessage(RESERVE_SEAT, (client: Client, { seat }: { seat: number }) => {
+      const player = <Player>this.state.players.get(client.sessionId);
+      player.turn = seat;
+      player.seat = seat;
+    });
+
     // START GAME
     this.onMessage(START_GAME, (_, __) => {
       const { onHandCards, banker5Cards } = deal(this.state.players.size);
