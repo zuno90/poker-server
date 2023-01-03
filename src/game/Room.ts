@@ -121,12 +121,11 @@ export default class GameRoom extends Room<RoomState> {
       let turnArr: number[] = [];
       this.state.players.forEach((playerMap: Player, sessionId: string) => {
         turnArr.push(playerMap.seat); // push turn array
+        const turn = this.arrangeTurn(playerMap.seat, turnArr); // handle turn
         // init state of player
         playerMap.betChips = this.initBetChip;
         playerMap.chips -= this.initBetChip;
 
-        // handle turn
-        const turn = this.arrangeTurn(playerMap.seat, turnArr);
         // handle player cards
         playerMap.cards = onHandCards[turn];
 
@@ -173,7 +172,6 @@ export default class GameRoom extends Room<RoomState> {
       this.state.banker5Cards = [];
 
       // CREATE AN INITIAL PLAYER STATE AFTER A GAME
-
       this.state.players.forEach((playerMap: Player, sessionId: string) => {
         const newPlayer = {
           id: playerMap.id,
@@ -185,9 +183,6 @@ export default class GameRoom extends Room<RoomState> {
           role: playerMap.role,
         };
         this.state.players.set(sessionId, new Player(newPlayer));
-
-        // ARRANGE TURN FOR EACH PLAYER
-        // turn : 1,2,4 -- seat: 1,2,4
       });
 
       this.broadcast(RESET_GAME, 'reset game, log thử state xem');
