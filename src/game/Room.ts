@@ -121,12 +121,14 @@ export default class GameRoom extends Room<RoomState> {
       let turnArr: number[] = [];
       this.state.players.forEach((playerMap: Player, sessionId: string) => {
         turnArr.push(playerMap.seat); // push turn array
-        const turn = this.arrangeTurn(playerMap.seat, turnArr); // handle turn
+
         // init state of player
         playerMap.betChips = this.initBetChip;
         playerMap.chips -= this.initBetChip;
 
         // handle player cards
+        const turn = this.arrangeTurn(playerMap.seat, turnArr); // handle turn
+        if (!turn) throw new Error('Turn can not be arranged!');
         playerMap.cards = onHandCards[turn];
 
         // pick winner

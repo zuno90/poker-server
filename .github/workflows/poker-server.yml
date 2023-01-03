@@ -19,8 +19,8 @@ jobs:
             git clone https://${{ secrets.POKER_TOKEN_SSH }}@github.com/zuno90/poker-server.git
             cd poker-server/
             DOCKER_BUILDKIT=1 docker build -t poker-server:$GITHUB_RUN_NUMBER .
-            docker stop poker-server || echo "OK"
-            docker rm poker-server || echo "OK"
+            docker stop poker-server || echo "stop docker OK"
+            docker rm poker-server || echo "remove OK"
             docker run -d --restart unless-stopped --name poker-server -p 9000:9000 \
                 -e NODE_ENV=production \
                 -e HOST=172.31.31.206 \
