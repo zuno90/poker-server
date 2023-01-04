@@ -99,6 +99,11 @@ export default class GameRoom extends Room<RoomState> {
     //   this.state.players.delete(client.sessionId);
     // }
     console.log('client ' + client.sessionId + ' has just left');
+
+    if (!this.state.players.has(client.sessionId))
+      throw new Error('Have no any player including sessionId!');
+    this.state.players.delete(client.sessionId);
+
     console.log('state room is:::::', this.state.toJSON());
   }
 
