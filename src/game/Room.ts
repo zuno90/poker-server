@@ -99,7 +99,7 @@ export default class GameRoom extends Room<RoomState> {
     //   this.state.players.delete(client.sessionId);
     // }
     console.log('client ' + client.sessionId + ' has just left');
-    console.log('state room is:::::', this.state);
+    console.log('state room is:::::', this.state.toJSON());
   }
 
   async onDispose() {
