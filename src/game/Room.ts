@@ -102,9 +102,16 @@ export default class GameRoom extends Room<RoomState> {
 
     if (!this.state.players.has(client.sessionId))
       throw new Error('Have no any player including sessionId!');
+    const leavingPlayer = <Player>this.state.players.get(client.sessionId);
     this.state.players.delete(client.sessionId);
-
-    console.log('state room is:::::', this.state.toJSON());
+    if (leavingPlayer.isHost) {
+      let seatArr: number[] = [];
+      this.state.players.forEach((playerMap: Player, sessionId: string) => {
+        seatArr.push(playerMap.seat);
+        const newHost = Math.min(...seatArr);
+        if (newHost === playerMap.seat) playerMap.isHost = true;
+      });
+    }
   }
 
   async onDispose() {
@@ -114,7 +121,7 @@ export default class GameRoom extends Room<RoomState> {
 
   // ROOM STATE
   private handleRoomState() {
-    // RESERVE SEAT
+    // RESERVE SEAT - JUST CALL ONCE AT STARTING GAME
     this.onMessage(RESERVE_SEAT, (client: Client, { seat }: { seat: number }) => {
       const player = <Player>this.state.players.get(client.sessionId);
       player.turn = seat;
@@ -135,6 +142,7 @@ export default class GameRoom extends Room<RoomState> {
       let seatArr: number[] = [];
       this.state.players.forEach((playerMap: Player, sessionId: string) => {
         seatArr.push(playerMap.seat); // push turn array
+
         // handle player turn
         playerMap.turn = this.arrangeTurn(playerMap.turn, seatArr) as number;
 
