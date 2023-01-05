@@ -14,6 +14,7 @@ import {
   CHECK,
   RAISE,
   ALLIN,
+  CURRENT_PLAYER,
 } from './constants/room.constant';
 import { deal } from './modules/handleCard';
 import { pickWinner } from './modules/handleRank';
@@ -53,15 +54,16 @@ export default class GameRoom extends Room<RoomState> {
       // HANDLE ALL ACTION FROM PLAYER
       this.onMessage('*', (client: Client, type, data: any) => {
         // handle game action CALL | RAISE | CHECK
-        if (type === CALL || type === CHECK || type === RAISE) return this.handleBet(client, data);
+        if (type === CALL || type === CHECK || type === RAISE || type === ALLIN)
+          return this.handleBet(type, client, data);
 
         // // handle ALL IN
-        if (type === ALLIN) return this.handleALLIN(client, data);
+        // if (type === ALLIN) return this.handleALLIN(client, data);
         // // handle ALL IN DONE
         // if (type === ALLIN_DONE) return this.handleALLIN_DONE();
 
         // handle FOLD option
-        if (type === FOLD) return this.handleFOLD(client);
+        if (type === FOLD) return this.handleFOLD(type, client);
       });
 
       // HANDLE CHAT ROOM
@@ -169,6 +171,8 @@ export default class GameRoom extends Room<RoomState> {
         arrCardRanks = playerCardRanks;
       });
 
+      this.handleCurrentPlayer(START_GAME, seatArr[Math.floor(Math.random() * seatArr.length)]); // handle current P
+
       // pick winner and set isWinner -> true
       const winner = Hand.winners(arrCardRanks)[0];
       // get winner session
@@ -184,8 +188,6 @@ export default class GameRoom extends Room<RoomState> {
         this.state.players.forEach((player: Player, _) => {
           if (player.isWinner) player.chips += this.state.totalBet;
         });
-      }
-      if (state === 'allin') {
       }
     });
 
@@ -206,7 +208,6 @@ export default class GameRoom extends Room<RoomState> {
       if (this.clients.length < 1) throw new Error('Have cheat! Player number is < 1');
       // CREATE AN INITIAL ROOM STATE AGAIN
       this.state.onReady = false;
-      this.state.highestBet = 0;
       this.state.totalBet = 0;
       this.state.banker5Cards = [];
 
@@ -246,7 +247,6 @@ export default class GameRoom extends Room<RoomState> {
     player.betChips += chips;
     player.chips -= chips;
     this.state.totalBet += chips;
-    this.state.highestBet <= chips ? (this.state.highestBet = chips) : this.state.highestBet;
   }
 
   // handle action - ALLIN_DONE
@@ -260,9 +260,10 @@ export default class GameRoom extends Room<RoomState> {
   }
 
   // handle action - FOLD
-  private handleFOLD(client: Client) {
+  private handleFOLD(action: string, client: Client) {
     if (!this.state.onReady) throw new Error('Game is not ready!');
     const player = <Player>this.state.players.get(client.sessionId);
+    this.handleCurrentPlayer(action, player.seat); // handle current P
     if (!player || player.isFold)
       throw new Error('Can not find any sessionId or any FOLDED player!');
     player.isFold = true;
@@ -310,7 +311,7 @@ export default class GameRoom extends Room<RoomState> {
   }
 
   // handle action without FOLD
-  private handleBet(client: Client, data: any) {
+  private handleBet(action: string, client: Client, data: any) {
     if (!this.state.onReady) throw new Error('Game is not ready!');
     const { chips } = data;
     const player = <Player>this.state.players.get(client.sessionId);
@@ -318,7 +319,14 @@ export default class GameRoom extends Room<RoomState> {
     player.betChips += chips;
     player.chips -= chips;
     this.state.totalBet += chips;
-    this.state.highestBet <= chips ? (this.state.highestBet = chips) : this.state.highestBet;
+
+    // handle current P
+    this.handleCurrentPlayer(action, player.seat);
+  }
+
+  // handle next player
+  private handleCurrentPlayer(action: string, seat: number) {
+    return this.broadcast(CURRENT_PLAYER, { action, seat });
   }
 
   // helper re-arrange turn after finishing a round

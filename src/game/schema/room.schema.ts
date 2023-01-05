@@ -1,19 +1,19 @@
-import { Schema, MapSchema, type } from "@colyseus/schema";
-import { Player } from "./player.schema";
+import { Schema, MapSchema, type } from '@colyseus/schema';
+import { Player } from './player.schema';
 
 export class RoomState extends Schema {
-  @type("boolean")
+  @type('boolean')
   onReady: boolean = false;
 
   @type({ map: Player })
   players = new MapSchema<Player>();
 
-  @type("number")
-  highestBet: number = 0;
+  @type('string')
+  currentId: string;
 
-  @type("number")
+  @type('number')
   totalBet: number = 0;
 
-  @type(["string"])
+  @type(['string'])
   banker5Cards: Array<string>;
 }
