@@ -124,6 +124,7 @@ export default class GameRoom extends Room<RoomState> {
     // RESERVE SEAT - JUST CALL ONCE AT STARTING GAME
     this.onMessage(RESERVE_SEAT, (client: Client, { seat }: { seat: number }) => {
       const player = <Player>this.state.players.get(client.sessionId);
+      player.turn = seat;
       player.seat = seat;
     });
 
