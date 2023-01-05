@@ -106,7 +106,7 @@ export default class GameRoom extends Room<RoomState> {
     this.state.players.delete(client.sessionId);
     if (leavingPlayer.isHost) {
       let seatArr: number[] = [];
-      this.state.players.forEach((playerMap: Player, sessionId: string) => {
+      this.state.players.forEach((playerMap: Player, _: string) => {
         seatArr.push(playerMap.seat);
         const newHost = Math.min(...seatArr);
         if (newHost === playerMap.seat) playerMap.isHost = true;
@@ -151,7 +151,7 @@ export default class GameRoom extends Room<RoomState> {
         playerMap.chips -= this.initBetChip;
 
         // handle player cards
-        playerMap.cards = onHandCards[playerMap.turn];
+        playerMap.cards = onHandCards[playerMap.turn - 1];
 
         // pick winner
         arrWinner.push({
