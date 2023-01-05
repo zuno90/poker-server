@@ -153,6 +153,7 @@ export default class GameRoom extends Room<RoomState> {
         playerMap.chips -= this.initBetChip;
 
         // handle player cards
+        console.log('turn of player:::::', { seat: playerMap.seat, turn: playerMap.turn });
         playerMap.cards = onHandCards[playerMap.turn];
 
         console.log('cards::::::', playerMap.cards);
