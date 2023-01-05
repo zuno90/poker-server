@@ -124,7 +124,6 @@ export default class GameRoom extends Room<RoomState> {
     // RESERVE SEAT - JUST CALL ONCE AT STARTING GAME
     this.onMessage(RESERVE_SEAT, (client: Client, { seat }: { seat: number }) => {
       const player = <Player>this.state.players.get(client.sessionId);
-      player.turn = seat;
       player.seat = seat;
     });
 
@@ -151,7 +150,9 @@ export default class GameRoom extends Room<RoomState> {
         playerMap.chips -= this.initBetChip;
 
         // handle player cards
-        playerMap.cards = onHandCards[playerMap.turn - 1];
+        playerMap.cards = onHandCards[playerMap.turn];
+
+        console.log('cards::::::', playerMap.cards);
 
         // pick winner
         arrWinner.push({
@@ -215,7 +216,7 @@ export default class GameRoom extends Room<RoomState> {
           isHost: playerMap.isHost,
           chips: playerMap.chips,
           betChips: 0,
-          turn: playerMap.turn,
+          turn: playerMap.seat,
           seat: playerMap.seat,
           cards: [],
           role: playerMap.role,
