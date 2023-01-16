@@ -63,7 +63,7 @@ export default class GameRoom extends Room<RoomState> {
         // if (type === ALLIN_DONE) return this.handleALLIN_DONE();
 
         // handle FOLD option
-        if (type === FOLD) return this.handleFOLD(type, client);
+        if (type === FOLD) return this.handleFOLD(type, client, data);
       });
 
       // HANDLE CHAT ROOM
@@ -172,8 +172,6 @@ export default class GameRoom extends Room<RoomState> {
         arrCardRanks = playerCardRanks;
       });
 
-      this.handleCurrentPlayer(START_GAME, seatArr[Math.floor(Math.random() * seatArr.length)]); // handle current P
-
       // pick winner and set isWinner -> true
       const winner = Hand.winners(arrCardRanks)[0];
       // get winner session
@@ -261,10 +259,11 @@ export default class GameRoom extends Room<RoomState> {
   }
 
   // handle action - FOLD
-  private handleFOLD(action: string, client: Client) {
+  private handleFOLD(action: string, client: Client, data: any) {
     if (!this.state.onReady) throw new Error('Game is not ready!');
     const player = <Player>this.state.players.get(client.sessionId);
-    this.handleCurrentPlayer(action, player.seat); // handle current P
+    const { turnRemaining } = data;
+    this.handleCurrentPlayer(action, player.seat, turnRemaining); // handle current P
     if (!player || player.isFold)
       throw new Error('Can not find any sessionId or any FOLDED player!');
     player.isFold = true;
