@@ -314,7 +314,7 @@ export default class GameRoom extends Room<RoomState> {
   // handle action without FOLD
   private handleBet(action: string, client: Client, data: any) {
     if (!this.state.onReady) throw new Error('Game is not ready!');
-    const { chips } = data;
+    const { chips, turnRemaining } = data;
     const player = <Player>this.state.players.get(client.sessionId);
     if (!player) throw new Error('Can not find any sessionId!');
     player.betChips += chips;
@@ -322,12 +322,12 @@ export default class GameRoom extends Room<RoomState> {
     this.state.totalBet += chips;
 
     // handle current P
-    this.handleCurrentPlayer(action, player.seat);
+    this.handleCurrentPlayer(action, player.seat, turnRemaining);
   }
 
-  // handle next player
-  private handleCurrentPlayer(action: string, seat: number) {
-    return this.broadcast(CURRENT_PLAYER, { action, seat });
+  // handle current player
+  private handleCurrentPlayer(action: string, seat: number, turnRemaining: number) {
+    return this.broadcast(CURRENT_PLAYER, { action, seat, turnRemaining });
   }
 
   // helper re-arrange turn after finishing a round
