@@ -263,7 +263,7 @@ export default class GameRoom extends Room<RoomState> {
     if (!this.state.onReady) throw new Error('Game is not ready!');
     const player = <Player>this.state.players.get(client.sessionId);
     const { turnRemaining } = data;
-    this.handleCurrentPlayer(action, player.seat, turnRemaining); // handle current P
+    this.handleCurrentPlayer(action, player.seat, 0, turnRemaining); // handle current P
     if (!player || player.isFold)
       throw new Error('Can not find any sessionId or any FOLDED player!');
     player.isFold = true;
@@ -321,12 +321,12 @@ export default class GameRoom extends Room<RoomState> {
     this.state.totalBet += chips;
 
     // handle current P
-    this.handleCurrentPlayer(action, player.seat, turnRemaining);
+    this.handleCurrentPlayer(action, player.seat, chips, turnRemaining);
   }
 
   // handle current player
-  private handleCurrentPlayer(action: string, seat: number, turnRemaining: number) {
-    return this.broadcast(CURRENT_PLAYER, { action, seat, turnRemaining });
+  private handleCurrentPlayer(action: string, seat: number, chips: number, turnRemaining: number) {
+    return this.broadcast(CURRENT_PLAYER, { action, seat, chips, turnRemaining });
   }
 
   // helper re-arrange turn after finishing a round
