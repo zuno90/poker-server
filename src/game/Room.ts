@@ -2,19 +2,19 @@ import { Client, Room } from 'colyseus';
 import { RoomState } from './schema/room.schema';
 import { Player } from './schema/player.schema';
 import {
-  ROOM_CHAT,
-  ROOM_DISPOSE,
-  RESERVE_SEAT,
-  START_GAME,
-  PRE_FINISH_GAME,
-  FINISH_GAME,
-  RESET_GAME,
-  FOLD,
+  ALLIN,
   CALL,
   CHECK,
-  RAISE,
-  ALLIN,
   CURRENT_PLAYER,
+  FINISH_GAME,
+  FOLD,
+  PRE_FINISH_GAME,
+  RAISE,
+  RESERVE_SEAT,
+  RESET_GAME,
+  ROOM_CHAT,
+  ROOM_DISPOSE,
+  START_GAME,
 } from './constants/room.constant';
 import { deal } from './modules/handleCard';
 import { pickWinner } from './modules/handleRank';
@@ -178,6 +178,8 @@ export default class GameRoom extends Room<RoomState> {
       const winPlayer = <Player>this.state.players.get(winner.sessionId);
       if (!winPlayer) throw new Error('Have no any winner! Please check');
       winPlayer.isWinner = true;
+
+      this.broadcast(START_GAME, seatArr[Math.floor(Math.random() * seatArr.length)]); // handle current P
     });
 
     // PRE_FINISH_GAME - finalize player chip
