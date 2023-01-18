@@ -179,7 +179,7 @@ export default class GameRoom extends Room<RoomState> {
       if (!winPlayer) throw new Error('Have no any winner! Please check');
       winPlayer.isWinner = true;
 
-      this.broadcast(START_GAME, seatArr[Math.floor(Math.random() * seatArr.length)]); // handle current P
+      this.broadcast(START_GAME, { seat: seatArr[Math.floor(Math.random() * seatArr.length)] }); // handle current P
     });
 
     // PRE_FINISH_GAME - finalize player chip
