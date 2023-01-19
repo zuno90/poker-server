@@ -7,6 +7,7 @@ export const RESET_GAME = 'RESET_GAME';
 export const ROOM_CHAT = 'ROOM_CHAT';
 export const ROOM_DISPOSE = 'ROOM_DISPOSE';
 export const CURRENT_PLAYER = 'CURRENT_PLAYER';
+export const INCREASE_TURN = 'INCREASE_TURN';
 
 // action
 export const CALL = 'CALL';

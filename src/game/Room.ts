@@ -1,11 +1,12 @@
-import { Client, Room } from 'colyseus';
-import { RoomState } from './schema/room.schema';
-import { Player } from './schema/player.schema';
+import {Client, Room} from 'colyseus';
+import {RoomState} from './schema/room.schema';
+import {Player} from './schema/player.schema';
 import {
   ALLIN,
   CALL,
   CHECK,
   CURRENT_PLAYER,
+  INCREASE_TURN,
   FINISH_GAME,
   FOLD,
   PRE_FINISH_GAME,
@@ -16,9 +17,9 @@ import {
   ROOM_DISPOSE,
   START_GAME,
 } from './constants/room.constant';
-import { deal } from './modules/handleCard';
-import { pickWinner } from './modules/handleRank';
-import { updateChip } from '../services/game.service';
+import {deal} from './modules/handleCard';
+import {pickWinner} from './modules/handleRank';
+import {updateChip} from '../services/game.service';
 
 const Hand = require('pokersolver').Hand; // func handle winner
 
@@ -68,6 +69,9 @@ export default class GameRoom extends Room<RoomState> {
 
       // HANDLE CHAT ROOM
       this.handleChat();
+
+      // HANDLE WAVE GAME
+      this.handleIncrTurn()
     } catch (e) {
       console.error(e);
     }
@@ -124,7 +128,7 @@ export default class GameRoom extends Room<RoomState> {
   // ROOM STATE
   private handleRoomState() {
     // RESERVE SEAT - JUST CALL ONCE AT STARTING GAME
-    this.onMessage(RESERVE_SEAT, (client: Client, { seat }: { seat: number }) => {
+    this.onMessage(RESERVE_SEAT, (client: Client, {seat}: { seat: number }) => {
       const player = <Player>this.state.players.get(client.sessionId);
       player.turn = seat;
       player.seat = seat;
@@ -132,7 +136,7 @@ export default class GameRoom extends Room<RoomState> {
 
     // START GAME
     this.onMessage(START_GAME, (_, __) => {
-      const { onHandCards, banker5Cards } = deal(this.state.players.size);
+      const {onHandCards, banker5Cards} = deal(this.state.players.size);
       this.state.onReady = true; // change room state -> TRUE
       this.state.totalBet = this.state.players.size * this.initBetChip;
       this.state.banker5Cards = banker5Cards; // change cards of banker -> [...]
@@ -153,7 +157,7 @@ export default class GameRoom extends Room<RoomState> {
         playerMap.chips -= this.initBetChip;
 
         // handle player cards
-        console.log('turn of player:::::', { seat: playerMap.seat, turn: playerMap.turn });
+        console.log('turn of player:::::', {seat: playerMap.seat, turn: playerMap.turn});
         playerMap.cards = onHandCards[playerMap.turn];
 
         console.log('cards::::::', playerMap.cards);
@@ -179,12 +183,12 @@ export default class GameRoom extends Room<RoomState> {
       if (!winPlayer) throw new Error('Have no any winner! Please check');
       winPlayer.isWinner = true;
 
-      this.broadcast(START_GAME, { seat: seatArr[Math.floor(Math.random() * seatArr.length)] }); // handle current P
+      this.broadcast(START_GAME, {seat: seatArr[Math.floor(Math.random() * seatArr.length)]}); // handle current P
     });
 
     // PRE_FINISH_GAME - finalize player chip
     this.onMessage(PRE_FINISH_GAME, (_, data: any) => {
-      const { state } = data;
+      const {state} = data;
       if (!state) {
         this.state.players.forEach((player: Player, _) => {
           if (player.isWinner) player.chips += this.state.totalBet;
@@ -241,7 +245,7 @@ export default class GameRoom extends Room<RoomState> {
   // handle action - ALLIN
   private handleALLIN(client: Client, data: any) {
     if (!this.state.onReady) throw new Error('Game is not ready!');
-    const { chips } = data;
+    const {chips} = data;
     const player = <Player>this.state.players.get(client.sessionId);
     if (!player) throw new Error('Can not find any sessionId!');
     this.allinArr.push(chips);
@@ -264,16 +268,16 @@ export default class GameRoom extends Room<RoomState> {
   private handleFOLD(action: string, client: Client, data: any) {
     if (!this.state.onReady) throw new Error('Game is not ready!');
     const player = <Player>this.state.players.get(client.sessionId);
-    const { turnRemaining } = data;
+    const {turnRemaining} = data;
     this.handleCurrentPlayer(action, player.seat, 0, turnRemaining); // handle current P
     if (!player || player.isFold)
       throw new Error('Can not find any sessionId or any FOLDED player!');
     player.isFold = true;
 
     const remainingPlayers = new Map<string, Player>(
-      Array.from(this.state.players).filter(
-        ([sessionId, player]) => !player.isFold && [sessionId, player],
-      ),
+        Array.from(this.state.players).filter(
+            ([sessionId, player]) => !player.isFold && [sessionId, player],
+        ),
     );
 
     if (player.isWinner) {
@@ -285,8 +289,8 @@ export default class GameRoom extends Room<RoomState> {
           console.log('winner cuối cùng:::::', winner);
           winner.isWinner = true;
           return this.broadcast(
-            'CONGRATULATION',
-            `ĐCM chúc mừng anh zai có id:::${winner.id} đã dành chiến thắng!`,
+              'CONGRATULATION',
+              `ĐCM chúc mừng anh zai có id:::${winner.id} đã dành chiến thắng!`,
           );
         }
       }
@@ -315,7 +319,7 @@ export default class GameRoom extends Room<RoomState> {
   // handle action without FOLD
   private handleBet(action: string, client: Client, data: any) {
     if (!this.state.onReady) throw new Error('Game is not ready!');
-    const { chips, turnRemaining } = data;
+    const {chips, turnRemaining} = data;
     const player = <Player>this.state.players.get(client.sessionId);
     if (!player) throw new Error('Can not find any sessionId!');
     player.betChips += chips;
@@ -328,7 +332,14 @@ export default class GameRoom extends Room<RoomState> {
 
   // handle current player
   private handleCurrentPlayer(action: string, seat: number, chips: number, turnRemaining: number) {
-    return this.broadcast(CURRENT_PLAYER, { action, seat, chips, turnRemaining });
+    return this.broadcast(CURRENT_PLAYER, {action, seat, chips, turnRemaining});
+  }
+
+  // incr turn
+  private handleIncrTurn() {
+    this.onMessage(INCREASE_TURN, (client: Client, {waveGame}: { waveGame: number }) => {
+      this.state.waveGame = waveGame;
+    });
   }
 
   // helper re-arrange turn after finishing a round

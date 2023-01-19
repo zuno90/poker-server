@@ -16,4 +16,7 @@ export class RoomState extends Schema {
 
   @type(['string'])
   banker5Cards: Array<string>;
+
+  @type('number')
+  waveGame: number = -2;
 }
