@@ -9,6 +9,9 @@ export class Player extends Schema {
   @type('string')
   id: string;
 
+  @type('string')
+  username: string;
+
   @type('boolean')
   isHost: boolean;
 
