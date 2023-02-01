@@ -137,6 +137,7 @@ export default class GameRoom extends Room<RoomState> {
     // START GAME
     this.onMessage(START_GAME, (_, __) => {
       const { onHandCards, banker5Cards } = deal(this.state.players.size);
+      // onHandCards: [], banker5Cards: []
       this.state.onReady = true; // change room state -> TRUE
       this.state.totalBet = this.state.players.size * this.initBetChip;
       this.state.banker5Cards = banker5Cards; // change cards of banker -> [...]
@@ -328,7 +329,7 @@ export default class GameRoom extends Room<RoomState> {
     this.state.totalBet += chips;
 
     // handle current P
-    this.handleCurrentPlayer(action, player.seat, chips, turnRemaining);
+    return this.handleCurrentPlayer(action, player.seat, chips, turnRemaining);
   }
 
   // handle current player
