@@ -2,7 +2,6 @@ import express, { Express, Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import { RedisPresence, Server } from 'colyseus';
-import { MongooseDriver } from '@colyseus/mongoose-driver';
 import { monitor } from '@colyseus/monitor';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 import { createServer } from 'http';
@@ -37,7 +36,9 @@ async function bootstrap() {
   // init game server
   const gameServer = new Server({
     transport: new WebSocketTransport({ server: createServer(app) }),
-    presence: new RedisPresence({ url: 'redis://localhost:6379' }),
+    presence: new RedisPresence({
+      url: process.env.NODE_ENV === 'production' ? process.env.REDIS_URL : 'redis://localhost:6379',
+    }),
   });
 
   // define each level of Room
