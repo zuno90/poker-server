@@ -6,7 +6,7 @@ res.http
 .env
 .prettierrc
 .idea
-loadtest.*
+./loadtest.*
 keydb.conf
 keydb
 redis
