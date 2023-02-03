@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 import cors from 'cors';
-import { RedisPresence, Server } from 'colyseus';
+import { MongooseDriver, RedisPresence, Server } from 'colyseus';
 import { monitor } from '@colyseus/monitor';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 import { createServer } from 'http';
@@ -15,7 +15,7 @@ import { userRouter } from './routers/user.router';
 async function bootstrap() {
   const app: Express = express();
 
-  // await initDatabase(); // init DB
+  await initDatabase(); // init DB
 
   app.use(cors());
   app.use(express.json());
@@ -39,6 +39,7 @@ async function bootstrap() {
     presence: new RedisPresence({
       url: process.env.NODE_ENV === 'production' ? process.env.REDIS_URL : 'redis://localhost:6379',
     }),
+    driver: new MongooseDriver(),
   });
 
   // define each level of Room
