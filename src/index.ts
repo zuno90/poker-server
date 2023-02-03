@@ -39,7 +39,11 @@ async function bootstrap() {
     presence: new RedisPresence({
       url: process.env.NODE_ENV === 'production' ? process.env.REDIS_URL : 'redis://localhost:6379',
     }),
-    driver: new MongooseDriver(process.env.MONGO_URI),
+    driver: new MongooseDriver(
+      process.env.NODE_ENV === 'production'
+        ? process.env.MONGO_URI
+        : `mongodb://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@localhost:27017`,
+    ),
   });
 
   // define each level of Room
