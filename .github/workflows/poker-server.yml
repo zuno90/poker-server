@@ -25,6 +25,7 @@ jobs:
                 -e NODE_ENV=production \
                 -e HOST=172.31.31.206 \
                 -e REDIS_URL=${{ secrets.REDIS_URL }} \
+                -e MONGO_URL=${{ secrets.MONGO_URL }} \
                 -e MONGO_HOST=${{ secrets.MONGO_HOST }} \
                 -e MONGO_PORT=${{ secrets.MONGO_PORT }} \
                 -e MONGO_USERNAME=${{ secrets.MONGO_USERNAME }} \
