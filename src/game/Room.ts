@@ -52,20 +52,14 @@ export default class GameRoom extends Room<RoomState> {
       // CHANGE ROOM STATE WHEN ALL USERS GET READY
       this.handleRoomState();
 
+      // HANDLE FOLD ACTION
+      this.handleFOLD();
+
       // HANDLE ALL ACTION FROM PLAYER
-      this.onMessage('*', (client: Client, type, data: any) => {
-        // handle game action CALL | RAISE | CHECK
-        if (type === CALL || type === CHECK || type === RAISE || type === ALLIN)
-          return this.handleBet(type, client, data);
-
-        // // handle ALL IN
-        // if (type === ALLIN) return this.handleALLIN(client, data);
-        // // handle ALL IN DONE
-        // if (type === ALLIN_DONE) return this.handleALLIN_DONE();
-
-        // handle FOLD option
-        if (type === FOLD) return this.handleFOLD(type, client, data);
-      });
+      this.handleBet(CALL);
+      this.handleBet(CHECK);
+      this.handleBet(RAISE);
+      this.handleBet(ALLIN);
 
       // HANDLE CHAT ROOM
       this.handleChat();
@@ -160,8 +154,6 @@ export default class GameRoom extends Room<RoomState> {
         // handle player cards
         console.log('turn of player:::::', { seat: playerMap.seat, turn: playerMap.turn });
         playerMap.cards = onHandCards[playerMap.turn];
-
-        console.log('cards::::::', playerMap.cards);
 
         // pick winner
         arrWinner.push({
@@ -267,74 +259,76 @@ export default class GameRoom extends Room<RoomState> {
   }
 
   // handle action - FOLD
-  private handleFOLD(action: string, client: Client, data: any) {
-    if (!this.state.onReady) throw new Error('Game is not ready!');
-    const player = <Player>this.state.players.get(client.sessionId);
-    const { turnRemaining } = data;
-    this.handleCurrentPlayer(action, player.seat, 0, turnRemaining); // handle current P
-    if (!player || player.isFold)
-      throw new Error('Can not find any sessionId or any FOLDED player!');
-    player.isFold = true;
+  private handleFOLD() {
+    this.onMessage(FOLD, (client: Client, data: any) => {
+      if (!this.state.onReady) throw new Error('Game is not ready!');
+      const player = <Player>this.state.players.get(client.sessionId);
+      const { turnRemaining } = data;
+      this.handleCurrentPlayer(FOLD, player.seat, 0, turnRemaining); // handle current P
+      if (!player || player.isFold)
+        throw new Error('Can not find any sessionId or any FOLDED player!');
+      player.isFold = true;
 
-    const remainingPlayers = new Map<string, Player>(
-      Array.from(this.state.players).filter(
-        ([sessionId, player]) => !player.isFold && [sessionId, player],
-      ),
-    );
+      const remainingPlayers = new Map<string, Player>(
+        Array.from(this.state.players).filter(
+          ([sessionId, player]) => !player.isFold && [sessionId, player],
+        ),
+      );
 
-    if (player.isWinner) {
-      remainingPlayers.delete(client.sessionId);
-      console.log('số player còn lại:::::', remainingPlayers.size);
-      // check if only 1 player
-      if (remainingPlayers.size === 1) {
-        for (let winner of remainingPlayers.values()) {
-          console.log('winner cuối cùng:::::', winner);
-          winner.isWinner = true;
-          return this.broadcast(
-            'CONGRATULATION',
-            `ĐCM chúc mừng anh zai có id:::${winner.id} đã dành chiến thắng!`,
-          );
+      if (player.isWinner) {
+        remainingPlayers.delete(client.sessionId);
+        // check if only 1 player
+        if (remainingPlayers.size === 1) {
+          for (let winner of remainingPlayers.values()) {
+            winner.isWinner = true;
+            return this.broadcast(
+              'CONGRATULATION',
+              `ĐCM chúc mừng anh zai có id:::${winner.id} đã dành chiến thắng!`,
+            );
+          }
         }
-      }
 
-      // pick new winner in remaining players
-      let arrWinner: Array<any> = [];
-      let arrCardRanks: Array<any> = [];
-      remainingPlayers.forEach((remainingPlayer: Player, sessionId: string) => {
-        arrWinner.push({
-          sessionId,
-          sevenCards: [...remainingPlayer.cards.values()].concat([...this.state.banker5Cards]),
+        // pick new winner in remaining players
+        let arrWinner: Array<any> = [];
+        let arrCardRanks: Array<any> = [];
+        remainingPlayers.forEach((remainingPlayer: Player, sessionId: string) => {
+          arrWinner.push({
+            sessionId,
+            sevenCards: [...remainingPlayer.cards.values()].concat([...this.state.banker5Cards]),
+          });
+          arrCardRanks = pickWinner(arrWinner);
         });
-        arrCardRanks = pickWinner(arrWinner);
-      });
 
-      // pick winner and set isWinner -> true
-      const winner = Hand.winners(arrCardRanks)[0];
-      // get winner session
-      const winPlayer = <Player>this.state.players.get(winner.sessionId);
-      if (!winPlayer) throw new Error('Have no winner! Please re-check function winner picking!');
-      winPlayer.isWinner = true;
-      player.isWinner = false;
-    }
+        // pick winner and set isWinner -> true
+        const winner = Hand.winners(arrCardRanks)[0];
+        // get winner session
+        const winPlayer = <Player>this.state.players.get(winner.sessionId);
+        if (!winPlayer) throw new Error('Have no winner! Please re-check function winner picking!');
+        winPlayer.isWinner = true;
+        player.isWinner = false;
+      }
+    });
   }
 
   // handle action without FOLD
-  private handleBet(action: string, client: Client, data: any) {
-    if (!this.state.onReady) throw new Error('Game is not ready!');
-    const { chips, turnRemaining } = data;
-    const player = <Player>this.state.players.get(client.sessionId);
-    if (!player) throw new Error('Can not find any sessionId!');
-    player.betChips += chips;
-    player.chips -= chips;
-    this.state.totalBet += chips;
+  private handleBet(action: string) {
+    this.onMessage(action, (client: Client, data: any) => {
+      if (!this.state.onReady) throw new Error('Game is not ready!');
+      const { chips, turnRemaining } = data;
+      const player = <Player>this.state.players.get(client.sessionId);
+      if (!player) throw new Error('Can not find any sessionId!');
+      player.betChips += chips;
+      player.chips -= chips;
+      this.state.totalBet += chips;
 
-    // handle current P
-    return this.handleCurrentPlayer(action, player.seat, chips, turnRemaining);
+      // handle current P
+      this.handleCurrentPlayer(action, player.seat, chips, turnRemaining);
+    });
   }
 
   // handle current player
   private handleCurrentPlayer(action: string, seat: number, chips: number, turnRemaining: number) {
-    return this.broadcast(CURRENT_PLAYER, { action, seat, chips, turnRemaining });
+    this.broadcast(CURRENT_PLAYER, { action, seat, chips, turnRemaining });
   }
 
   // incr turn

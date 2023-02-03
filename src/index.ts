@@ -1,5 +1,7 @@
 import express, { Express, Request, Response } from 'express';
 import dotenv from 'dotenv';
+
+dotenv.config();
 import cors from 'cors';
 import { RedisPresence, Server } from 'colyseus';
 import { monitor } from '@colyseus/monitor';
@@ -10,12 +12,10 @@ import initDatabase from './init/db';
 import { authRouter } from './routers/auth.router';
 import { userRouter } from './routers/user.router';
 
-dotenv.config();
-
 async function bootstrap() {
   const app: Express = express();
 
-  await initDatabase(); // init DB
+  // await initDatabase(); // init DB
 
   app.use(cors());
   app.use(express.json());

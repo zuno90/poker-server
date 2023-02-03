@@ -1,15 +1,12 @@
-import { Request, Response } from "express";
-import {
-  signupService,
-  signinService,
-  signoutService,
-} from "../services/auth.service";
+import { Request, Response } from 'express';
+import { signupService, signinService, signoutService } from '../services/auth.service';
 
 export const SignUp = async (req: Request, res: Response) => {
   return signupService(req.body, res);
 };
 
 export const SignIn = (req: Request, res: Response) => {
+  console.log(req.body);
   return signinService(req.body, res);
 };
 
