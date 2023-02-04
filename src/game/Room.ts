@@ -1,11 +1,10 @@
 import { Client, Room } from 'colyseus';
-import { RoomState } from './schema/room.schema';
-import { Player } from './schema/player.schema';
+import { RoomState } from './schemas/room.schema';
+import { Player } from './schemas/player.schema';
 import {
   ALLIN,
   CALL,
   CHECK,
-  CURRENT_PLAYER,
   FINISH_GAME,
   FOLD,
   INCREASE_TURN,
@@ -41,6 +40,7 @@ export default class GameRoom extends Room<RoomState> {
   private allinState: TAllinState;
 
   onAuth(_: Client, player: Player) {
+    // check auth
     return player;
   }
 
@@ -262,7 +262,7 @@ export default class GameRoom extends Room<RoomState> {
       if (!this.state.onReady) throw new Error('Game is not ready!');
       const player = <Player>this.state.players.get(client.sessionId);
       const { turnRemaining } = data;
-      this.handleCurrentPlayer(FOLD, player.seat, 0, turnRemaining); // handle current P
+      this.state.turnRemaining = turnRemaining;
       if (!player || player.isFold)
         throw new Error('Can not find any sessionId or any FOLDED player!');
       player.isFold = true;
@@ -318,15 +318,8 @@ export default class GameRoom extends Room<RoomState> {
       player.betChips += chips;
       player.chips -= chips;
       this.state.totalBet += chips;
-
-      // handle current P
-      this.handleCurrentPlayer(action, player.seat, chips, turnRemaining);
+      this.state.turnRemaining = turnRemaining;
     });
-  }
-
-  // handle current player
-  private handleCurrentPlayer(action: string, seat: number, chips: number, turnRemaining: number) {
-    this.broadcast(CURRENT_PLAYER, { action, seat, chips, turnRemaining });
   }
 
   // incr turn

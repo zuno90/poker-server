@@ -1,4 +1,4 @@
-import { Deck } from "../schema/deck.schema";
+import { Deck } from '../schemas/deck.schema';
 
 export const createADeck = (ranks: Array<string>, suits: Array<string>) => {
   let fullDeck: Array<string> = [];
@@ -39,12 +39,6 @@ export const deal = (numberOfPlayer: number) => {
   };
 };
 
-const dealHelper = (
-  deck: Array<string>,
-  index: number,
-  numberOfPlayer: number
-) => {
-  return deck
-    .slice(index, index + 1)
-    .concat(deck.slice(numberOfPlayer, numberOfPlayer + 1));
+const dealHelper = (deck: Array<string>, index: number, numberOfPlayer: number) => {
+  return deck.slice(index, index + 1).concat(deck.slice(numberOfPlayer, numberOfPlayer + 1));
 };

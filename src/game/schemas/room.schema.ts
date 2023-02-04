@@ -19,4 +19,7 @@ export class RoomState extends Schema {
 
   @type('number')
   waveGame: number = -2;
+
+  @type('number')
+  turnRemaining: number = 2;
 }
