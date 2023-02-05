@@ -261,7 +261,8 @@ export default class GameRoom extends Room<RoomState> {
     this.onMessage(FOLD, (client: Client, data: any) => {
       if (!this.state.onReady) throw new Error('Game is not ready!');
       const player = <Player>this.state.players.get(client.sessionId);
-      const { turnRemaining } = data;
+      const { currentSeat, turnRemaining } = data;
+      this.state.currentSeat = currentSeat;
       this.state.turnRemaining = turnRemaining;
       if (!player || player.isFold)
         throw new Error('Can not find any sessionId or any FOLDED player!');
@@ -312,12 +313,13 @@ export default class GameRoom extends Room<RoomState> {
   private handleBet(action: string) {
     this.onMessage(action, (client: Client, data: any) => {
       if (!this.state.onReady) throw new Error('Game is not ready!');
-      const { chips, turnRemaining } = data;
+      const { chips, currentSeat, turnRemaining } = data;
       const player = <Player>this.state.players.get(client.sessionId);
       if (!player) throw new Error('Can not find any sessionId!');
       player.betChips += chips;
       player.chips -= chips;
       this.state.totalBet += chips;
+      this.state.currentSeat = currentSeat;
       this.state.turnRemaining = turnRemaining;
     });
   }

@@ -22,4 +22,7 @@ export class RoomState extends Schema {
 
   @type('number')
   turnRemaining: number = 2;
+
+  @type('number')
+  currentSeat: number;
 }
