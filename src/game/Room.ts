@@ -1,6 +1,6 @@
-import { Client, Room } from 'colyseus';
-import { RoomState } from './schemas/room.schema';
-import { Player } from './schemas/player.schema';
+import {Client, Room} from 'colyseus';
+import {RoomState} from './schemas/room.schema';
+import {Player} from './schemas/player.schema';
 import {
   ALLIN,
   CALL,
@@ -16,9 +16,9 @@ import {
   ROOM_DISPOSE,
   START_GAME,
 } from './constants/room.constant';
-import { deal } from './modules/handleCard';
-import { pickWinner } from './modules/handleRank';
-import { updateChip } from '../services/game.service';
+import {deal} from './modules/handleCard';
+import {pickWinner} from './modules/handleRank';
+import {updateChip} from '../services/game.service';
 
 const Hand = require('pokersolver').Hand; // func handle winner
 
@@ -122,7 +122,7 @@ export default class GameRoom extends Room<RoomState> {
   // ROOM STATE
   private handleRoomState() {
     // RESERVE SEAT - JUST CALL ONCE AT STARTING GAME
-    this.onMessage(RESERVE_SEAT, (client: Client, { seat }: { seat: number }) => {
+    this.onMessage(RESERVE_SEAT, (client: Client, {seat}: { seat: number }) => {
       const player = <Player>this.state.players.get(client.sessionId);
       player.turn = seat;
       player.seat = seat;
@@ -130,7 +130,7 @@ export default class GameRoom extends Room<RoomState> {
 
     // START GAME
     this.onMessage(START_GAME, (_, __) => {
-      const { onHandCards, banker5Cards } = deal(this.state.players.size);
+      const {onHandCards, banker5Cards} = deal(this.state.players.size);
       this.state.onReady = true; // change room state -> TRUE
       this.state.totalBet = this.state.players.size * this.initBetChip;
       this.state.banker5Cards = banker5Cards; // change cards of banker -> [...]
@@ -174,12 +174,13 @@ export default class GameRoom extends Room<RoomState> {
       if (!winPlayer) throw new Error('Have no any winner! Please check');
       winPlayer.isWinner = true;
 
-      this.broadcast(START_GAME, { seat: seatArr[Math.floor(Math.random() * seatArr.length)] }); // handle current P
+      // random current player on init
+      this.state.currentSeat = seatArr[Math.floor(Math.random() * seatArr.length)]
     });
 
     // PRE_FINISH_GAME - finalize player chip
     this.onMessage(PRE_FINISH_GAME, (_, data: any) => {
-      const { state } = data;
+      const {state} = data;
       if (!state) {
         this.state.players.forEach((player: Player, _) => {
           if (player.isWinner) player.chips += this.state.totalBet;
@@ -237,7 +238,7 @@ export default class GameRoom extends Room<RoomState> {
   // handle action - ALLIN
   private handleALLIN(client: Client, data: any) {
     if (!this.state.onReady) throw new Error('Game is not ready!');
-    const { chips } = data;
+    const {chips} = data;
     const player = <Player>this.state.players.get(client.sessionId);
     if (!player) throw new Error('Can not find any sessionId!');
     this.allinArr.push(chips);
@@ -261,7 +262,7 @@ export default class GameRoom extends Room<RoomState> {
     this.onMessage(FOLD, (client: Client, data: any) => {
       if (!this.state.onReady) throw new Error('Game is not ready!');
       const player = <Player>this.state.players.get(client.sessionId);
-      const { currentSeat, turnRemaining } = data;
+      const {currentSeat, turnRemaining} = data;
       this.state.currentSeat = currentSeat;
       this.state.turnRemaining = turnRemaining;
       if (!player || player.isFold)
@@ -313,7 +314,7 @@ export default class GameRoom extends Room<RoomState> {
   private handleBet(action: string) {
     this.onMessage(action, (client: Client, data: any) => {
       if (!this.state.onReady) throw new Error('Game is not ready!');
-      const { chips, currentSeat, turnRemaining } = data;
+      const {chips, currentSeat, turnRemaining} = data;
       const player = <Player>this.state.players.get(client.sessionId);
       if (!player) throw new Error('Can not find any sessionId!');
       player.betChips += chips;
@@ -326,7 +327,7 @@ export default class GameRoom extends Room<RoomState> {
 
   // incr turn
   private handleIncrTurn() {
-    this.onMessage(INCREASE_TURN, (client: Client, { waveGame }: { waveGame: number }) => {
+    this.onMessage(INCREASE_TURN, (client: Client, {waveGame}: { waveGame: number }) => {
       this.state.waveGame = waveGame;
     });
   }
