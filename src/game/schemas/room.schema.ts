@@ -1,5 +1,13 @@
-import { Schema, MapSchema, type } from '@colyseus/schema';
+import { MapSchema, Schema, type } from '@colyseus/schema';
 import { Player } from './player.schema';
+
+export enum ERound {
+  PREFLOP = 'PREFLOP',
+  FLOP = 'FLOP',
+  TURN = 'TURN',
+  RIVER = 'RIVER',
+  SHOWDOWN = 'SHOWDOWN',
+}
 
 export class RoomState extends Schema {
   @type('boolean')
@@ -9,20 +17,14 @@ export class RoomState extends Schema {
   players = new MapSchema<Player>();
 
   @type('string')
-  currentId: string;
-
-  @type('number')
-  totalBet: number = 0;
+  round: ERound = ERound.PREFLOP;
 
   @type(['string'])
-  banker5Cards: Array<string>;
+  bankerCards: string[] = [];
 
   @type('number')
-  waveGame: number = -2;
+  potSize: number = 0;
 
   @type('number')
-  turnRemaining: number = 2;
-
-  @type('number')
-  currentSeat: number;
+  remainingPlayer: number;
 }

@@ -1,7 +1,5 @@
 import express, { Express, Request, Response } from 'express';
 import dotenv from 'dotenv';
-
-dotenv.config();
 import cors from 'cors';
 import { MongooseDriver, RedisPresence, Server } from 'colyseus';
 import { monitor } from '@colyseus/monitor';
@@ -11,6 +9,8 @@ import GameRoom from './game/Room';
 import initDatabase from './init/db';
 import { authRouter } from './routers/auth.router';
 import { userRouter } from './routers/user.router';
+
+dotenv.config();
 
 async function bootstrap() {
   const app: Express = express();
@@ -57,7 +57,7 @@ async function bootstrap() {
 
   console.log(`🚀 Server is ready at http://${SERVER_IP}:${PORT} and ws://${SERVER_IP}:${PORT} 🚀`);
   gameServer.onShutdown(() => {
-    console.log('master process is being shut down!');
+    console.log('Master process is being shut down!');
   });
 }
 

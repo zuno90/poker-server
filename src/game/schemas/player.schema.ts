@@ -5,6 +5,11 @@ export enum ERole {
   Bot = 'Bot',
 }
 
+export enum EStatement {
+  Playing = 'Playing',
+  Waiting = 'Waiting',
+}
+
 export class Player extends Schema {
   @type('string')
   id: string;
@@ -19,7 +24,7 @@ export class Player extends Schema {
   chips: number;
 
   @type('number')
-  betChips: number;
+  bet: number;
 
   @type('number')
   turn: number;
@@ -27,21 +32,15 @@ export class Player extends Schema {
   @type('number')
   seat: number;
 
-  @type(['string'])
-  cards: Array<string>;
-
   @type('string')
   role: ERole;
 
-  @type('boolean')
-  isFold: boolean = false;
-
-  @type('boolean')
-  isWinner: boolean = false;
+  @type('string')
+  statement: EStatement = EStatement.Waiting;
 
   @type('boolean')
   connected: boolean = true;
 
-  @type('string')
-  cardRank: string | undefined;
+  @type('boolean')
+  isFold: boolean = false;
 }

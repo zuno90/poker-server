@@ -10,3 +10,4 @@ res.http
 keydb.conf
 keydb
 redis
+./testgame.html

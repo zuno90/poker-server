@@ -6,10 +6,10 @@ export const SignUp = async (req: Request, res: Response) => {
 };
 
 export const SignIn = (req: Request, res: Response) => {
-  console.log(req.body);
+
   return signinService(req.body, res);
 };
 
 export const SignOut = async (req: Request, res: Response) => {
-  signoutService(req.body.id, res);
+  return signoutService(req.body.id, res);
 };

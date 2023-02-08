@@ -1,30 +1,22 @@
-import {Client, Room} from 'colyseus';
-import {RoomState} from './schemas/room.schema';
-import {Player} from './schemas/player.schema';
-import {
-  ALLIN,
-  CALL,
-  CHECK,
-  FINISH_GAME,
-  FOLD,
-  INCREASE_TURN,
-  PRE_FINISH_GAME,
-  RAISE,
-  RESERVE_SEAT,
-  RESET_GAME,
-  ROOM_CHAT,
-  ROOM_DISPOSE,
-  START_GAME,
-} from './constants/room.constant';
-import {deal} from './modules/handleCard';
-import {pickWinner} from './modules/handleRank';
-import {updateChip} from '../services/game.service';
+import { Client, Room } from 'colyseus';
+import { Request } from 'express';
+import { ERound, RoomState } from './schemas/room.schema';
+import { ERole, EStatement, Player } from './schemas/player.schema';
+import { ROOM_CHAT, ROOM_DISPOSE, START_GAME } from './constants/room.constant';
+import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
+import { DEAL, FIRST_TURN, RANK, RESULT } from './constants/server-emit.constant';
+import { deal } from './modules/handleCard';
+import { updateChip } from '../services/game.service';
+import { parseUserFromJwt } from '../utils/jwtChecking';
+import { arrangeSeat, arrangeTurn, handleFirstSecond } from './modules/handlePlayer';
+import { checkPlayerRank } from './modules/handleRank';
+import { BotClient } from './Bot';
 
 const Hand = require('pokersolver').Hand; // func handle winner
 
-type TAllinState = {
-  total: number;
-  minAllin: number;
+type TJwtAuth = {
+  jwt: string;
+  isBot?: boolean;
 };
 
 type TRoomChat = {
@@ -33,18 +25,45 @@ type TRoomChat = {
   message: string;
 };
 
-export default class GameRoom extends Room<RoomState> {
-  readonly maxClients = 5;
-  private initBetChip: number = 100;
-  private allinArr: number[] = [];
-  private allinState: TAllinState;
+type TAllinPlayer = {
+  sessionId: string;
+  allinValue: number;
+};
 
-  onAuth(_: Client, player: Player) {
+export default class GameRoom extends Room<RoomState> {
+  readonly maxClients: number = 5;
+  private readonly initBetChip: number = 100;
+  private betChip: number = 0;
+  private banker5Cards: Array<string> = [];
+  private player2Cards: Array<string[]> = [];
+  private remainingTurn: number;
+  private allinPot: TAllinPlayer[] = [];
+
+  async onAuth(_: Client, options: TJwtAuth, req: Request) {
     // check auth
+    const existedPlayer = await parseUserFromJwt(options.jwt);
+    // is HOST or second player
+    if (!this.state.players.size || this.state.players.size === 1)
+      return handleFirstSecond(this.state.players.size, existedPlayer);
+
+    // is not HOST - number of players > 2
+    let playerSeatArr: number[] = [];
+    this.state.players.forEach((player: Player, _) => playerSeatArr.push(player.seat));
+    // find out next seat for this player
+    const nextSeat = arrangeSeat(playerSeatArr); // next seat - 1 = 1
+
+    const player = {
+      id: existedPlayer.id,
+      username: existedPlayer.username ?? existedPlayer.email,
+      chips: existedPlayer.chips,
+      isHost: false,
+      seat: nextSeat,
+      role: ERole.Player,
+    };
     return player;
   }
 
-  onCreate(options: any) {
+  async onCreate(options: TJwtAuth) {
     try {
       // CREATE AN INITIAL ROOM STATE
       this.setState(new RoomState());
@@ -52,26 +71,17 @@ export default class GameRoom extends Room<RoomState> {
       // CHANGE ROOM STATE WHEN ALL USERS GET READY
       this.handleRoomState();
 
-      // HANDLE FOLD ACTION
-      this.handleFOLD();
-
-      // HANDLE ALL ACTION FROM PLAYER
-      this.handleBet(CALL);
-      this.handleBet(CHECK);
-      this.handleBet(RAISE);
-      this.handleBet(ALLIN);
-
       // HANDLE CHAT ROOM
       this.handleChat();
 
-      // HANDLE WAVE GAME
-      this.handleIncrTurn();
-    } catch (e) {
-      console.error(e);
+      // HANDLE ALL ACTION FROM PLAYER
+      this.handleAction();
+    } catch (err) {
+      console.error(err);
     }
   }
 
-  onJoin(client: Client, options: any, player: Player) {
+  onJoin(client: Client, options: TJwtAuth, player: Player) {
     // SET INITIAL PLAYER STATE
     this.state.players.set(client.sessionId, new Player(player)); // set player every joining
   }
@@ -100,131 +110,72 @@ export default class GameRoom extends Room<RoomState> {
     // }
     console.log('client ' + client.sessionId + ' has just left');
 
-    if (!this.state.players.has(client.sessionId))
-      throw new Error('Have no any player including sessionId!');
     const leavingPlayer = <Player>this.state.players.get(client.sessionId);
+    if (!leavingPlayer) throw new Error('Have no any player including sessionId!');
+    if (leavingPlayer.statement === EStatement.Playing)
+      throw new Error('Please wait until end game!');
+    // update chip
     this.state.players.delete(client.sessionId);
+
+    // re-arrange turn for player
     if (leavingPlayer.isHost) {
-      let seatArr: number[] = [];
-      this.state.players.forEach((playerMap: Player, _: string) => {
-        seatArr.push(playerMap.seat);
-        const newHost = Math.min(...seatArr);
-        if (newHost === playerMap.seat) playerMap.isHost = true;
+      // handle change host & delete bot
+      this.state.players.forEach((player: Player, _) => {
+        if (player.turn === 1) {
+          player.isHost = true;
+          player.turn = 0;
+          player.seat = 1;
+        }
       });
     }
   }
 
   async onDispose() {
-    console.log('room', this.roomId, 'disposing...');
+    console.log('room ', this.roomId, ' is disposing...');
     this.broadcast(ROOM_DISPOSE, 'room bi dispose');
   }
 
-  // ROOM STATE
+  // HANDLE ALL ACTIONS
   private handleRoomState() {
-    // RESERVE SEAT - JUST CALL ONCE AT STARTING GAME
-    this.onMessage(RESERVE_SEAT, (client: Client, {seat}: { seat: number }) => {
-      const player = <Player>this.state.players.get(client.sessionId);
-      player.turn = seat;
-      player.seat = seat;
-    });
-
     // START GAME
-    this.onMessage(START_GAME, (_, __) => {
-      const {onHandCards, banker5Cards} = deal(this.state.players.size);
+    this.onMessage(START_GAME, async (client: Client, _) => {
+      // check game is ready or not
+      if (this.state.onReady) return;
+      // check accept only host
+      const host = <Player>this.state.players.get(client.sessionId);
+      if (!host.isHost) return; // accept only host
+
+      const { onHandCards, banker5Cards } = deal(this.state.players.size);
+      this.banker5Cards = banker5Cards; // cache 5 cards of banker first
+      this.player2Cards = onHandCards; // chia bai
+
+      console.log({ banker: this.banker5Cards, player: this.player2Cards });
+
       this.state.onReady = true; // change room state -> TRUE
-      this.state.totalBet = this.state.players.size * this.initBetChip;
-      this.state.banker5Cards = banker5Cards; // change cards of banker -> [...]
+      this.remainingTurn = this.state.players.size;
+      this.state.remainingPlayer = this.state.players.size;
+      this.state.potSize = this.state.players.size * this.initBetChip;
 
-      let arrWinner: Array<any> = [];
-      let arrCardRanks: Array<any> = [];
+      // initialize state of player
 
-      // handle arranging turn for player
-      let seatArr: number[] = [];
-      this.state.players.forEach((playerMap: Player, sessionId: string) => {
-        seatArr.push(playerMap.seat); // push turn array
-
-        // handle player turn
-        playerMap.turn = this.arrangeTurn(playerMap.turn, seatArr) as number;
-
-        // init state of player
-        playerMap.betChips = this.initBetChip;
-        playerMap.chips -= this.initBetChip;
-
-        // handle player cards
-        playerMap.cards = onHandCards[playerMap.turn];
-
-        // pick winner
-        arrWinner.push({
-          sessionId,
-          sevenCards: [...playerMap.cards.values()].concat([...banker5Cards.values()]),
-        });
-
-        const playerCardRanks = pickWinner(arrWinner);
-        // detail card rank each player
-        playerCardRanks.forEach((v, _) => {
-          if (v.sessionId === sessionId) playerMap.cardRank = v.name; // v.descr
-        });
-        arrCardRanks = playerCardRanks;
+      let playerSeatArr: number[] = [];
+      this.state.players.forEach((player: Player, _) => {
+        player.statement = EStatement.Playing;
+        player.bet = this.initBetChip;
+        player.chips -= this.initBetChip;
+        playerSeatArr.push(player.seat);
       });
-
-      // pick winner and set isWinner -> true
-      const winner = Hand.winners(arrCardRanks)[0];
-      // get winner session
-      const winPlayer = <Player>this.state.players.get(winner.sessionId);
-      if (!winPlayer) throw new Error('Have no any winner! Please check');
-      winPlayer.isWinner = true;
-
-      // random current player on init
-      this.state.currentSeat = seatArr[Math.floor(Math.random() * seatArr.length)]
-    });
-
-    // PRE_FINISH_GAME - finalize player chip
-    this.onMessage(PRE_FINISH_GAME, (_, data: any) => {
-      const {state} = data;
-      if (!state) {
-        this.state.players.forEach((player: Player, _) => {
-          if (player.isWinner) player.chips += this.state.totalBet;
-        });
-      }
-    });
-
-    // FINISH GAME
-    this.onMessage(FINISH_GAME, (_, __) => {
-      this.state.players.forEach(async (player: Player, _) => {
-        // if (player.isWinner)
-        //   player.chips =
-        //     player.chips + this.state.totalBet - this.allinState.minAllin * this.allinState.total;
-        if (player.isWinner) player.chips += this.state.totalBet;
-        player.role === 'Player' && (await updateChip(player.id, player.chips));
-      });
-      this.broadcast(FINISH_GAME, 'Finish, updated owned chips of user into database!!!!!');
-    });
-
-    // RESET GAME
-    this.onMessage(RESET_GAME, (_, __) => {
-      if (this.clients.length < 1) throw new Error('Have cheat! Player number is < 1');
-      // CREATE AN INITIAL ROOM STATE AGAIN
-      this.state.onReady = false;
-      this.state.totalBet = 0;
-      this.state.banker5Cards = [];
-
-      // CREATE AN INITIAL PLAYER STATE AFTER A GAME
-      this.state.players.forEach((playerMap: Player, sessionId: string) => {
-        const newPlayer = {
-          id: playerMap.id,
-          username: playerMap.username,
-          isHost: playerMap.isHost,
-          chips: playerMap.chips,
-          betChips: 0,
-          turn: playerMap.seat,
-          seat: playerMap.seat,
-          cards: [],
-          role: playerMap.role,
-        };
-        this.state.players.set(sessionId, new Player(newPlayer));
-      });
-
-      this.broadcast(RESET_GAME, 'reset game, log thử state xem');
+      // gán turn vào
+      this.state.players.forEach(
+        (player: Player, _) => (player.turn = arrangeTurn(player.seat, playerSeatArr) as number),
+      );
+      // send to player 2 cards
+      this.send2Cards();
+      // random đi trước
+      return this.broadcast(
+        FIRST_TURN,
+        playerSeatArr[Math.floor(Math.random() * playerSeatArr.length)],
+      );
     });
   }
 
@@ -235,107 +186,209 @@ export default class GameRoom extends Room<RoomState> {
     });
   }
 
-  // handle action - ALLIN
-  private handleALLIN(client: Client, data: any) {
-    if (!this.state.onReady) throw new Error('Game is not ready!');
-    const {chips} = data;
-    const player = <Player>this.state.players.get(client.sessionId);
-    if (!player) throw new Error('Can not find any sessionId!');
-    this.allinArr.push(chips);
-    player.betChips += chips;
-    player.chips -= chips;
-    this.state.totalBet += chips;
-  }
+  private handleAction() {
+    // RAISE
+    this.onMessage(RAISE, (client: Client, { chips }: { chips: number }) => {
+      const player = this.checkBeforeAction(client);
+      // check chips
+      if (chips < this.betChip / 2) return;
+      player.bet += chips;
+      player.chips -= chips;
 
-  // handle action - ALLIN_DONE
-  private handleALLIN_DONE() {
-    if (!this.state.onReady) throw new Error('Game is not ready!');
-    if (!this.allinArr.length) throw new Error('Opps! No one call ALL IN!');
-    this.allinState = {
-      total: this.allinArr.length,
-      minAllin: Math.min(...this.allinArr),
-    };
-  }
+      this.betChip = chips;
+      this.state.potSize += chips;
 
-  // handle action - FOLD
-  private handleFOLD() {
-    this.onMessage(FOLD, (client: Client, data: any) => {
-      if (!this.state.onReady) throw new Error('Game is not ready!');
-      const player = <Player>this.state.players.get(client.sessionId);
-      const {currentSeat, turnRemaining} = data;
-      this.state.currentSeat = currentSeat;
-      this.state.turnRemaining = turnRemaining;
-      if (!player || player.isFold)
-        throw new Error('Can not find any sessionId or any FOLDED player!');
-      player.isFold = true;
+      this.remainingTurn = this.state.remainingPlayer - 1;
+      console.log('raise:::::', this.remainingTurn);
+    });
+    // CALL
+    this.onMessage(CALL, (client: Client) => {
+      const player = this.checkBeforeAction(client);
+      player.bet += this.betChip;
+      player.chips -= this.betChip;
 
-      const remainingPlayers = new Map<string, Player>(
-        Array.from(this.state.players).filter(
-          ([sessionId, player]) => !player.isFold && [sessionId, player],
-        ),
-      );
+      this.state.potSize += this.betChip;
+      this.remainingTurn--;
+      console.log('call:::::', this.remainingTurn);
+      if (this.remainingTurn === 0) return this.handleEndEachRound(this.state.round);
+    });
+    // CHECK
+    this.onMessage(CHECK, (client: Client) => {
+      const player = this.checkBeforeAction(client);
+      this.remainingTurn--;
+      console.log('check:::::', this.remainingTurn);
+      if (this.remainingTurn === 0) return this.handleEndEachRound(this.state.round);
+    });
+    // ALLIN
+    this.onMessage(ALLIN, async (client: Client) => {
+      const player = this.checkBeforeAction(client);
+      const allinAmount = player.chips;
+      player.bet += allinAmount;
+      player.chips = 0; // trừ sạch tiền
+      this.betChip = allinAmount;
 
-      if (player.isWinner) {
-        remainingPlayers.delete(client.sessionId);
-        // check if only 1 player
-        if (remainingPlayers.size === 1) {
-          for (let winner of remainingPlayers.values()) {
-            winner.isWinner = true;
-            return this.broadcast(
-              'CONGRATULATION',
-              `ĐCM chúc mừng anh zai có id:::${winner.id} đã dành chiến thắng!`,
-            );
-          }
-        }
+      // đưa tiền vào pot size
+      this.allinPot.push({ sessionId: client.sessionId, allinValue: allinAmount });
+      // check so luong all in
+      console.log(this.allinPot);
 
-        // pick new winner in remaining players
-        let arrWinner: Array<any> = [];
-        let arrCardRanks: Array<any> = [];
-        remainingPlayers.forEach((remainingPlayer: Player, sessionId: string) => {
-          arrWinner.push({
-            sessionId,
-            sevenCards: [...remainingPlayer.cards.values()].concat([...this.state.banker5Cards]),
-          });
-          arrCardRanks = pickWinner(arrWinner);
-        });
+      this.remainingTurn = this.state.remainingPlayer - 1;
+      this.state.remainingPlayer--;
 
-        // pick winner and set isWinner -> true
-        const winner = Hand.winners(arrCardRanks)[0];
-        // get winner session
-        const winPlayer = <Player>this.state.players.get(winner.sessionId);
-        if (!winPlayer) throw new Error('Have no winner! Please re-check function winner picking!');
-        winPlayer.isWinner = true;
-        player.isWinner = false;
+      console.log('allin:::::', this.remainingTurn);
+      if (this.remainingTurn === 0) {
+        // check ket qua khi thang cuoi cung all in
+        console.log('tính tiền luôn, thằng cuối nó allin rồi');
+        this.pickWinner();
+        await this.calculateChips();
+        this.resetGame();
+        return;
       }
     });
+    // FOLD
+    this.onMessage(FOLD, (client: Client, _) => {
+      const player = this.checkBeforeAction(client);
+      player.isFold = true;
+      if (this.state.players.size === 2) {
+        // check ket qua khi chi co 2 players
+        console.log('tính tiền luôn, còn có thằng kia ah');
+        this.state.players.forEach((player: Player, _) => {
+          if (!player.isFold) {
+            player.chips += this.state.potSize;
+          }
+        });
+        return;
+      }
+      this.state.remainingPlayer--;
+      this.remainingTurn--;
+      console.log('fold:::::', this.remainingTurn);
+      if (this.remainingTurn === 0) return this.handleEndEachRound(this.state.round);
+    });
   }
 
-  // handle action without FOLD
-  private handleBet(action: string) {
-    this.onMessage(action, (client: Client, data: any) => {
-      if (!this.state.onReady) throw new Error('Game is not ready!');
-      const {chips, currentSeat, turnRemaining} = data;
+  // internal function
+  private send2Cards() {
+    this.clients.forEach((client: Client, _) => {
       const player = <Player>this.state.players.get(client.sessionId);
-      if (!player) throw new Error('Can not find any sessionId!');
-      player.betChips += chips;
-      player.chips -= chips;
-      this.state.totalBet += chips;
-      this.state.currentSeat = currentSeat;
-      this.state.turnRemaining = turnRemaining;
+      client.send(DEAL, { c: this.player2Cards[player.turn] });
     });
   }
 
-  // incr turn
-  private handleIncrTurn() {
-    this.onMessage(INCREASE_TURN, (client: Client, {waveGame}: { waveGame: number }) => {
-      this.state.waveGame = waveGame;
-    });
+  private checkBeforeAction(client: Client) {
+    if (!this.state.onReady) throw new Error('Game is not ready!');
+    const player = <Player>this.state.players.get(client.sessionId);
+    if (!player || player.isFold)
+      throw new Error('Can not find Player! Player is invalid or folded!');
+    if (player.statement === 'Waiting') throw new Error('định cheat hả mày?');
+    return player;
   }
 
-  // helper re-arrange turn after finishing a round
-  private arrangeTurn(turn: number, seatArr: number[]) {
-    for (let i = 0; i < seatArr.length; i++) {
-      if (turn === seatArr[i]) return i;
+  private async handleEndEachRound(round: ERound) {
+    // check winner first (river -> showdown)
+    if (round === ERound.RIVER) {
+      this.state.round = ERound.SHOWDOWN;
+      this.pickWinner();
+      await this.calculateChips();
+      this.resetGame();
+      return;
     }
+    // preflop -> flop
+    if (round === ERound.PREFLOP) {
+      this.state.round = ERound.FLOP;
+      this.state.bankerCards = [...this.banker5Cards.slice(0, 3)];
+    }
+    // flop -> turn
+    if (round === ERound.FLOP) {
+      this.state.round = ERound.TURN;
+      this.state.bankerCards = [...this.banker5Cards.slice(0, 4)];
+    }
+    // turn -> river
+    if (round === ERound.TURN) {
+      this.state.round = ERound.RIVER;
+      this.state.bankerCards = [...this.banker5Cards];
+    }
+
+    this.remainingTurn = this.state.remainingPlayer;
+    return this.sendRankEachRound();
+  }
+
+  private sendRankEachRound() {
+    this.clients.forEach((client: Client, _) => {
+      const player = <Player>this.state.players.get(client.sessionId);
+      const rankInfo = checkPlayerRank([
+        {
+          sessionId: client.sessionId,
+          combinedCards: [...this.banker5Cards].concat([...this.player2Cards[player.turn]]),
+        },
+      ]);
+      if (!player.isFold) return client.send(RANK, { r: rankInfo[0].rank, d: rankInfo[0].name });
+    });
+  }
+
+  private pickWinner() {
+    let winCardsArr: any[] = [];
+    let resultArr: any[] = [];
+    this.state.players.forEach((player: Player, sessionId: string) => {
+      if (!player.isFold) {
+        const rankInfo = checkPlayerRank([
+          {
+            sessionId,
+            combinedCards: [...this.banker5Cards].concat([...this.player2Cards[player.turn]]),
+          },
+        ]);
+        winCardsArr.push(rankInfo[0]);
+        resultArr.push({ s: player.seat, d: rankInfo[0].name, i: rankInfo[0].sessionId });
+      }
+    });
+
+    // handle winner tại đây và show kết quả
+    const winHand = Hand.winners(winCardsArr)[0];
+    for (const result of resultArr) {
+      if (winHand.sessionId === result.i) result.is_win = true;
+      delete result.i;
+    }
+    // bắn kết quả về cho all clients
+    return this.broadcast(RESULT, resultArr);
+  }
+
+  private async calculateChips() {
+    for (const player of this.state.players.values()) {
+      if (player.role === 'Player') await updateChip(player.id, player.chips);
+    }
+  }
+
+  private resetGame() {
+    // global variables
+    this.banker5Cards = [];
+    this.player2Cards = [];
+    this.allinPot = [];
+    // room state
+    this.state.onReady = false;
+    this.state.round = ERound.PREFLOP;
+    this.state.potSize = 0;
+    this.state.bankerCards = [];
+    // player state
+    this.state.players.forEach((player: Player, sessionId: string) => {
+      const newPlayer = {
+        id: player.id,
+        username: player.username,
+        isHost: player.isHost,
+        chips: player.chips,
+        bet: 0,
+        turn: player.turn,
+        seat: player.seat,
+        role: player.role,
+      };
+      this.state.players.set(sessionId, new Player(newPlayer));
+    });
+  }
+
+  private async addBot() {
+    const bot = new BotClient(
+      process.env.NODE_ENV === 'production' ? `${process.env.WS_SERVER}` : 'ws://localhost:9000',
+    );
+    console.log(this.roomId);
+    await bot.joinRoom(this.roomId);
+    console.log(bot.sessionId);
   }
 }

@@ -24,15 +24,14 @@ export const shuffle = (numberOfShuffle: number) => {
 
 export const deal = (numberOfPlayer: number) => {
   const deck = shuffle(100);
-  // console.log("bộ bài full sau khi sốc lọ 100 lần", deck);
   const remainingDeck: Array<string> = deck.splice(numberOfPlayer * 2);
   const banker5Cards: Array<string> = remainingDeck.slice(0, 5);
 
   let onHandCards: Array<Array<string>> = [];
   for (let i = 0; i < numberOfPlayer; i++) {
-    // console.log(`thằng thứ ${i + 1}`, chiabai(deck, i, numberOfPlayer + i));
     onHandCards.push([...dealHelper(deck, i, numberOfPlayer + i)]);
   }
+
   return {
     onHandCards,
     banker5Cards,

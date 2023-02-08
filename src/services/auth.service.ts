@@ -1,30 +1,28 @@
-import { Response } from "express";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import { User } from "../models/user.model";
-import { ObjectId } from "mongoose";
-import { handleError } from "../utils/handleError";
+import { Response } from 'express';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import { User } from '../models/user.model';
+import { ObjectId } from 'mongoose';
+import { handleError } from '../utils/handleError';
 
 export const signupService = async (data: any, res: Response) => {
   try {
     const { type, payload } = data;
-    if (type !== "normal")
-      throw new Error("Credential is not available for Account Sign Up!");
+    if (type !== 'normal') throw new Error('Credential is not available for Account Sign Up!');
     const { username, password } = payload;
     const existedUser = await User.findOne({ username, loginType: type });
-    if (existedUser) throw new Error("User name is existing!");
+    if (existedUser) throw new Error('User name is existing!');
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await new User({
       username,
       password: hashedPassword,
-      status: "active",
+      status: 'active',
       loginType: type,
     }).save();
 
     return res.status(201).json({
       success: true,
-      msg: "Successfully Created new user!",
-      data: newUser,
+      msg: 'Successfully Created new user!',
     });
   } catch (error: any) {
     console.error(error);
@@ -39,33 +37,21 @@ export const signinService = async (data: any, res: Response) => {
   try {
     switch (type) {
       // username + pass login
-      case "normal":
+      case 'normal':
         const { username, password } = payload;
         const existedUser = await User.findOne({ username, loginType: type });
-        if (!existedUser) throw new Error("User is not existing!");
-        const isMatchPassword = await bcrypt.compare(
-          password,
-          existedUser.password
-        );
-        if (!isMatchPassword) throw new Error("Password is not correct");
-        // if (existedUser.isLogged)
-        //   throw new Error(
-        //     "User is logged in an other device. Please log out it first if you want to keep logging in this device!"
-        //   );
+        if (!existedUser) throw new Error('User is not existing!');
+        const isMatchPassword = await bcrypt.compare(password, existedUser.password);
+        if (!isMatchPassword) throw new Error('Password is not correct');
 
-        // await User.findOneAndUpdate(
-        //   { _id: existedUser._id },
-        //   { isLogged: true },
-        //   { new: true }
-        // );
         accessToken = jwt.sign(
           { id: existedUser.id, username: existedUser.username },
           `${process.env.JWT_SECRET}`,
-          { expiresIn: "1d" }
+          { expiresIn: '1d' },
         );
         break;
       // fb login
-      case "facebook":
+      case 'facebook':
         const { fbEmail, fbName, fbAvatar } = payload;
         const fbUser = await User.findOne({ email: fbEmail, loginType: type });
         if (fbUser) {
@@ -74,28 +60,18 @@ export const signinService = async (data: any, res: Response) => {
           user = await new User({
             email: fbEmail,
             name: fbName,
-            status: "active",
+            status: 'active',
             loginType: type,
             avatar: fbAvatar,
           }).save();
         }
-        // if (user.isLogged)
-        //   throw new Error(
-        //     "Facebook User is logged in an other device. Please log out it first if you want to keep logging in this device!"
-        //   );
-        // await User.findOneAndUpdate(
-        //   { _id: user._id },
-        //   { isLogged: true },
-        //   { new: true }
-        // );
-        accessToken = jwt.sign(
-          { id: user.id, email: user.email },
-          `${process.env.JWT_SECRET}`,
-          { expiresIn: "1d" }
-        );
+
+        accessToken = jwt.sign({ id: user.id, email: user.email }, `${process.env.JWT_SECRET}`, {
+          expiresIn: '1d',
+        });
         break;
       // gg login
-      case "google":
+      case 'google':
         const { ggEmail, ggName, ggAvatar } = payload;
         const ggUser = await User.findOne({ email: ggEmail, loginType: type });
         if (ggUser) {
@@ -104,7 +80,7 @@ export const signinService = async (data: any, res: Response) => {
           user = await new User({
             email: ggEmail,
             name: ggName,
-            status: "active",
+            status: 'active',
             loginType: type,
             avatar: ggAvatar,
           }).save();
@@ -118,18 +94,16 @@ export const signinService = async (data: any, res: Response) => {
         //   { isLogged: true },
         //   { new: true }
         // );
-        accessToken = jwt.sign(
-          { id: user.id, email: user.email },
-          `${process.env.JWT_SECRET}`,
-          { expiresIn: "1d" }
-        );
+        accessToken = jwt.sign({ id: user.id, email: user.email }, `${process.env.JWT_SECRET}`, {
+          expiresIn: '1d',
+        });
         break;
       default:
         break;
     }
     return res.status(200).json({
       success: true,
-      msg: "Login successfully!",
+      msg: 'Login successfully!',
       accessToken,
     });
   } catch (error: any) {
