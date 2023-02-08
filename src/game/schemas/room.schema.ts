@@ -2,6 +2,7 @@ import { MapSchema, Schema, type } from '@colyseus/schema';
 import { Player } from './player.schema';
 
 export enum ERound {
+  WELCOME = 'WELCOME',
   PREFLOP = 'PREFLOP',
   FLOP = 'FLOP',
   TURN = 'TURN',
@@ -17,7 +18,7 @@ export class RoomState extends Schema {
   players = new MapSchema<Player>();
 
   @type('string')
-  round: ERound = ERound.PREFLOP;
+  round: ERound = ERound.WELCOME;
 
   @type(['string'])
   bankerCards: string[] = [];

@@ -148,11 +148,12 @@ export default class GameRoom extends Room<RoomState> {
       const { onHandCards, banker5Cards } = deal(this.state.players.size);
       this.banker5Cards = banker5Cards; // cache 5 cards of banker first
       this.player2Cards = onHandCards; // chia bai
+      this.remainingTurn = this.state.players.size;
 
       console.log({ banker: this.banker5Cards, player: this.player2Cards });
 
       this.state.onReady = true; // change room state -> TRUE
-      this.remainingTurn = this.state.players.size;
+      this.state.round = ERound.PREFLOP;
       this.state.remainingPlayer = this.state.players.size;
       this.state.potSize = this.state.players.size * this.initBetChip;
 
@@ -369,7 +370,7 @@ export default class GameRoom extends Room<RoomState> {
     this.allinPot = [];
     // room state
     this.state.onReady = false;
-    this.state.round = ERound.PREFLOP;
+    this.state.round = ERound.WELCOME;
     this.state.potSize = 0;
     this.state.bankerCards = [];
     // player state
