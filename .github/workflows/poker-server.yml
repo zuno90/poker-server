@@ -24,6 +24,7 @@ jobs:
             docker run -d --restart unless-stopped --name poker-server -p 9000:9000 \
                 -e NODE_ENV=production \
                 -e HOST=172.31.31.206 \
+                -e WS_SERVER=${{ secrets.WS_SERVER }} \
                 -e REDIS_URL=${{ secrets.REDIS_URL }} \
                 -e MONGO_URI=${{ secrets.MONGO_URI }} \
                 -e MONGO_HOST=${{ secrets.MONGO_HOST }} \

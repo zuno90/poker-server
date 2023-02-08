@@ -174,7 +174,7 @@ export default class GameRoom extends Room<RoomState> {
       // random đi trước
       return this.broadcast(
         FIRST_TURN,
-        playerSeatArr[Math.floor(Math.random() * playerSeatArr.length)],
+        Math.round((Math.random() * 10) % (this.state.players.size - 1)),
       );
     });
   }
