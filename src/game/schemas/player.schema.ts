@@ -23,6 +23,9 @@ export class Player extends Schema {
   @type('number')
   chips: number;
 
+  @type('string')
+  action: string;
+
   @type('number')
   bet: number;
 

@@ -192,6 +192,7 @@ export default class GameRoom extends Room<RoomState> {
       const player = this.checkBeforeAction(client);
       // check chips
       if (chips < this.betChip / 2) return;
+      player.action = RAISE;
       player.bet += chips;
       player.chips -= chips;
 
@@ -204,6 +205,7 @@ export default class GameRoom extends Room<RoomState> {
     // CALL
     this.onMessage(CALL, (client: Client) => {
       const player = this.checkBeforeAction(client);
+      player.action = CALL;
       player.bet += this.betChip;
       player.chips -= this.betChip;
 
@@ -215,6 +217,7 @@ export default class GameRoom extends Room<RoomState> {
     // CHECK
     this.onMessage(CHECK, (client: Client) => {
       const player = this.checkBeforeAction(client);
+      player.action = CHECK;
       this.remainingTurn--;
       console.log('check:::::', this.remainingTurn);
       if (this.remainingTurn === 0) return this.handleEndEachRound(this.state.round);
@@ -223,6 +226,7 @@ export default class GameRoom extends Room<RoomState> {
     this.onMessage(ALLIN, async (client: Client) => {
       const player = this.checkBeforeAction(client);
       const allinAmount = player.chips;
+      player.action = ALLIN;
       player.bet += allinAmount;
       player.chips = 0; // trừ sạch tiền
       this.betChip = allinAmount;
@@ -248,6 +252,7 @@ export default class GameRoom extends Room<RoomState> {
     // FOLD
     this.onMessage(FOLD, (client: Client, _) => {
       const player = this.checkBeforeAction(client);
+      player.action = FOLD;
       player.isFold = true;
       if (this.state.players.size === 2) {
         // check ket qua khi chi co 2 players
@@ -270,7 +275,7 @@ export default class GameRoom extends Room<RoomState> {
   private send2Cards() {
     this.clients.forEach((client: Client, _) => {
       const player = <Player>this.state.players.get(client.sessionId);
-      client.send(DEAL, { c: this.player2Cards[player.turn] });
+      client.send(DEAL, this.player2Cards[player.turn]);
     });
   }
 
