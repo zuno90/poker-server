@@ -261,8 +261,10 @@ export default class GameRoom extends Room<RoomState> {
         this.state.players.forEach((player: Player, _) => {
           if (!player.isFold) {
             player.chips += this.state.potSize;
+            return this.broadcast(RESULT, player.turn);
           }
         });
+        console.log('fold:::::chay xuong nay');
         return;
       }
       this.state.remainingPlayer--;
@@ -324,7 +326,7 @@ export default class GameRoom extends Room<RoomState> {
       const rankInfo = checkPlayerRank([
         {
           sessionId: client.sessionId,
-          combinedCards: [...this.banker5Cards].concat([...this.player2Cards[player.turn]]),
+          combinedCards: [...this.state.bankerCards].concat([...this.player2Cards[player.turn]]),
         },
       ]);
       if (!player.isFold) return client.send(RANK, { r: rankInfo[0].rank, d: rankInfo[0].name });

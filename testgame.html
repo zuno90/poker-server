@@ -14,7 +14,7 @@
         const client = new Colyseus.Client('ws://localhost:9000');
 
         const room = await client.joinOrCreate('noob', {
-          jwt: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYzZGY3OTcyMTY5NjhjMzMzODRiNjVkZiIsInVzZXJuYW1lIjoienVub2hhbiIsImlhdCI6MTY3NTc4Nzc1NCwiZXhwIjoxNjc1ODc0MTU0fQ.u-nS3QZ_KWaEvfwpJMcNMOIo1XgBdCgl3caVRQYqnYU',
+          jwt: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYzZGY3OTcyMTY5NjhjMzMzODRiNjVkZiIsInVzZXJuYW1lIjoienVub2hhbiIsImlhdCI6MTY3NTkxMjU0OCwiZXhwIjoxNjc1OTk4OTQ4fQ.SCra-JULMYXEreBNc4j4WdC3cSs8n2tZOCMzJg837JI',
         });
 
         room.onMessage('DEAL', data => {
