@@ -245,11 +245,10 @@ export default class GameRoom extends Room<RoomState> {
         // check ket qua khi thang cuoi cung all in
         console.log('tính tiền luôn, thằng cuối nó allin rồi');
         this.pickWinner();
-        setTimeout(async () => {
+        return setTimeout(async () => {
           await this.calculateChips();
           this.resetGame();
         }, 10000);
-        return;
       }
     });
     // FOLD
@@ -257,20 +256,9 @@ export default class GameRoom extends Room<RoomState> {
       const player = this.checkBeforeAction(client);
       player.action = FOLD;
       player.isFold = true;
-      if (this.state.players.size === 2) {
-        // check ket qua khi chi co 2 players
-        console.log('tính tiền luôn, còn có thằng kia ah');
-        this.state.players.forEach((player: Player, _) => {
-          if (!player.isFold) {
-            player.chips += this.state.potSize;
-            return setTimeout(async () => {
-              console.log('fold:::::chay xuong nay');
-              await this.calculateChips();
-              this.broadcast(RESULT, player.turn);
-            }, 3000);
-          }
-        });
-      }
+
+      if (this.checkFoldIfOnly2()) return;
+
       this.state.remainingPlayer--;
       this.remainingTurn--;
       console.log('fold:::::', this.remainingTurn);
@@ -405,6 +393,23 @@ export default class GameRoom extends Room<RoomState> {
       };
       this.state.players.set(sessionId, new Player(newPlayer));
     });
+  }
+
+  private checkFoldIfOnly2() {
+    if (this.state.players.size > 2) return false;
+    // check ket qua khi chi co 2 players
+    console.log('tính tiền luôn, còn có thằng kia ah');
+    this.state.players.forEach((player: Player, _) => {
+      if (!player.isFold) {
+        player.chips += this.state.potSize;
+        return setTimeout(async () => {
+          console.log('fold:::::chay xuong nay');
+          await this.calculateChips();
+          this.broadcast(RESULT, player.turn);
+        }, 3000);
+      }
+    });
+    return true;
   }
 
   private async addBot() {
