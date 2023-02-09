@@ -224,7 +224,7 @@ export default class GameRoom extends Room<RoomState> {
       if (this.remainingTurn === 0) return this.handleEndEachRound(this.state.round);
     });
     // ALLIN
-    this.onMessage(ALLIN, async (client: Client) => {
+    this.onMessage(ALLIN, (client: Client) => {
       const player = this.checkBeforeAction(client);
       const allinAmount = player.chips;
       player.action = ALLIN;
@@ -245,8 +245,10 @@ export default class GameRoom extends Room<RoomState> {
         // check ket qua khi thang cuoi cung all in
         console.log('tính tiền luôn, thằng cuối nó allin rồi');
         this.pickWinner();
-        await this.calculateChips();
-        this.resetGame();
+        setTimeout(async () => {
+          await this.calculateChips();
+          this.resetGame();
+        }, 10000);
         return;
       }
     });
@@ -261,11 +263,13 @@ export default class GameRoom extends Room<RoomState> {
         this.state.players.forEach((player: Player, _) => {
           if (!player.isFold) {
             player.chips += this.state.potSize;
-            return this.broadcast(RESULT, player.turn);
+            return setTimeout(async () => {
+              console.log('fold:::::chay xuong nay');
+              await this.calculateChips();
+              this.broadcast(RESULT, player.turn);
+            }, 3000);
           }
         });
-        console.log('fold:::::chay xuong nay');
-        return;
       }
       this.state.remainingPlayer--;
       this.remainingTurn--;
@@ -301,13 +305,15 @@ export default class GameRoom extends Room<RoomState> {
     return player;
   }
 
-  private async handleEndEachRound(round: ERound) {
+  private handleEndEachRound(round: ERound) {
     // check winner first (river -> showdown)
     if (round === ERound.RIVER) {
       this.state.round = ERound.SHOWDOWN;
       this.pickWinner();
-      await this.calculateChips();
-      this.resetGame();
+      setTimeout(async () => {
+        await this.calculateChips();
+        this.resetGame();
+      }, 10000);
       return;
     }
     // preflop -> flop
