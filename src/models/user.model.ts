@@ -1,4 +1,4 @@
-import { model, Schema } from "mongoose";
+import { model, Schema } from 'mongoose';
 
 const UserModel: Schema = new Schema(
   {
@@ -6,18 +6,18 @@ const UserModel: Schema = new Schema(
     password: { type: String, trim: true, default: null },
     email: { type: String, trim: true, default: null },
     name: { type: String, default: null },
-    status: { type: String, required: true, enum: ["active", "inactive"] },
+    status: { type: String, required: true, enum: ['active', 'inactive'] },
     chips: { type: Number, default: 10000, index: true },
     loginType: {
       type: String,
       required: true,
-      enum: ["normal", "facebook", "google"],
+      enum: ['normal', 'facebook', 'google'],
       index: true,
     },
     isLogged: { type: Boolean, default: false },
-    avatar: { type: String, default: "user.png" },
+    avatar: { type: String, default: 'user.png' },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-export const User = model("user", UserModel);
+export const User = model('user', UserModel);

@@ -25,19 +25,14 @@ type TRoomChat = {
   message: string;
 };
 
-type TAllinPlayer = {
-  sessionId: string;
-  allinValue: number;
-};
-
 export default class GameRoom extends Room<RoomState> {
   readonly maxClients: number = 5;
   private readonly initBetChip: number = 100;
   private betChip: number = 0;
+  private allinValue: number = 0;
   private banker5Cards: Array<string> = [];
   private player2Cards: Array<string[]> = [];
   private remainingTurn: number;
-  private allinPot: TAllinPlayer[] = [];
 
   async onAuth(_: Client, options: TJwtAuth, req: Request) {
     // check auth
@@ -226,16 +221,13 @@ export default class GameRoom extends Room<RoomState> {
     // ALLIN
     this.onMessage(ALLIN, (client: Client) => {
       const player = this.checkBeforeAction(client);
-      const allinAmount = player.chips;
+      const allinAmount = player.chips; // chip cua player
       player.action = ALLIN;
       player.bet += allinAmount;
       player.chips = 0; // trừ sạch tiền
-      this.betChip = allinAmount;
 
-      // đưa tiền vào pot size
-      this.allinPot.push({ sessionId: client.sessionId, allinValue: allinAmount });
-      // check so luong all in
-      console.log(this.allinPot);
+      this.state.potSize += this.betChip + allinAmount;
+      this.betChip += allinAmount;
 
       this.remainingTurn = this.state.remainingPlayer - 1;
       this.state.remainingPlayer--;
@@ -257,9 +249,12 @@ export default class GameRoom extends Room<RoomState> {
       player.action = FOLD;
       player.isFold = true;
 
-      if (this.checkFoldIfOnly2()) return;
-
       this.state.remainingPlayer--;
+      if (this.state.remainingPlayer === 1) {
+        this.isFoldAll();
+        return;
+      }
+
       this.remainingTurn--;
       console.log('fold:::::', this.remainingTurn);
       if (this.remainingTurn === 0) return this.handleEndEachRound(this.state.round);
@@ -298,11 +293,10 @@ export default class GameRoom extends Room<RoomState> {
     if (round === ERound.RIVER) {
       this.state.round = ERound.SHOWDOWN;
       this.pickWinner();
-      setTimeout(async () => {
+      return setTimeout(async () => {
         await this.calculateChips();
         this.resetGame();
       }, 10000);
-      return;
     }
     // preflop -> flop
     if (round === ERound.PREFLOP) {
@@ -319,7 +313,7 @@ export default class GameRoom extends Room<RoomState> {
       this.state.round = ERound.RIVER;
       this.state.bankerCards = [...this.banker5Cards];
     }
-
+    this.betChip = 0;
     this.remainingTurn = this.state.remainingPlayer;
     return this.sendRankEachRound();
   }
@@ -349,14 +343,19 @@ export default class GameRoom extends Room<RoomState> {
           },
         ]);
         winCardsArr.push(rankInfo[0]);
-        resultArr.push({ s: player.seat, d: rankInfo[0].name, i: rankInfo[0].sessionId });
+        resultArr.push({
+          t: player.turn,
+          d: rankInfo[0].name,
+          c: this.player2Cards[player.turn],
+          i: rankInfo[0].sessionId,
+        });
       }
     });
 
     // handle winner tại đây và show kết quả
     const winHand = Hand.winners(winCardsArr)[0];
     for (const result of resultArr) {
-      if (winHand.sessionId === result.i) result.is_win = true;
+      if (winHand.sessionId === result.i) result.w = true;
       delete result.i;
     }
     // bắn kết quả về cho all clients
@@ -373,7 +372,7 @@ export default class GameRoom extends Room<RoomState> {
     // global variables
     this.banker5Cards = [];
     this.player2Cards = [];
-    this.allinPot = [];
+    this.allinValue = 0;
     // room state
     this.state.onReady = false;
     this.state.round = ERound.WELCOME;
@@ -395,10 +394,8 @@ export default class GameRoom extends Room<RoomState> {
     });
   }
 
-  private checkFoldIfOnly2() {
-    if (this.state.players.size > 2) return false;
-    // check ket qua khi chi co 2 players
-    console.log('tính tiền luôn, còn có thằng kia ah');
+  private isFoldAll() {
+    console.log('tính tiền luôn, còn có thằng kia ah!');
     this.state.players.forEach((player: Player, _) => {
       if (!player.isFold) {
         player.chips += this.state.potSize;
@@ -409,7 +406,6 @@ export default class GameRoom extends Room<RoomState> {
         }, 3000);
       }
     });
-    return true;
   }
 
   private async addBot() {
