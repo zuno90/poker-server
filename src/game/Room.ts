@@ -278,7 +278,17 @@ export default class GameRoom extends Room<RoomState> {
   private send2Cards() {
     this.clients.forEach((client: Client, _) => {
       const player = <Player>this.state.players.get(client.sessionId);
-      client.send(DEAL, this.player2Cards[player.turn]);
+      const rankInfo = checkPlayerRank([
+        {
+          sessionId: client.sessionId,
+          combinedCards: [...this.state.bankerCards].concat([...this.player2Cards[player.turn]]),
+        },
+      ]);
+      client.send(DEAL, {
+        r: rankInfo[0].rank,
+        d: rankInfo[0].name,
+        c: this.player2Cards[player.turn],
+      });
     });
   }
 
