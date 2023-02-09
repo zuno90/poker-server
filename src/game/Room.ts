@@ -133,46 +133,7 @@ export default class GameRoom extends Room<RoomState> {
   // HANDLE ALL ACTIONS
   private handleRoomState() {
     // START GAME
-    this.onMessage(START_GAME, async (client: Client, _) => {
-      // check game is ready or not
-      if (this.state.onReady) return;
-      // check accept only host
-      const host = <Player>this.state.players.get(client.sessionId);
-      if (!host.isHost) return; // accept only host
-
-      const { onHandCards, banker5Cards } = deal(this.state.players.size);
-      this.banker5Cards = banker5Cards; // cache 5 cards of banker first
-      this.player2Cards = onHandCards; // chia bai
-      this.remainingTurn = this.state.players.size;
-
-      console.log({ banker: this.banker5Cards, player: this.player2Cards });
-
-      this.state.onReady = true; // change room state -> TRUE
-      this.state.round = ERound.PREFLOP;
-      this.state.remainingPlayer = this.state.players.size;
-      this.state.potSize = this.state.players.size * this.initBetChip;
-
-      // initialize state of player
-
-      let playerSeatArr: number[] = [];
-      this.state.players.forEach((player: Player, _) => {
-        player.statement = EStatement.Playing;
-        player.bet = this.initBetChip;
-        player.chips -= this.initBetChip;
-        playerSeatArr.push(player.seat);
-      });
-      // gán turn vào
-      this.state.players.forEach(
-        (player: Player, _) => (player.turn = arrangeTurn(player.seat, playerSeatArr) as number),
-      );
-      // send to player 2 cards
-      this.send2Cards();
-      // random đi trước
-      return this.broadcast(
-        FIRST_TURN,
-        Math.round((Math.random() * 10) % (this.state.players.size - 1)),
-      );
-    });
+    this.onMessage(START_GAME, async (client: Client, _) => this.startGame(client));
   }
 
   // handle chat
@@ -199,13 +160,13 @@ export default class GameRoom extends Room<RoomState> {
       console.log('raise:::::', this.remainingTurn);
     });
     // CALL
-    this.onMessage(CALL, (client: Client) => {
+    this.onMessage(CALL, (client: Client, { chips }: { chips: number }) => {
       const player = this.checkBeforeAction(client);
       player.action = CALL;
-      player.bet += this.betChip;
+      player.bet += chips;
       player.chips -= this.betChip;
 
-      this.state.potSize += this.betChip;
+      this.state.potSize += chips;
       this.remainingTurn--;
       console.log('call:::::', this.remainingTurn);
       if (this.remainingTurn === 0) return this.handleEndEachRound(this.state.round);
@@ -368,6 +329,47 @@ export default class GameRoom extends Room<RoomState> {
     for (const player of this.state.players.values()) {
       if (player.role === 'Player') await updateChip(player.id, player.chips);
     }
+  }
+
+  private startGame(client: Client) {
+    // check game is ready or not
+    if (this.state.onReady) return;
+    // check accept only host
+    const host = <Player>this.state.players.get(client.sessionId);
+    if (!host.isHost) return; // accept only host
+
+    const { onHandCards, banker5Cards } = deal(this.state.players.size);
+    this.banker5Cards = banker5Cards; // cache 5 cards of banker first
+    this.player2Cards = onHandCards; // chia bai
+    this.remainingTurn = this.state.players.size;
+
+    console.log({ banker: this.banker5Cards, player: this.player2Cards });
+
+    this.state.onReady = true; // change room state -> TRUE
+    this.state.round = ERound.PREFLOP;
+    this.state.remainingPlayer = this.state.players.size;
+    this.state.potSize = this.state.players.size * this.initBetChip;
+
+    // initialize state of player
+
+    let playerSeatArr: number[] = [];
+    this.state.players.forEach((player: Player, _) => {
+      player.statement = EStatement.Playing;
+      player.bet = this.initBetChip;
+      player.chips -= this.initBetChip;
+      playerSeatArr.push(player.seat);
+    });
+    // gán turn vào
+    this.state.players.forEach(
+      (player: Player, _) => (player.turn = arrangeTurn(player.seat, playerSeatArr) as number),
+    );
+    // send to player 2 cards
+    this.send2Cards();
+    // random đi trước
+    return this.broadcast(
+      FIRST_TURN,
+      Math.round((Math.random() * 10) % (this.state.players.size - 1)),
+    );
   }
 
   private resetGame() {
