@@ -345,8 +345,8 @@ export default class GameRoom extends Room<RoomState> {
         winCardsArr.push(rankInfo[0]);
         resultArr.push({
           t: player.turn,
-          d: rankInfo[0].name,
           c: this.player2Cards[player.turn],
+          d: rankInfo[0].name,
           i: rankInfo[0].sessionId,
         });
       }
@@ -355,7 +355,7 @@ export default class GameRoom extends Room<RoomState> {
     // handle winner tại đây và show kết quả
     const winHand = Hand.winners(winCardsArr)[0];
     const winPlayer = <Player>this.state.players.get(winHand.sessionId);
-    winPlayer.chips = this.state.potSize; // update lai chip cho winner
+    winPlayer.chips += this.state.potSize; // update lai chip cho winner
     for (const result of resultArr) {
       if (winHand.sessionId === result.i) result.w = true;
       delete result.i;
