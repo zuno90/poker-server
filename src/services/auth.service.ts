@@ -47,7 +47,7 @@ export const signinService = async (data: any, res: Response) => {
         accessToken = jwt.sign(
           { id: existedUser.id, username: existedUser.username },
           `${process.env.JWT_SECRET}`,
-          { expiresIn: '1d' },
+          { expiresIn: '30d' },
         );
         break;
       // fb login
