@@ -249,7 +249,7 @@ export default class GameRoom extends Room<RoomState> {
     // check winner first (river -> showdown)
     if (round === ERound.RIVER) {
       this.state.round = ERound.SHOWDOWN;
-      this.pickWinner();
+      await this.pickWinner();
       await this.calculateChips();
       return setTimeout(() => this.resetGame(), 10000);
     }
@@ -286,7 +286,7 @@ export default class GameRoom extends Room<RoomState> {
     });
   }
 
-  private pickWinner() {
+  private async pickWinner() {
     let winCardsArr: any[] = [];
     let resultArr: any[] = [];
     this.state.players.forEach((player: Player, sessionId: string) => {
@@ -397,11 +397,9 @@ export default class GameRoom extends Room<RoomState> {
     console.log('tính tiền luôn, thằng cuối nó allin rồi');
     this.state.round = ERound.SHOWDOWN;
     this.state.bankerCards = this.banker5Cards;
+    await this.pickWinner();
     await this.calculateChips();
-    this.pickWinner();
-    return setTimeout(() => {
-      this.resetGame();
-    }, 10000);
+    return setTimeout(() => this.resetGame(), 10000);
   }
 
   private isFoldAll() {
@@ -412,9 +410,7 @@ export default class GameRoom extends Room<RoomState> {
         player.chips += this.state.potSize;
         await this.calculateChips();
         this.broadcast(RESULT, [{ t: player.turn, w: true }]);
-        return setTimeout(() => {
-          this.resetGame();
-        }, 5000);
+        return setTimeout(() => this.resetGame(), 5000);
       }
     });
   }
