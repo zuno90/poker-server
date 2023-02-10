@@ -411,9 +411,9 @@ export default class GameRoom extends Room<RoomState> {
       if (!player.isFold) {
         player.chips += this.state.potSize;
         await this.calculateChips();
-        this.resetGame();
+        this.broadcast(RESULT, [{ t: player.turn, w: true }]);
         return setTimeout(() => {
-          this.broadcast(RESULT, [{ t: player.turn, w: true }]);
+          this.resetGame();
         }, 5000);
       }
     });
