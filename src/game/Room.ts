@@ -182,27 +182,23 @@ export default class GameRoom extends Room<RoomState> {
     // ALLIN
     this.onMessage(ALLIN, (client: Client) => {
       const player = this.checkBeforeAction(client);
-      const allinAmount = player.chips; // chip cua player
+      const allinAmount = player.chips; // chip cua player t
       player.action = ALLIN;
       player.bet += allinAmount;
       player.chips = 0; // trừ sạch tiền
 
-      this.state.potSize += this.betChip + allinAmount;
+      this.state.potSize += allinAmount;
+      // di dau tien / trc no co 1 check -> this.betChip = 0
+
+      // di turn bat ky -> this.betChip = x > 0
+      // di cuoi cung -> this.betChip = ???
       this.betChip += allinAmount;
 
       this.remainingTurn = this.state.remainingPlayer - 1;
       this.state.remainingPlayer--;
 
       console.log('allin:::::', this.remainingTurn);
-      if (this.remainingTurn === 0) {
-        // check ket qua khi thang cuoi cung all in
-        console.log('tính tiền luôn, thằng cuối nó allin rồi');
-        this.pickWinner();
-        return setTimeout(async () => {
-          await this.calculateChips();
-          this.resetGame();
-        }, 10000);
-      }
+      if (this.remainingTurn === 0) return this.isLastAllin();
     });
     // FOLD
     this.onMessage(FOLD, (client: Client, _) => {
@@ -249,15 +245,13 @@ export default class GameRoom extends Room<RoomState> {
     return player;
   }
 
-  private handleEndEachRound(round: ERound) {
+  private async handleEndEachRound(round: ERound) {
     // check winner first (river -> showdown)
     if (round === ERound.RIVER) {
       this.state.round = ERound.SHOWDOWN;
       this.pickWinner();
-      return setTimeout(async () => {
-        await this.calculateChips();
-        this.resetGame();
-      }, 10000);
+      await this.calculateChips();
+      return setTimeout(() => this.resetGame(), 10000);
     }
     // preflop -> flop
     if (round === ERound.PREFLOP) {
@@ -398,18 +392,29 @@ export default class GameRoom extends Room<RoomState> {
     });
   }
 
+  private async isLastAllin() {
+    // check ket qua khi thang cuoi cung all in
+    console.log('tính tiền luôn, thằng cuối nó allin rồi');
+    this.state.round = ERound.SHOWDOWN;
+    this.state.bankerCards = this.banker5Cards;
+    await this.calculateChips();
+    this.pickWinner();
+    return setTimeout(() => {
+      this.resetGame();
+    }, 10000);
+  }
+
   private isFoldAll() {
     console.log('tính tiền luôn, còn có thằng kia ah!');
     this.state.round = ERound.SHOWDOWN;
-    this.state.players.forEach((player: Player, _) => {
+    this.state.players.forEach(async (player: Player, _) => {
       if (!player.isFold) {
         player.chips += this.state.potSize;
-        return setTimeout(async () => {
-          console.log('fold:::::chay xuong nay');
-          await this.calculateChips();
-          this.resetGame();
+        await this.calculateChips();
+        this.resetGame();
+        return setTimeout(() => {
           this.broadcast(RESULT, [{ t: player.turn, w: true }]);
-        }, 3000);
+        }, 5000);
       }
     });
   }
