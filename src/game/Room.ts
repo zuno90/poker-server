@@ -400,6 +400,7 @@ export default class GameRoom extends Room<RoomState> {
 
   private isFoldAll() {
     console.log('tính tiền luôn, còn có thằng kia ah!');
+    this.state.round = ERound.SHOWDOWN;
     this.state.players.forEach((player: Player, _) => {
       if (!player.isFold) {
         player.chips += this.state.potSize;
