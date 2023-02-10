@@ -406,7 +406,7 @@ export default class GameRoom extends Room<RoomState> {
         return setTimeout(async () => {
           console.log('fold:::::chay xuong nay');
           await this.calculateChips();
-          this.broadcast(RESULT, player.turn);
+          this.broadcast(RESULT, [{ t: player.turn, w: true }]);
         }, 3000);
       }
     });
