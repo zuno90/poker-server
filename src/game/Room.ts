@@ -381,13 +381,10 @@ export default class GameRoom extends Room<RoomState> {
     this.state.players.forEach(
       (player: Player, _) => (player.turn = arrangeTurn(player.seat, playerSeatArr) as number),
     );
-    // send to player 2 cards
-    this.send2Cards();
     // random đi trước
-    return this.broadcast(
-      FIRST_TURN,
-      Math.round((Math.random() * 10) % (this.state.players.size - 1)),
-    );
+    this.state.currentTurn = Math.round((Math.random() * 10) % (this.state.players.size - 1));
+    // send to player 2 cards
+    return this.send2Cards();
   }
 
   private resetGame() {
