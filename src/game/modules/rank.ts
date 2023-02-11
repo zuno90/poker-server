@@ -1,4 +1,4 @@
-const CARDORDER = "2345678910JQKA";
+const CARDORDER = '2345678910JQKA';
 const scores = {
   sf: 9,
   foak: 8,
@@ -15,7 +15,7 @@ export const bestHands = (hands: any) => {
   let allHands = [];
   let winners: any = [];
   hands.forEach((h: any, i: any) => {
-    let hand = h.split(" ").reduce((t: any, c: any) => {
+    let hand = h.split(' ').reduce((t: any, c: any) => {
       let suit = c.slice(-1);
       let value = c.slice(0, c.length - 1);
       t.push({ value, suit });
@@ -27,23 +27,14 @@ export const bestHands = (hands: any) => {
     hand.highs = hand
       .map((c: any) => c.value)
       .sort((a: any, b: any) => CARDORDER.indexOf(b) - CARDORDER.indexOf(a));
-    hand.isStraight =
-      CARDORDER.indexOf(hand.highs.slice().reverse().join("")) > -1;
-    if (!hand.isStraight && hand.highs.indexOf("A") > -1) {
-      hand.isStraight =
-        CARDORDER.indexOf(hand.highs.slice(1).reverse().join("")) === 0;
-      if (hand.isStraight)
-        hand.highs = [...hand.highs.slice(1), ...hand.highs.shift()];
+    hand.isStraight = CARDORDER.indexOf(hand.highs.slice().reverse().join('')) > -1;
+    if (!hand.isStraight && hand.highs.indexOf('A') > -1) {
+      hand.isStraight = CARDORDER.indexOf(hand.highs.slice(1).reverse().join('')) === 0;
+      if (hand.isStraight) hand.highs = [...hand.highs.slice(1), ...hand.highs.shift()];
     }
-    let combos = hand.highs.join("").match(/(.)\1+/g) || [];
-    hand.quad = combos.reduce(
-      (t: any, c: any) => (c.length === 4 ? (t = c[0]) : t),
-      0
-    ); // Store card value of quad
-    hand.trio = combos.reduce(
-      (t: any, c: any) => (c.length === 3 ? (t = c[0]) : t),
-      0
-    ); // Store card value of trio
+    let combos = hand.highs.join('').match(/(.)\1+/g) || [];
+    hand.quad = combos.reduce((t: any, c: any) => (c.length === 4 ? (t = c[0]) : t), 0); // Store card value of quad
+    hand.trio = combos.reduce((t: any, c: any) => (c.length === 3 ? (t = c[0]) : t), 0); // Store card value of trio
     hand.pairs = combos
       .reduce((t: any, c: any) => {
         if (c.length === 2) t.push(c[0]);
@@ -53,16 +44,12 @@ export const bestHands = (hands: any) => {
     if (hand.quad) {
       hand.highs = [
         ...new Array(4).fill(hand.quad),
-        ...hand.highs
-          .filter((a: any) => a != hand.quad)
-          .sort((a: any, b: any) => b - a),
+        ...hand.highs.filter((a: any) => a != hand.quad).sort((a: any, b: any) => b - a),
       ];
     } else if (hand.trio) {
       hand.highs = [
         ...new Array(3).fill(hand.trio),
-        ...hand.highs
-          .filter((a: any) => a != hand.trio)
-          .sort((a: any, b: any) => b - a),
+        ...hand.highs.filter((a: any) => a != hand.trio).sort((a: any, b: any) => b - a),
       ];
     }
 
