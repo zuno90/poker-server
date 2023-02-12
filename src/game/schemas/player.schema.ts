@@ -27,7 +27,10 @@ export class Player extends Schema {
   action: string;
 
   @type('number')
-  bet: number;
+  betEachAction: number = 0;
+
+  @type('number')
+  accumulatedBet: number = 0;
 
   @type('number')
   turn: number;

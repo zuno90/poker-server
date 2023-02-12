@@ -30,5 +30,5 @@ export class RoomState extends Schema {
   potSize: number = 0;
 
   @type('number')
-  remainingPlayer: number;
+  remainingPlayer: number = 0;
 }

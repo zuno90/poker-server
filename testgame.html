@@ -14,7 +14,7 @@
         const client = new Colyseus.Client('ws://localhost:9000');
 
         const room = await client.joinOrCreate('noob', {
-          jwt: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYzZGY3OTcyMTY5NjhjMzMzODRiNjVkZiIsInVzZXJuYW1lIjoienVub2hhbiIsImlhdCI6MTY3NTkxMjU0OCwiZXhwIjoxNjc1OTk4OTQ4fQ.SCra-JULMYXEreBNc4j4WdC3cSs8n2tZOCMzJg837JI',
+          jwt: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYzZGY3OTcyMTY5NjhjMzMzODRiNjVkZiIsInVzZXJuYW1lIjoienVub2hhbiIsImlhdCI6MTY3NjExNDc5NCwiZXhwIjoxNjc4NzA2Nzk0fQ.6AAS24EYvoVFZ8ZOPgtUsJynqluUSGNNmD0LHIUcccg',
         });
 
         room.onMessage('DEAL', data => {
@@ -94,9 +94,12 @@
       //   console.log(res);
       // }
       // callLogin();
+
+      const arr = [0, 1, 4]; // co 3 ng
+      console.log(arr[arr.length - 2]);
     </script>
     <div class="container is-max-widescreen">
-      ZUNO TEST GAME
+      ZUNO TEST GAME CREATE
       <div class="buttons">
         <button class="button is-info" id="start">START</button>
         <button class="button is-success" id="raise">RAISE</button>

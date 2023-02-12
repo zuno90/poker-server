@@ -15,14 +15,20 @@ export const checkPlayerRank = (
   return wholeHand;
 };
 
-export const calculateAllinPlayer = (arrPlayers: TAllinPlayer[]) => {
+export const calculateAllinPlayer = async (arrPlayers: TAllinPlayer[]) => {
   let total = 0;
 
-  const winner = <TAllinPlayer>arrPlayers
-    .sort(function (pre, next) {
-      return pre.t - next.t;
-    })
-    .find(player => player.w);
+  const x = arrPlayers.sort((pre, next) => pre.t - next.t);
+  const y = x.find(player => player.w);
+
+  console.log(x, 'sỏt trc');
+  console.log(y, 'find sau');
+
+  const winner = <TAllinPlayer>(
+    arrPlayers.sort((pre, next) => pre.t - next.t).find(player => player.w)
+  );
+
+  console.log(winner, 'dfjhqeofj');
 
   const chipsWinner = winner.v;
   const idWinner = winner.t + 1;
