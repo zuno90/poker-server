@@ -443,7 +443,7 @@ export default class GameRoom extends Room<RoomState> {
         seat: player.seat,
         role: player.role,
         statement: EStatement.Waiting,
-        connected: true,
+        connected: player.connected,
         isFold: false,
       };
       this.state.players.set(sessionId, new Player(newPlayer));

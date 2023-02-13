@@ -101,8 +101,8 @@ export class BotClient {
     console.log('is active', this.isActive);
     console.log('bot go 1st', this.isGoFirst);
     if (!this.isActive) return;
-    await sleep(5);
     if (this.isGoFirst) {
+      await sleep(3);
       if (round === ERound.PREFLOP) return this.emit(RAISE, { chips: this.INIT_RAISING_BET });
       if (round === ERound.FLOP) return this.emit(CHECK);
       if (round === ERound.TURN) return this.emit(RAISE, { chips: this.randomNumberRange() });
@@ -110,32 +110,32 @@ export class BotClient {
     }
     if (this.currentBetInfo.action === RAISE) {
       console.log('bot call sau khi co player raise');
+      await sleep(3);
       this.isActive = false;
-      await sleep(5);
       return this.emit(CALL);
     }
     if (this.currentBetInfo.action === CALL) {
       console.log('bot call sau khi player call');
+      await sleep(3);
       this.isActive = false;
-      await sleep(5);
       return this.emit(CALL);
     }
     if (this.currentBetInfo.action === CHECK) {
       console.log('bot check sau khi player check');
+      await sleep(3);
       this.isActive = false;
-      await sleep(5);
       return this.emit(CHECK);
     }
     if (this.currentBetInfo.action === ALLIN) {
       console.log('bot allin sau khi player allin');
+      await sleep(3);
       this.isActive = false;
-      await sleep(5);
       return this.emit(ALLIN);
     }
     if (this.currentBetInfo.action === FOLD) {
       console.log('bot check sau khi player check');
       this.isActive = false;
-      await sleep(5);
+      await sleep(3);
       return this.emit(CHECK);
     }
   }
