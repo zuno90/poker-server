@@ -102,6 +102,7 @@ export class BotClient {
   private async betAlgorithm(round: ERound) {
     console.log('is active', this.isActive);
     console.log('bot go 1st', this.isGoFirst);
+    if (this.isEndGame) return;
     if (!this.isActive) return;
 
     if (this.isGoFirst) {

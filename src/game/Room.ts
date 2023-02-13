@@ -12,6 +12,7 @@ import { arrangeSeat, arrangeTurn } from './modules/handlePlayer';
 import { calculateAllinPlayer, checkPlayerRank } from './modules/handleRank';
 import { BotClient } from './BotGPT';
 import { botInfo } from './constants/bot.constant';
+import { sleep } from '../utils/sleep';
 
 const Hand = require('pokersolver').Hand; // func handle winner
 
@@ -291,7 +292,8 @@ export default class GameRoom extends Room<RoomState> {
       this.state.round = ERound.SHOWDOWN;
       const resArr = await this.pickWinner();
       this.broadcast(RESULT, resArr);
-      return setTimeout(() => this.resetGame(), 10000);
+      await sleep(10);
+      return this.resetGame();
     }
     // preflop -> flop
     if (round === ERound.PREFLOP) {
@@ -459,7 +461,8 @@ export default class GameRoom extends Room<RoomState> {
     const resArr = await this.pickWinner(ALLIN);
     // bắn kết quả về cho all clients
     this.broadcast(RESULT, resArr);
-    return setTimeout(() => this.resetGame(), 10000);
+    await sleep(10);
+    return this.resetGame();
   }
 
   private isFoldAll() {
@@ -469,7 +472,8 @@ export default class GameRoom extends Room<RoomState> {
       if (!player.isFold) {
         player.chips += this.state.potSize;
         this.broadcast(RESULT, [{ t: player.turn, w: true }]);
-        return setTimeout(() => this.resetGame(), 10000);
+        await sleep(10);
+        return this.resetGame();
       }
     });
   }
