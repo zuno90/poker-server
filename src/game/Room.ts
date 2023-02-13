@@ -6,13 +6,13 @@ import { ROOM_CHAT, ROOM_DISPOSE, START_GAME } from './constants/room.constant';
 import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
 import { DEAL, RANK, RESULT } from './constants/server-emit.constant';
 import { deal } from './modules/handleCard';
-import { updateChip } from '../services/game.service';
 import { parseUserFromJwt } from '../utils/jwtChecking';
 import { arrangeSeat, arrangeTurn } from './modules/handlePlayer';
 import { calculateAllinPlayer, checkPlayerRank } from './modules/handleRank';
 import { BotClient } from './BotGPT';
 import { botInfo } from './constants/bot.constant';
 import { sleep } from '../utils/sleep';
+import { updateChip } from '../services/game.service';
 
 const Hand = require('pokersolver').Hand; // func handle winner
 
@@ -100,25 +100,30 @@ export default class GameRoom extends Room<RoomState> {
     }
   }
 
-  onJoin(client: Client, options: TJwtAuth, player: Player) {
+  async onJoin(client: Client, options: TJwtAuth, player: Player) {
     // SET INITIAL PLAYER STATE
     if (player.chips < this.MIN_CHIP) throw new Error('Đéo có tiền thì cút!');
     if (player.isHost) {
       this.state.players.set(client.sessionId, new Player(player)); // set host and bot first
-      return this.addBot();
+      return await this.addBot();
     }
-    this.state.players.set(client.sessionId, new Player(player)); // set player every joining
+    return this.state.players.set(client.sessionId, new Player(player)); // set player every joining
   }
 
   async onLeave(client: Client, consented: boolean) {
     const leavingPlayer = <Player>this.state.players.get(client.sessionId);
     if (!leavingPlayer) throw new Error('Have no any player including sessionId!');
     // check bot leave
-    if (leavingPlayer.role === ERole.Bot)
-      return console.log('bot ' + client.sessionId + ' has just left');
     if (leavingPlayer.statement === EStatement.Playing)
       throw new Error('Please wait until end game!');
-    if (leavingPlayer.isHost) {
+    if (leavingPlayer.role === ERole.Bot) {
+      console.log('bot ' + client.sessionId + ' has just left');
+      this.state.players.delete(client.sessionId);
+      if (this.state.players.size < 2) await this.addBot(); // add new BOT
+      return;
+    }
+    if (leavingPlayer.role === 'Player') await updateChip(leavingPlayer.id, leavingPlayer.chips);
+    if (leavingPlayer.isHost && this.state.players.size >= 2) {
       // handle change host & delete bot
       this.state.players.forEach((player: Player, _) => {
         if (player.turn === 1) {
@@ -128,21 +133,21 @@ export default class GameRoom extends Room<RoomState> {
         }
       });
     }
-    leavingPlayer.connected = false;
-    try {
-      // update chip
-      if (leavingPlayer.role === 'Player') await updateChip(leavingPlayer.id, leavingPlayer.chips);
-      // re-arrange turn for player
-
-      // allow disconnected client to reconnect into this room until 20 seconds
-      await this.allowReconnection(client, 10);
-      // client returned! let's re-activate it.
-      leavingPlayer.connected = true;
-    } catch (e) {
-      // 10 seconds expired. let's remove the client.
-      this.state.players.delete(client.sessionId);
-      console.log('client ' + client.sessionId + ' has just left');
-    }
+    console.log('client ' + client.sessionId + ' has just left');
+    return this.state.players.delete(client.sessionId);
+    // leavingPlayer.connected = false;
+    // try {
+    //   // update chip
+    //   if (leavingPlayer.role === 'Player') await updateChip(leavingPlayer.id, leavingPlayer.chips);
+    //   // allow disconnected client to reconnect into this room until 20 seconds
+    //   const reconnection = await this.allowReconnection(client, 10);
+    //   // client returned! let's re-activate it.
+    //   leavingPlayer.connected = true;
+    // } catch (e) {
+    //   // 10 seconds expired. let's remove the client.
+    //   this.state.players.delete(client.sessionId);
+    //   console.log('client ' + client.sessionId + ' has just left');
+    // }
   }
 
   async onDispose() {
@@ -416,9 +421,9 @@ export default class GameRoom extends Room<RoomState> {
 
   private resetGame() {
     // ông nào còn dưới 1000 chíp thì chim cút
-    this.clients.forEach((client: Client, index: number) => {
+    this.clients.forEach(async (client: Client, index: number) => {
       const player = <Player>this.state.players.get(client.sessionId);
-      if (player.chips < this.MIN_CHIP) client.leave(1001);
+      if (player.chips < this.MIN_CHIP) await client.leave(1001);
     });
     // global variables
     this.banker5Cards = [];
