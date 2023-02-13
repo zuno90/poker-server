@@ -21,15 +21,9 @@ export const calculateAllinPlayer = async (arrPlayers: TAllinPlayer[]) => {
   const x = arrPlayers.sort((pre, next) => pre.t - next.t);
   const y = x.find(player => player.w);
 
-  console.log(x, 'sỏt trc');
-  console.log(y, 'find sau');
-
   const winner = <TAllinPlayer>(
     arrPlayers.sort((pre, next) => pre.t - next.t).find(player => player.w)
   );
-
-  console.log(winner, 'dfjhqeofj');
-
   const chipsWinner = winner.v;
   const idWinner = winner.t + 1;
 

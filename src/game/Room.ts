@@ -4,13 +4,13 @@ import { ERound, RoomState } from './schemas/room.schema';
 import { ERole, EStatement, Player } from './schemas/player.schema';
 import { ROOM_CHAT, ROOM_DISPOSE, START_GAME } from './constants/room.constant';
 import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
-import { DEAL, FIRST_TURN, RANK, RESULT } from './constants/server-emit.constant';
+import { DEAL, RANK, RESULT } from './constants/server-emit.constant';
 import { deal } from './modules/handleCard';
 import { updateChip } from '../services/game.service';
 import { parseUserFromJwt } from '../utils/jwtChecking';
 import { arrangeSeat, arrangeTurn } from './modules/handlePlayer';
 import { calculateAllinPlayer, checkPlayerRank } from './modules/handleRank';
-import { BotClient } from './Bot';
+import { BotClient } from './BotGPT';
 import { botInfo } from './constants/bot.constant';
 
 const Hand = require('pokersolver').Hand; // func handle winner
@@ -102,8 +102,11 @@ export default class GameRoom extends Room<RoomState> {
   onJoin(client: Client, options: TJwtAuth, player: Player) {
     // SET INITIAL PLAYER STATE
     if (player.chips < this.MIN_CHIP) throw new Error('Đéo có tiền thì cút!');
+    if (player.isHost) {
+      this.state.players.set(client.sessionId, new Player(player)); // set host and bot first
+      return this.addBot();
+    }
     this.state.players.set(client.sessionId, new Player(player)); // set player every joining
-    if (player.isHost) this.addBot();
   }
 
   async onLeave(client: Client, consented: boolean) {
@@ -228,6 +231,8 @@ export default class GameRoom extends Room<RoomState> {
       this.remainingTurn = this.state.remainingPlayer - 1;
       this.state.remainingPlayer--;
 
+      console.log(this.remainingTurn, 'turn all in con lai');
+
       console.log('allin:::::', this.remainingTurn);
       if (this.remainingTurn === 0) return this.isLastAllin();
     });
@@ -239,8 +244,10 @@ export default class GameRoom extends Room<RoomState> {
 
       this.state.currentTurn = player.turn;
 
+      console.log(this.state.remainingPlayer);
       this.state.remainingPlayer--;
       if (this.state.remainingPlayer === 1) {
+        console.log('con 1ng');
         this.isFoldAll();
         return;
       }
@@ -352,7 +359,6 @@ export default class GameRoom extends Room<RoomState> {
         if (allinPlayer.i === winHand.sessionId) allinPlayer.w = true;
       }
       const remainingAllinArr = await calculateAllinPlayer(this.allinArr);
-      console.log(remainingAllinArr); // [{ i: sessionId, t: turn, v: remaining amount, w: true/false }]
       for (const r of remainingAllinArr) {
         console.log('kết quả của ông pha', r);
         const p = <Player>this.state.players.get(r.i);
@@ -422,6 +428,7 @@ export default class GameRoom extends Room<RoomState> {
     this.state.potSize = 0;
     this.state.bankerCards = [];
     this.state.remainingPlayer = 0;
+    this.state.currentTurn = undefined;
     // player state
     this.state.players.forEach((player: Player, sessionId: string) => {
       const newPlayer = {
