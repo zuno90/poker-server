@@ -184,7 +184,7 @@ export default class GameRoom extends Room<RoomState> {
     // CALL
     this.onMessage(CALL, (client: Client) => {
       console.log('chip dang bet hien tai:::::', this.betChip);
-      const player = <Player>(<Player>this.checkBeforeAction(client));
+      const player = <Player>this.checkBeforeAction(client);
       let callValue: number;
       if (player.action === RAISE && player.betEachAction < this.betChip) {
         callValue = this.betChip - player.betEachAction;

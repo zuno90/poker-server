@@ -58,6 +58,7 @@ export class BotClient {
           };
       });
 
+      console.log(this.isEndGame, 'end game');
       this.botReadyToAction(this.botState.turn, state.currentTurn as number);
       return this.betAlgorithm(state.round);
     });
@@ -148,7 +149,7 @@ export class BotClient {
       this.isActive = true;
       console.log(this.currentBetInfo);
       if (!this.currentBetInfo.action) {
-        // preflop noone had action
+        // preflop no one had action
         this.isGoFirst = true;
       } else if (this.currentBetInfo.action === RAISE || this.currentBetInfo.action === ALLIN) {
         this.isGoFirst = false;
