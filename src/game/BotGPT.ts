@@ -102,6 +102,7 @@ export class BotClient {
     console.log('is active', this.isActive);
     console.log('bot go 1st', this.isGoFirst);
     if (!this.isActive) return;
+    if (round === ERound.SHOWDOWN) this.isEndGame = false;
     if (this.isGoFirst) {
       await sleep(3);
       if (round === ERound.PREFLOP) return this.emit(RAISE, { chips: this.INIT_RAISING_BET });
