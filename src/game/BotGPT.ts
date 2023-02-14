@@ -4,6 +4,7 @@ import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
 import { DEAL, RANK, RESULT } from './constants/server-emit.constant';
 import { Player } from './schemas/player.schema';
 import { sleep } from '../utils/sleep';
+import { sortedArr } from './modules/handlePlayer';
 
 type TCurrentBetInfo = {
   action: string | undefined;
@@ -30,7 +31,6 @@ export class BotClient {
 
   constructor(server: string | Client) {
     this.client = server instanceof Client ? server : new Client(server);
-    console.log(this);
   }
 
   async joinRoom(roomId: string) {
@@ -55,11 +55,13 @@ export class BotClient {
             betEachAction: player.betEachAction,
           };
       });
+      console.log(state.currentTurn);
+      const sortedRemainingPlayerTurn = sortedArr(remainingPlayerTurn);
       // Check specific round
       if (state.round === ERound.WELCOME) this.isEndGame = false;
       if (state.round === ERound.SHOWDOWN) this.isEndGame = true;
       if (this.isEndGame) return;
-      this.botReadyToAction(this.botState.turn, state.currentTurn as number);
+      this.botReadyToAction(state.currentTurn as number, sortedRemainingPlayerTurn);
       return this.betAlgorithm(state.round, this.botState);
     });
 
@@ -99,9 +101,10 @@ export class BotClient {
   }
 
   // check bot goes first
-  private botReadyToAction(botTurn: number, currentTurn: number) {
+  private botReadyToAction(currentTurn: number, sortedRemainingPlayerTurn: number[]) {
     if (this.isEndGame) return (this.isActive = false);
-    if (botTurn - currentTurn === 1) {
+
+    if (sortedRemainingPlayerTurn[sortedRemainingPlayerTurn.length - 2] === currentTurn) {
       console.log(this.currentBetInfo);
       this.isActive = true;
       if (!this.currentBetInfo.action) this.isGoFirst = true; // at turn preflop
@@ -119,7 +122,7 @@ export class BotClient {
     await sleep(5);
     this.isActive = false;
     if (this.isGoFirst) {
-      if (round === ERound.PREFLOP) return this.emit(RAISE, { chips: this.randomNumberRange });
+      if (round === ERound.PREFLOP) return this.emit(RAISE, { chips: this.randomNumberRange() });
       if (round === ERound.FLOP) return this.emit(CHECK);
       if (round === ERound.TURN) return this.emit(ALLIN);
       if (round === ERound.RIVER) return this.emit(FOLD);

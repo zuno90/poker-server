@@ -97,7 +97,6 @@ export default class GameRoom extends Room<RoomState> {
     } catch (err) {
       console.error('error la:::::', err);
       await this.disconnect();
-      throw err;
     }
   }
 
@@ -177,7 +176,6 @@ export default class GameRoom extends Room<RoomState> {
       const player = <Player>this.checkBeforeAction(client);
       if (player.turn === this.state.currentTurn) return;
       // check chips
-      console.log(this.betChip);
       if (chips < this.betChip / 2) return;
       player.action = RAISE;
       player.accumulatedBet += chips;
@@ -241,19 +239,17 @@ export default class GameRoom extends Room<RoomState> {
       player.accumulatedBet += allinAmount;
       player.chips = 0; // trừ sạch tiền
 
+      this.allinArr.push({ i: client.sessionId, t: player.turn, v: allinAmount });
+
       this.betChip += allinAmount;
       this.state.potSize += allinAmount;
       this.state.currentTurn = player.turn;
 
-      this.allinArr.push({ i: client.sessionId, t: player.turn, v: allinAmount });
-
       this.remainingTurn = this.state.remainingPlayer - 1;
       this.state.remainingPlayer--;
 
-      console.log(this.remainingTurn, 'turn all in con lai');
-
-      console.log('allin:::::', this.remainingTurn);
-      if (this.state.remainingPlayer === 1 || this.remainingTurn === 0) return this.isLastAllin();
+      console.log('allin:::::', { turn: this.remainingTurn, player: this.state.remainingPlayer });
+      if (this.remainingTurn === 0) return this.isLastAllin();
     });
     // FOLD
     this.onMessage(FOLD, (client: Client, _) => {
@@ -264,14 +260,8 @@ export default class GameRoom extends Room<RoomState> {
 
       this.state.currentTurn = player.turn;
 
-      console.log(this.state.remainingPlayer);
+      // console.log(this.state.remainingPlayer);
       this.state.remainingPlayer--;
-      if (this.state.remainingPlayer === 1) {
-        console.log('con 1ng');
-        this.isFoldAll();
-        return;
-      }
-
       this.remainingTurn--;
       console.log('fold:::::', this.remainingTurn);
       if (this.remainingTurn === 0) return this.handleEndEachRound(this.state.round);
@@ -381,6 +371,7 @@ export default class GameRoom extends Room<RoomState> {
         if (allinPlayer.i === winHand.sessionId) allinPlayer.w = true;
         totalAllin += allinPlayer.v;
       }
+      console.log({ totalAllin, arr: this.allinArr }, 'haha');
       const remainingAllinArr = calculateAllinPlayer(this.allinArr);
       console.log(remainingAllinArr);
       for (const r of remainingAllinArr) {
@@ -422,7 +413,7 @@ export default class GameRoom extends Room<RoomState> {
 
     // initialize state of player
 
-    let playerSeatArr: number[] = [];
+    const playerSeatArr: number[] = [];
     this.state.players.forEach((player: Player, _) => {
       player.statement = EStatement.Playing;
       player.accumulatedBet += this.initBetChip;
