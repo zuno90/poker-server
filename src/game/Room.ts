@@ -177,6 +177,7 @@ export default class GameRoom extends Room<RoomState> {
       const player = <Player>this.checkBeforeAction(client);
       if (player.turn === this.state.currentTurn) return;
       // check chips
+      console.log(this.betChip);
       if (chips < this.betChip / 2) return;
       player.action = RAISE;
       player.accumulatedBet += chips;

@@ -16,9 +16,8 @@ export class BotClient {
   sessionId: string;
   private room: Room<RoomState>;
 
-  private readonly INIT_RAISING_BET = 500;
-  private readonly MIN_RANGE = 500;
-  private readonly MAX_RANGE = 1000;
+  private readonly MIN_RANGE = 200;
+  private readonly MAX_RANGE = 800;
 
   private isEndGame: boolean;
 
@@ -120,9 +119,9 @@ export class BotClient {
     await sleep(5);
     this.isActive = false;
     if (this.isGoFirst) {
-      if (round === ERound.PREFLOP) return this.emit(RAISE, { chips: this.INIT_RAISING_BET });
+      if (round === ERound.PREFLOP) return this.emit(RAISE, { chips: this.randomNumberRange });
       if (round === ERound.FLOP) return this.emit(CHECK);
-      if (round === ERound.TURN) return this.emit(RAISE, { chips: this.randomNumberRange() });
+      if (round === ERound.TURN) return this.emit(ALLIN);
       if (round === ERound.RIVER) return this.emit(FOLD);
       return;
     }
@@ -130,8 +129,7 @@ export class BotClient {
       case RAISE:
         console.log('bot raise sau khi co player raise');
         if (this.currentBetInfo.betEachAction > botState.chips) return this.emit(ALLIN);
-        this.isGoFirst = true;
-        return this.emit(RAISE, { chips: this.randomNumberRange() });
+        return this.emit(CALL);
       case CALL:
         console.log('bot call sau khi player call');
         if (this.currentBetInfo.betEachAction > botState.chips) return this.emit(ALLIN);
