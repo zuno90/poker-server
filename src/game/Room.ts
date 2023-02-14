@@ -96,7 +96,8 @@ export default class GameRoom extends Room<RoomState> {
       // HANDLE ALL ACTION FROM PLAYER
       this.handleAction();
     } catch (err) {
-      console.error(err);
+      console.error('error la:::::', err);
+      throw err;
     }
   }
 
@@ -174,6 +175,7 @@ export default class GameRoom extends Room<RoomState> {
     this.onMessage(RAISE, (client: Client, { chips }: { chips: number }) => {
       const player = <Player>this.checkBeforeAction(client);
       // check chips
+      console.log({ chips, ss: this.betChip });
       if (chips < this.betChip / 2) return;
       player.action = RAISE;
       player.accumulatedBet += chips;
@@ -429,6 +431,7 @@ export default class GameRoom extends Room<RoomState> {
     this.banker5Cards = [];
     this.player2Cards = [];
     this.allinValue = 0;
+    this.betChip = 0;
     // room state
     this.state.onReady = false;
     this.state.round = ERound.WELCOME;
@@ -455,6 +458,14 @@ export default class GameRoom extends Room<RoomState> {
       };
       this.state.players.set(sessionId, new Player(newPlayer));
     });
+
+    let count = 5;
+    let x: any = setInterval(() => {
+      console.log('dem nguoc', count);
+      this.broadcast('COUNTDOWN', count);
+      count--;
+      if (count === 0) return clearInterval(x);
+    }, 1000);
   }
 
   // handle special cases

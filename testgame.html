@@ -33,6 +33,10 @@
           console.log('result:::::', data);
         });
 
+        room.onMessage("COUNTDOWN", num => {
+          console.log("dem nguoc:::::", num)
+        })
+
         room.onStateChange(state => {
           console.log('the room state has been updated:', state);
         });
