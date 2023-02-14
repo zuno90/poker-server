@@ -15,7 +15,7 @@ export const checkPlayerRank = (
   return wholeHand;
 };
 
-export const calculateAllinPlayer = async (arrPlayers: TAllinPlayer[]) => {
+export const calculateAllinPlayer = (arrPlayers: TAllinPlayer[]) => {
   let total = 0;
 
   const x = arrPlayers.sort((pre, next) => pre.t - next.t);
@@ -37,5 +37,5 @@ export const calculateAllinPlayer = async (arrPlayers: TAllinPlayer[]) => {
     }
   }
   arrPlayers[idWinner - 1].v = total;
-  return arrPlayers;
+  return [...arrPlayers];
 };

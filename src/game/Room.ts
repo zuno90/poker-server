@@ -45,7 +45,6 @@ export default class GameRoom extends Room<RoomState> {
   private remainingTurn: number;
 
   private allinArr: TAllinPlayer[] = [];
-  private allinValue: number = 0;
 
   async onAuth(_: Client, options: TJwtAuth, req: Request) {
     // is BOT
@@ -114,6 +113,7 @@ export default class GameRoom extends Room<RoomState> {
 
   async onLeave(client: Client, consented: boolean) {
     const leavingPlayer = <Player>this.state.players.get(client.sessionId);
+    console.log('player left', leavingPlayer.toJSON());
     if (!leavingPlayer) throw new Error('Have no any player including sessionId!');
     // check bot leave
     if (leavingPlayer.statement === EStatement.Playing)
@@ -368,15 +368,18 @@ export default class GameRoom extends Room<RoomState> {
       for (const allinPlayer of this.allinArr) {
         if (allinPlayer.i === winHand.sessionId) allinPlayer.w = true;
       }
-      const remainingAllinArr = await calculateAllinPlayer(this.allinArr);
+      const remainingAllinArr = calculateAllinPlayer(this.allinArr);
       for (const r of remainingAllinArr) {
-        console.log('kết quả của ông pha', r);
         const p = <Player>this.state.players.get(r.i);
         p.chips = r.v;
+        let totalAllin = 0;
+        if (r.w) {
+          totalAllin += r.v;
+          const t = this.state.potSize - totalAllin;
+          p.chips += t;
+        }
       }
-    } else {
-      winPlayer.chips += this.state.potSize; // update lai chip cho winner
-    }
+    } else winPlayer.chips += this.state.potSize; // update lai chip cho winner
     for (const result of resultArr) {
       if (winHand.sessionId === result.i) result.w = true;
       delete result.i;
@@ -429,10 +432,11 @@ export default class GameRoom extends Room<RoomState> {
       if (player.chips < this.MIN_CHIP) await client.leave(1001);
     });
     // global variables
+    this.betChip = 0;
     this.banker5Cards = [];
     this.player2Cards = [];
-    this.allinValue = 0;
-    this.betChip = 0;
+    this.allinArr = [];
+
     // room state
     this.state.onReady = false;
     this.state.round = ERound.WELCOME;
@@ -464,6 +468,7 @@ export default class GameRoom extends Room<RoomState> {
   // handle special cases
   private async isLastAllin() {
     console.log('tính tiền luôn, thằng cuối nó allin rồi');
+    await sleep(5);
     this.state.round = ERound.SHOWDOWN;
     this.state.bankerCards = this.banker5Cards;
 
