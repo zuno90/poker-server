@@ -6,8 +6,9 @@ import { Player } from './schemas/player.schema';
 import { sleep } from '../utils/sleep';
 
 type TCurrentBetInfo = {
-  action: string;
+  action: string | undefined;
   chips: number;
+  betEachAction: number;
 };
 
 export class BotClient {
@@ -52,6 +53,7 @@ export class BotClient {
           this.currentBetInfo = {
             action: player.action,
             chips: player.chips,
+            betEachAction: player.betEachAction,
           };
       });
       // Check specific round
@@ -59,7 +61,7 @@ export class BotClient {
       if (state.round === ERound.SHOWDOWN) this.isEndGame = true;
       if (this.isEndGame) return;
       this.botReadyToAction(this.botState.turn, state.currentTurn as number);
-      return this.betAlgorithm(state.round);
+      return this.betAlgorithm(state.round, this.botState);
     });
 
     // HANDLE ALL BROADCAST DATA
@@ -99,50 +101,40 @@ export class BotClient {
 
   // check bot goes first
   private botReadyToAction(botTurn: number, currentTurn: number) {
-    // if (this.isEndGame) return (this.isActive = false);
-    if (botTurn - currentTurn !== 1) return (this.isActive = false);
-    console.log(this.currentBetInfo);
-    this.isActive = true;
-    if (!this.currentBetInfo.action) this.isGoFirst = true; // turn preflop
-    if (this.currentBetInfo.action === RAISE || this.currentBetInfo.action === ALLIN)
-      this.isGoFirst = false;
+    if (this.isEndGame) return (this.isActive = false);
+    if (botTurn - currentTurn === 1) {
+      console.log(this.currentBetInfo);
+      this.isActive = true;
+      if (!this.currentBetInfo.action) this.isGoFirst = true; // at turn preflop
+      if (this.currentBetInfo.action === RAISE || this.currentBetInfo.action === ALLIN)
+        this.isGoFirst = false;
+    }
   }
 
   // Bet Algorithm
-  private async betAlgorithm(round: ERound) {
+  private async betAlgorithm(round: ERound, botState: Player) {
     console.log({ endgame: this.isEndGame, active: this.isActive, goFirst: this.isGoFirst });
     if (this.isEndGame) return;
     if (!this.isActive) return;
     /* */
-    console.log('chay toi nay!!!!!');
-    await this.botGoFirstByRound(round);
-    await this.botGoLastByPrevAction(this.currentBetInfo.action);
-  }
-
-  // bot go 1st by round
-  private async botGoFirstByRound(round: ERound) {
-    console.log('round hien tai:::::', round);
+    await sleep(5);
+    this.isActive = false;
     if (this.isGoFirst) {
-      await sleep(5);
       if (round === ERound.PREFLOP) return this.emit(RAISE, { chips: this.INIT_RAISING_BET });
       if (round === ERound.FLOP) return this.emit(CHECK);
       if (round === ERound.TURN) return this.emit(RAISE, { chips: this.randomNumberRange() });
       if (round === ERound.RIVER) return this.emit(FOLD);
+      return;
     }
-  }
-
-  // di sau
-  private async botGoLastByPrevAction(action: string) {
-    await sleep(5);
-    console.log('is active::::::567567567567567', this.isActive);
-    if (!this.isActive) return;
-    this.isActive = false;
-    switch (action) {
+    switch (this.currentBetInfo.action) {
       case RAISE:
-        console.log('bot call sau khi co player raise');
+        console.log('bot raise sau khi co player raise');
+        if (this.currentBetInfo.betEachAction > botState.chips) return this.emit(ALLIN);
+        this.isGoFirst = true;
         return this.emit(RAISE, { chips: this.randomNumberRange() });
       case CALL:
         console.log('bot call sau khi player call');
+        if (this.currentBetInfo.betEachAction > botState.chips) return this.emit(ALLIN);
         return this.emit(CALL);
       case CHECK:
         console.log('bot check sau khi player check');

@@ -97,6 +97,7 @@ export default class GameRoom extends Room<RoomState> {
       this.handleAction();
     } catch (err) {
       console.error('error la:::::', err);
+      await this.disconnect();
       throw err;
     }
   }
@@ -458,14 +459,6 @@ export default class GameRoom extends Room<RoomState> {
       };
       this.state.players.set(sessionId, new Player(newPlayer));
     });
-
-    let count = 5;
-    let x: any = setInterval(() => {
-      console.log('dem nguoc', count);
-      this.broadcast('COUNTDOWN', count);
-      count--;
-      if (count === 0) return clearInterval(x);
-    }, 1000);
   }
 
   // handle special cases
