@@ -244,7 +244,7 @@ export default class GameRoom extends Room<RoomState> {
       console.log(this.remainingTurn, 'turn all in con lai');
 
       console.log('allin:::::', this.remainingTurn);
-      if (this.remainingTurn === 0) return this.isLastAllin();
+      if (this.state.remainingPlayer === 1 || this.remainingTurn === 0) return this.isLastAllin();
     });
     // FOLD
     this.onMessage(FOLD, (client: Client, _) => {
