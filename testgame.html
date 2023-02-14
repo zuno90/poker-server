@@ -61,7 +61,7 @@
 
         document.getElementById('raise').addEventListener('click', async function (event) {
           try {
-            await room.send('RAISE', { chips: 11000 });
+            await room.send('RAISE', { chips: 500 });
           } catch (e) {}
         });
         document.getElementById('call').addEventListener('click', async function (event) {
