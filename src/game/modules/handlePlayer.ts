@@ -25,4 +25,8 @@ export const arrangeTurn = (seat: number, seatArr: number[]) => {
   }
 };
 
+export const removePlayer = (turn: number, turnArr: number[]) => {
+  return turnArr.filter(_turn => _turn !== turn);
+};
+
 export const sortedArr = (arr: number[]) => [...arr].sort((a: number, b: number) => a - b);

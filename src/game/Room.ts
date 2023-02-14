@@ -7,7 +7,7 @@ import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
 import { DEAL, RANK, RESULT } from './constants/server-emit.constant';
 import { deal } from './modules/handleCard';
 import { parseUserFromJwt } from '../utils/jwtChecking';
-import { arrangeSeat, arrangeTurn } from './modules/handlePlayer';
+import { arrangeSeat, arrangeTurn, removePlayer } from './modules/handlePlayer';
 import { calculateAllinPlayer, checkPlayerRank } from './modules/handleRank';
 import { BotClient } from './BotGPT';
 import { botInfo } from './constants/bot.constant';
@@ -42,6 +42,7 @@ export default class GameRoom extends Room<RoomState> {
   private betChip: number = 0; // chỉ gán cho action RAISE và ALLIN
   private banker5Cards: Array<string> = [];
   private player2Cards: Array<string[]> = [];
+  private remainingPlayerArr: number[] = [];
   private remainingTurn: number;
 
   private allinArr: TAllinPlayer[] = [];
@@ -175,7 +176,6 @@ export default class GameRoom extends Room<RoomState> {
     this.onMessage(RAISE, (client: Client, { chips }: { chips: number }) => {
       const player = <Player>this.checkBeforeAction(client);
       if (player.turn === this.state.currentTurn) return;
-      // check chips
       if (chips < this.betChip / 2) return;
       player.action = RAISE;
       player.accumulatedBet += chips;
@@ -228,6 +228,8 @@ export default class GameRoom extends Room<RoomState> {
     this.onMessage(ALLIN, (client: Client) => {
       const player = <Player>this.checkBeforeAction(client);
       if (player.turn === this.state.currentTurn) return;
+      this.remainingPlayerArr = removePlayer(player.turn, this.remainingPlayerArr);
+      if (!this.remainingPlayerArr.length) return this.isLastAllin();
       // check if first player raise > chip of this player
       this.state.players.forEach((raisedPlayer: Player, sessionId: string) => {
         if (raisedPlayer.action === RAISE && raisedPlayer.betEachAction > player.chips)
@@ -245,25 +247,28 @@ export default class GameRoom extends Room<RoomState> {
       this.state.potSize += allinAmount;
       this.state.currentTurn = player.turn;
 
-      this.remainingTurn = this.state.remainingPlayer - 1;
+      this.remainingTurn = this.remainingPlayerArr.length - 1;
       this.state.remainingPlayer--;
 
-      console.log('allin:::::', { turn: this.remainingTurn, player: this.state.remainingPlayer });
+      console.log('allin:::::', this.remainingTurn);
       if (this.remainingTurn === 0) return this.isLastAllin();
     });
     // FOLD
     this.onMessage(FOLD, (client: Client, _) => {
       const player = <Player>this.checkBeforeAction(client);
       if (player.turn === this.state.currentTurn) return;
+
+      console.log('firfwrgfwer');
       player.action = FOLD;
       player.isFold = true;
 
       this.state.currentTurn = player.turn;
 
-      // console.log(this.state.remainingPlayer);
       this.state.remainingPlayer--;
       this.remainingTurn--;
       console.log('fold:::::', this.remainingTurn);
+      this.remainingPlayerArr = removePlayer(player.turn, this.remainingPlayerArr);
+      if (this.remainingPlayerArr.length === 1) return this.isFoldAll();
       if (this.remainingTurn === 0) return this.handleEndEachRound(this.state.round);
     });
   }
@@ -420,10 +425,13 @@ export default class GameRoom extends Room<RoomState> {
       player.chips -= this.initBetChip;
       playerSeatArr.push(player.seat);
     });
+
     // gán turn vào
-    this.state.players.forEach(
-      (player: Player, _) => (player.turn = arrangeTurn(player.seat, playerSeatArr) as number),
-    );
+    this.state.players.forEach((player: Player, _) => {
+      player.turn = arrangeTurn(player.seat, playerSeatArr) as number;
+      this.remainingPlayerArr = [...this.remainingPlayerArr, player.turn];
+    });
+    console.log(this.remainingPlayerArr, 'start');
     // send to player 2 cards
     this.send2Cards();
   }
@@ -438,6 +446,7 @@ export default class GameRoom extends Room<RoomState> {
     this.betChip = 0;
     this.banker5Cards = [];
     this.player2Cards = [];
+    this.remainingPlayerArr = [];
     this.allinArr = [];
 
     // room state
