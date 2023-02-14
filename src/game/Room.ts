@@ -4,10 +4,10 @@ import { ERound, RoomState } from './schemas/room.schema';
 import { ERole, EStatement, Player } from './schemas/player.schema';
 import { ROOM_CHAT, ROOM_DISPOSE, START_GAME } from './constants/room.constant';
 import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
-import { DEAL, RANK, RESULT } from './constants/server-emit.constant';
+import { DEAL, RANK, RESET_CD, RESULT } from './constants/server-emit.constant';
 import { deal } from './modules/handleCard';
 import { parseUserFromJwt } from '../utils/jwtChecking';
-import { arrangeSeat, arrangeTurn, removePlayer } from './modules/handlePlayer';
+import { arrangeSeat, arrangeTurn, removePlayer, sortedArr } from './modules/handlePlayer';
 import { calculateAllinPlayer, checkPlayerRank } from './modules/handleRank';
 import { BotClient } from './BotGPT';
 import { botInfo } from './constants/bot.constant';
@@ -96,7 +96,7 @@ export default class GameRoom extends Room<RoomState> {
       // HANDLE ALL ACTION FROM PLAYER
       this.handleAction();
     } catch (err) {
-      console.error('error la:::::', err);
+      console.error('error:::::', err);
       await this.disconnect();
     }
   }
@@ -113,18 +113,16 @@ export default class GameRoom extends Room<RoomState> {
 
   async onLeave(client: Client, consented: boolean) {
     const leavingPlayer = <Player>this.state.players.get(client.sessionId);
-    console.log('player left', leavingPlayer.toJSON());
-    if (!leavingPlayer) throw new Error('Have no any player including sessionId!');
-    // check bot leave
-    if (leavingPlayer.statement === EStatement.Playing)
-      throw new Error('Please wait until end game!');
+    if (!leavingPlayer) return;
+    if (leavingPlayer.statement === EStatement.Playing) return;
     if (leavingPlayer.role === ERole.Bot) {
+      await sleep(3);
       console.log('bot ' + client.sessionId + ' has just left');
       this.state.players.delete(client.sessionId);
       if (this.state.players.size < 2) await this.addBot(); // add new BOT
       return;
     }
-    if (leavingPlayer.role === 'Player') await updateChip(leavingPlayer.id, leavingPlayer.chips);
+    await updateChip(leavingPlayer.id, leavingPlayer.chips);
     if (leavingPlayer.isHost && this.state.players.size >= 2) {
       // handle change host & delete bot
       this.state.players.forEach((player: Player, _) => {
@@ -228,8 +226,7 @@ export default class GameRoom extends Room<RoomState> {
     this.onMessage(ALLIN, (client: Client) => {
       const player = <Player>this.checkBeforeAction(client);
       if (player.turn === this.state.currentTurn) return;
-      this.remainingPlayerArr = removePlayer(player.turn, this.remainingPlayerArr);
-      if (!this.remainingPlayerArr.length) return this.isLastAllin();
+
       // check if first player raise > chip of this player
       this.state.players.forEach((raisedPlayer: Player, sessionId: string) => {
         if (raisedPlayer.action === RAISE && raisedPlayer.betEachAction > player.chips)
@@ -251,6 +248,8 @@ export default class GameRoom extends Room<RoomState> {
       this.state.remainingPlayer--;
 
       console.log('allin:::::', this.remainingTurn);
+      this.remainingPlayerArr = removePlayer(player.turn, this.remainingPlayerArr);
+      if (!this.remainingPlayerArr.length) return this.isLastAllin();
       if (this.remainingTurn === 0) return this.isLastAllin();
     });
     // FOLD
@@ -258,7 +257,6 @@ export default class GameRoom extends Room<RoomState> {
       const player = <Player>this.checkBeforeAction(client);
       if (player.turn === this.state.currentTurn) return;
 
-      console.log('firfwrgfwer');
       player.action = FOLD;
       player.isFold = true;
 
@@ -305,9 +303,21 @@ export default class GameRoom extends Room<RoomState> {
     if (round === ERound.RIVER) {
       this.state.round = ERound.SHOWDOWN;
       const resArr = await this.pickWinner();
+      // count down for result
+      await sleep(2);
       this.broadcast(RESULT, resArr);
-      await sleep(10);
-      return this.resetGame();
+
+      // count down for reset game
+      let resetCd = 5;
+      const resetCountdownInterval: any = setInterval(() => {
+        this.broadcast(RESET_CD, resetCd);
+        if (resetCd === 0) {
+          this.resetGame();
+          this.broadcast(RESET_CD, 'Reset done');
+          return clearInterval(resetCountdownInterval);
+        }
+        resetCd--;
+      }, 1000);
     }
     // preflop -> flop
     if (round === ERound.PREFLOP) {
@@ -335,13 +345,15 @@ export default class GameRoom extends Room<RoomState> {
   private sendRankEachRound() {
     this.clients.forEach((client: Client, _) => {
       const player = <Player>this.state.players.get(client.sessionId);
-      const rankInfo = checkPlayerRank([
-        {
-          sessionId: client.sessionId,
-          combinedCards: [...this.state.bankerCards].concat([...this.player2Cards[player.turn]]),
-        },
-      ]);
-      if (!player.isFold) return client.send(RANK, { r: rankInfo[0].rank, d: rankInfo[0].name });
+      if (player.statement === EStatement.Playing && !player.isFold) {
+        const rankInfo = checkPlayerRank([
+          {
+            sessionId: client.sessionId,
+            combinedCards: [...this.state.bankerCards].concat([...this.player2Cards[player.turn]]),
+          },
+        ]);
+        return client.send(RANK, { r: rankInfo[0].rank, d: rankInfo[0].name });
+      }
     });
   }
 
@@ -349,7 +361,7 @@ export default class GameRoom extends Room<RoomState> {
     let winCardsArr: any[] = [];
     let resultArr: any[] = [];
     this.state.players.forEach((player: Player, sessionId: string) => {
-      if (!player.isFold) {
+      if (player.statement === EStatement.Playing && !player.isFold) {
         const rankInfo = checkPlayerRank([
           {
             sessionId,
@@ -429,9 +441,8 @@ export default class GameRoom extends Room<RoomState> {
     // gán turn vào
     this.state.players.forEach((player: Player, _) => {
       player.turn = arrangeTurn(player.seat, playerSeatArr) as number;
-      this.remainingPlayerArr = [...this.remainingPlayerArr, player.turn];
+      this.remainingPlayerArr = sortedArr([...this.remainingPlayerArr, player.turn]);
     });
-    console.log(this.remainingPlayerArr, 'start');
     // send to player 2 cards
     this.send2Cards();
   }
@@ -480,26 +491,48 @@ export default class GameRoom extends Room<RoomState> {
   // handle special cases
   private async isLastAllin() {
     console.log('tính tiền luôn, thằng cuối nó allin rồi');
-    await sleep(5);
     this.state.round = ERound.SHOWDOWN;
     this.state.bankerCards = this.banker5Cards;
 
     const resArr = await this.pickWinner(ALLIN);
-    // bắn kết quả về cho all clients
+    // count down for result
+    await sleep(2);
     this.broadcast(RESULT, resArr);
-    await sleep(10);
-    return this.resetGame();
+
+    // count down for reset game
+    let resetCd = 5;
+    const resetCountdownInterval: any = setInterval(() => {
+      this.broadcast(RESET_CD, resetCd);
+      if (resetCd === 0) {
+        this.resetGame();
+        this.broadcast(RESET_CD, 'Reset done');
+        return clearInterval(resetCountdownInterval);
+      }
+      resetCd--;
+    }, 1000);
   }
 
-  private isFoldAll() {
+  private async isFoldAll() {
     console.log('tính tiền luôn, còn có thằng kia ah!');
     this.state.round = ERound.SHOWDOWN;
     this.state.players.forEach(async (player: Player, _) => {
-      if (!player.isFold) {
+      if (player.statement === EStatement.Playing && !player.isFold) {
         player.chips += this.state.potSize;
+        // count down for result
+        await sleep(2);
         this.broadcast(RESULT, [{ t: player.turn, w: true }]);
-        await sleep(10);
-        return this.resetGame();
+
+        // count down for reset game
+        let resetCd = 5;
+        const resetCountdownInterval: any = setInterval(() => {
+          this.broadcast(RESET_CD, resetCd);
+          if (resetCd === 0) {
+            this.resetGame();
+            this.broadcast(RESET_CD, 'Reset done');
+            return clearInterval(resetCountdownInterval);
+          }
+          resetCd--;
+        }, 1000);
       }
     });
   }

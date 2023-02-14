@@ -1,8 +1,8 @@
 import { Client, Room } from 'colyseus.js';
 import { ERound, RoomState } from './schemas/room.schema';
 import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
-import { DEAL, RANK, RESULT } from './constants/server-emit.constant';
-import { Player } from './schemas/player.schema';
+import { DEAL, RANK, RESET_CD, RESULT } from './constants/server-emit.constant';
+import { EStatement, Player } from './schemas/player.schema';
 import { sleep } from '../utils/sleep';
 import { sortedArr } from './modules/handlePlayer';
 
@@ -21,6 +21,7 @@ export class BotClient {
   private readonly MAX_RANGE = 800;
 
   private isEndGame: boolean;
+  private turnArr = [];
 
   // all variables of BOT
   private isActive: boolean;
@@ -44,24 +45,26 @@ export class BotClient {
     this.room.onStateChange(async state => {
       if (!state.onReady) return;
       this.botState = <Player>state.players.get(this.sessionId);
+      console.log('current turn', state.currentTurn);
       // xac dinh ai vua di va turn nao
       let remainingPlayerTurn: number[] = [];
       state.players.forEach((player: Player, _: string) => {
-        if (!player.isFold) remainingPlayerTurn = [...remainingPlayerTurn, player.turn];
-        if (state.currentTurn === player.turn)
-          this.currentBetInfo = {
-            action: player.action,
-            chips: player.chips,
-            betEachAction: player.betEachAction,
-          };
+        if (player.statement === EStatement.Playing) {
+          if (!player.isFold)
+            remainingPlayerTurn = sortedArr([...remainingPlayerTurn, player.turn]);
+          if (state.currentTurn === player.turn)
+            this.currentBetInfo = {
+              action: player.action,
+              chips: player.chips,
+              betEachAction: player.betEachAction,
+            };
+        }
       });
-      console.log(state.currentTurn);
-      const sortedRemainingPlayerTurn = sortedArr(remainingPlayerTurn);
       // Check specific round
       if (state.round === ERound.WELCOME) this.isEndGame = false;
       if (state.round === ERound.SHOWDOWN) this.isEndGame = true;
       if (this.isEndGame) return;
-      this.botReadyToAction(state.currentTurn as number, sortedRemainingPlayerTurn);
+      this.botReadyToAction(state.currentTurn as number, remainingPlayerTurn);
       return this.betAlgorithm(state.round, this.botState);
     });
 
@@ -77,6 +80,9 @@ export class BotClient {
     this.room.onMessage(RESULT, data => {
       console.log('ket qua', data);
       this.isEndGame = true;
+    });
+    this.room.onMessage(RESET_CD, count => {
+      console.log('game is ready after', count);
     });
   }
 
@@ -102,53 +108,61 @@ export class BotClient {
 
   // check bot goes first
   private botReadyToAction(currentTurn: number, sortedRemainingPlayerTurn: number[]) {
+    if (currentTurn === -1) return;
     if (this.isEndGame) return (this.isActive = false);
+    let a = [];
+    if (this.currentBetInfo?.action === FOLD)
+      a = sortedArr([currentTurn, ...sortedRemainingPlayerTurn]);
+    else a = sortedArr([...new Set([currentTurn, ...sortedRemainingPlayerTurn])]);
 
-    if (sortedRemainingPlayerTurn[sortedRemainingPlayerTurn.length - 2] === currentTurn) {
+    // bot action if previous player action
+    if (a[a.length - 2] === currentTurn) {
       console.log(this.currentBetInfo);
-      this.isActive = true;
       if (!this.currentBetInfo.action) this.isGoFirst = true; // at turn preflop
       if (this.currentBetInfo.action === RAISE || this.currentBetInfo.action === ALLIN)
         this.isGoFirst = false;
-    }
+      console.log(sortedRemainingPlayerTurn, 'con lai');
+
+      this.isActive = true;
+    } else this.isActive = false;
   }
 
   // Bet Algorithm
   private async betAlgorithm(round: ERound, botState: Player) {
-    console.log({ endgame: this.isEndGame, active: this.isActive, goFirst: this.isGoFirst });
     if (this.isEndGame) return;
     if (!this.isActive) return;
     /* */
+    console.log({ endgame: this.isEndGame, active: this.isActive, goFirst: this.isGoFirst });
     await sleep(5);
     this.isActive = false;
+
     if (this.isGoFirst) {
       if (round === ERound.PREFLOP) return this.emit(RAISE, { chips: this.randomNumberRange() });
       if (round === ERound.FLOP) return this.emit(CHECK);
       if (round === ERound.TURN) return this.emit(ALLIN);
       if (round === ERound.RIVER) return this.emit(FOLD);
-      return;
-    }
-    switch (this.currentBetInfo.action) {
-      case RAISE:
-        console.log('bot raise sau khi co player raise');
-        if (this.currentBetInfo.betEachAction > botState.chips) return this.emit(ALLIN);
-        return this.emit(CALL);
-      case CALL:
-        console.log('bot call sau khi player call');
-        if (this.currentBetInfo.betEachAction > botState.chips) return this.emit(ALLIN);
-        return this.emit(CALL);
-      case CHECK:
-        console.log('bot check sau khi player check');
-        return this.emit(CHECK);
-      case ALLIN:
-        console.log('bot allin sau khi player allin');
-        return this.emit(ALLIN);
-      case FOLD:
-        console.log('bot check sau khi player fold');
-        return this.emit(CHECK);
-      default:
-        break;
-    }
+    } else
+      switch (this.currentBetInfo.action) {
+        case RAISE:
+          console.log('bot raise sau khi co player raise');
+          if (this.currentBetInfo.betEachAction > botState.chips) return this.emit(ALLIN);
+          return this.emit(CALL);
+        case CALL:
+          console.log('bot call sau khi player call');
+          if (this.currentBetInfo.betEachAction > botState.chips) return this.emit(ALLIN);
+          return this.emit(CALL);
+        case CHECK:
+          console.log('bot check sau khi player check');
+          return this.emit(CHECK);
+        case ALLIN:
+          console.log('bot allin sau khi player allin');
+          return this.emit(ALLIN);
+        case FOLD:
+          console.log('bot check sau khi player fold');
+          return this.emit(CHECK);
+        default:
+          break;
+      }
   }
 
   // random number
