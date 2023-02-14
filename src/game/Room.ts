@@ -228,6 +228,7 @@ export default class GameRoom extends Room<RoomState> {
       const player = <Player>this.checkBeforeAction(client);
       const allinAmount = player.chips; // chip cua player t
       player.action = ALLIN;
+      player.betEachAction = allinAmount;
       player.accumulatedBet += allinAmount;
       player.chips = 0; // trừ sạch tiền
 
@@ -301,7 +302,7 @@ export default class GameRoom extends Room<RoomState> {
       const resArr = await this.pickWinner();
       this.broadcast(RESULT, resArr);
       await sleep(10);
-      return this.resetGame();
+      // return this.resetGame();
     }
     // preflop -> flop
     if (round === ERound.PREFLOP) {
@@ -365,18 +366,19 @@ export default class GameRoom extends Room<RoomState> {
     const winPlayer = <Player>this.state.players.get(winHand.sessionId);
     // check action
     if (action === ALLIN) {
+      let totalAllin = 0;
       for (const allinPlayer of this.allinArr) {
         if (allinPlayer.i === winHand.sessionId) allinPlayer.w = true;
+        totalAllin += allinPlayer.v;
       }
       const remainingAllinArr = calculateAllinPlayer(this.allinArr);
+      console.log(remainingAllinArr);
       for (const r of remainingAllinArr) {
         const p = <Player>this.state.players.get(r.i);
         p.chips = r.v;
-        let totalAllin = 0;
         if (r.w) {
-          totalAllin += r.v;
-          const t = this.state.potSize - totalAllin;
-          p.chips += t;
+          const x = this.state.potSize - totalAllin;
+          p.chips += x;
         }
       }
     } else winPlayer.chips += this.state.potSize; // update lai chip cho winner
