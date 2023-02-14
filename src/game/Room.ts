@@ -302,7 +302,7 @@ export default class GameRoom extends Room<RoomState> {
       const resArr = await this.pickWinner();
       this.broadcast(RESULT, resArr);
       await sleep(10);
-      // return this.resetGame();
+      return this.resetGame();
     }
     // preflop -> flop
     if (round === ERound.PREFLOP) {
