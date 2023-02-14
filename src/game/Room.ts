@@ -176,7 +176,6 @@ export default class GameRoom extends Room<RoomState> {
     this.onMessage(RAISE, (client: Client, { chips }: { chips: number }) => {
       const player = <Player>this.checkBeforeAction(client);
       // check chips
-      console.log({ chips, ss: this.betChip });
       if (chips < this.betChip / 2) return;
       player.action = RAISE;
       player.accumulatedBet += chips;
@@ -226,6 +225,11 @@ export default class GameRoom extends Room<RoomState> {
     // ALLIN
     this.onMessage(ALLIN, (client: Client) => {
       const player = <Player>this.checkBeforeAction(client);
+      // check if first player raise > chip of this player
+      this.state.players.forEach((raisedPlayer: Player, sessionId: string) => {
+        if (raisedPlayer.action === RAISE && raisedPlayer.betEachAction > player.chips)
+          this.allinArr.push({ i: sessionId, t: raisedPlayer.turn, v: raisedPlayer.betEachAction });
+      });
       const allinAmount = player.chips; // chip cua player t
       player.action = ALLIN;
       player.betEachAction = allinAmount;

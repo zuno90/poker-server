@@ -17,10 +17,6 @@ export const checkPlayerRank = (
 
 export const calculateAllinPlayer = (arrPlayers: TAllinPlayer[]) => {
   let total = 0;
-
-  const x = arrPlayers.sort((pre, next) => pre.t - next.t);
-  const y = x.find(player => player.w);
-
   const winner = <TAllinPlayer>(
     arrPlayers.sort((pre, next) => pre.t - next.t).find(player => player.w)
   );
