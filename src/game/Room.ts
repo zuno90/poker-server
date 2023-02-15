@@ -79,7 +79,6 @@ export default class GameRoom extends Room<RoomState> {
         role: ERole.Player,
       };
     }
-    throw new Error('Có sự lỗi giữa việc real player vào room trước con bot!');
   }
 
   async onCreate(options: TJwtAuth) {
@@ -103,7 +102,7 @@ export default class GameRoom extends Room<RoomState> {
 
   async onJoin(client: Client, options: TJwtAuth, player: Player) {
     // SET INITIAL PLAYER STATE
-    if (player.chips < this.MIN_CHIP) throw new Error('Đéo có tiền thì cút!');
+    if (player.chips < this.MIN_CHIP) return;
     if (player.isHost) {
       this.state.players.set(client.sessionId, new Player(player)); // set host and bot first
       return await this.addBot();
@@ -239,7 +238,11 @@ export default class GameRoom extends Room<RoomState> {
           sessionId !== client.sessionId &&
           raisedPlayer.betEachAction > player.chips
         )
-          this.allinArr.push({ i: sessionId, t: raisedPlayer.turn, v: player.accumulatedBet });
+          this.allinArr.push({
+            i: sessionId,
+            t: raisedPlayer.turn,
+            v: raisedPlayer.chips + raisedPlayer.accumulatedBet,
+          });
       });
       this.allinArr.push({ i: client.sessionId, t: player.turn, v: player.accumulatedBet });
 
@@ -292,11 +295,10 @@ export default class GameRoom extends Room<RoomState> {
   }
 
   private checkBeforeAction(client: Client) {
-    if (!this.state.onReady) throw new Error('Game is not ready!');
+    if (!this.state.onReady) return;
     const player = <Player>this.state.players.get(client.sessionId);
-    if (!player || player.isFold)
-      throw new Error('Can not find Player! Player is invalid or folded!');
-    if (player.statement === 'Waiting') throw new Error('định cheat hả mày?');
+    if (!player || player.isFold) return;
+    if (player.statement === 'Waiting') return;
     return player;
   }
 
@@ -388,10 +390,6 @@ export default class GameRoom extends Room<RoomState> {
       for (const r of remainingAllinArr) {
         const p = <Player>this.state.players.get(r.i);
         p.chips = r.v;
-        if (r.w) {
-          const x = this.state.potSize - totalAllin;
-          p.chips += x;
-        }
       }
     } else winPlayer.chips += this.state.potSize; // update lai chip cho winner
     for (const result of resultArr) {
