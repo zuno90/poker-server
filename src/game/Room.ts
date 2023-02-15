@@ -459,7 +459,7 @@ export default class GameRoom extends Room<RoomState> {
     this.state.potSize = 0;
     this.state.bankerCards = [];
     this.state.remainingPlayer = 0;
-    this.state.currentTurn = undefined;
+    this.state.currentTurn = 6969;
     // player state
     this.state.players.forEach((player: Player, sessionId: string) => {
       const newPlayer = {
