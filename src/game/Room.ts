@@ -246,10 +246,9 @@ export default class GameRoom extends Room<RoomState> {
 
       this.remainingTurn = this.remainingPlayerArr.length - 1;
       this.state.remainingPlayer--;
+      this.remainingTurn--;
 
       console.log('allin:::::', this.remainingTurn);
-      this.remainingPlayerArr = removePlayer(player.turn, this.remainingPlayerArr);
-      if (!this.remainingPlayerArr.length) return this.isLastAllin();
       if (this.remainingTurn === 0) return this.isLastAllin();
     });
     // FOLD

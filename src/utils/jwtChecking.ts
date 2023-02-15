@@ -8,7 +8,7 @@ export const parseUserFromJwt = async (accessToken: string) => {
 
   // check user
   const user = await User.findOne({ id, email, username }, '-password');
-  if (!user) throw new Error('You have unauthorized!...');
+  if (!user) throw new Error('You have unauthorized!');
 
   return user;
 };

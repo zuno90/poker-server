@@ -33,9 +33,9 @@
           console.log('result:::::', data);
         });
 
-        room.onMessage("RESET_CD", num => {
-          console.log("game has been reset after:::::", num)
-        })
+        room.onMessage('RESET_CD', num => {
+          console.log('game has been reset after:::::', num);
+        });
 
         room.onStateChange(state => {
           console.log('the room state has been updated:', state);
@@ -61,7 +61,7 @@
 
         document.getElementById('raise').addEventListener('click', async function (event) {
           try {
-            await room.send('RAISE', { chips: 1500 });
+            await room.send('RAISE', { chips: 11000 });
           } catch (e) {}
         });
         document.getElementById('call').addEventListener('click', async function (event) {
