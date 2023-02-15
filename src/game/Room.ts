@@ -314,7 +314,7 @@ export default class GameRoom extends Room<RoomState> {
       this.resetGame();
 
       // count down for reset game
-      this.countdown();
+      // this.countdown();
     }
     // preflop -> flop
     if (round === ERound.PREFLOP) {
@@ -495,7 +495,7 @@ export default class GameRoom extends Room<RoomState> {
     this.resetGame();
 
     // count down for reset game
-    this.countdown();
+    // this.countdown();
   }
 
   private async isFoldAll() {
@@ -511,7 +511,7 @@ export default class GameRoom extends Room<RoomState> {
         this.resetGame();
 
         // count down for reset game
-        this.countdown();
+        // this.countdown();
       }
     });
   }

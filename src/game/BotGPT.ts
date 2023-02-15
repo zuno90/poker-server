@@ -60,6 +60,7 @@ export class BotClient {
             };
         }
       });
+
       // Check specific round
       if (state.round === ERound.WELCOME) this.isEndGame = false;
       if (state.round === ERound.SHOWDOWN) this.isEndGame = true;
