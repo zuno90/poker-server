@@ -21,7 +21,7 @@ export class RoomState extends Schema {
   round: ERound = ERound.WELCOME;
 
   @type('number')
-  currentTurn: number | undefined;
+  currentTurn: number = 6969;
 
   @type(['string'])
   bankerCards: string[] = [];
