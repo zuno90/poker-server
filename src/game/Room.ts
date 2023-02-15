@@ -308,8 +308,9 @@ export default class GameRoom extends Room<RoomState> {
       this.state.round = ERound.SHOWDOWN;
       const resArr = await this.pickWinner();
       // count down for result
-      await sleep(2);
+      await sleep(3);
       this.broadcast(RESULT, resArr);
+      await sleep(10);
       this.resetGame();
 
       // count down for reset game
@@ -488,8 +489,9 @@ export default class GameRoom extends Room<RoomState> {
 
     const resArr = await this.pickWinner(ALLIN);
     // count down for result
-    await sleep(2);
+    await sleep(3);
     this.broadcast(RESULT, resArr);
+    await sleep(10);
     this.resetGame();
 
     // count down for reset game
@@ -503,8 +505,9 @@ export default class GameRoom extends Room<RoomState> {
       if (player.statement === EStatement.Playing && !player.isFold) {
         player.chips += this.state.potSize;
         // count down for result
-        await sleep(2);
+        await sleep(3);
         this.broadcast(RESULT, [{ t: player.turn, w: true }]);
+        await sleep(10);
         this.resetGame();
 
         // count down for reset game
