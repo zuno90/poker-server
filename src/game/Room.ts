@@ -96,7 +96,7 @@ export default class GameRoom extends Room<RoomState> {
       this.handleAction();
     } catch (err) {
       console.error('error:::::', err);
-      await this.disconnect();
+      // await this.disconnect();
     }
   }
 
@@ -105,7 +105,8 @@ export default class GameRoom extends Room<RoomState> {
     if (player.chips < this.MIN_CHIP) return;
     if (player.isHost) {
       this.state.players.set(client.sessionId, new Player(player)); // set host and bot first
-      return await this.addBot();
+      await this.addBot();
+      return;
     }
     return this.state.players.set(client.sessionId, new Player(player)); // set player every joining
   }
@@ -115,7 +116,6 @@ export default class GameRoom extends Room<RoomState> {
     if (!leavingPlayer) return;
     if (leavingPlayer.statement === EStatement.Playing) return;
     if (leavingPlayer.role === ERole.Bot) {
-      await sleep(2);
       console.log('bot ' + client.sessionId + ' has just left');
       this.state.players.delete(client.sessionId);
       if (this.state.players.size < 2) await this.addBot(); // add new BOT
@@ -172,7 +172,7 @@ export default class GameRoom extends Room<RoomState> {
     // RAISE
     this.onMessage(RAISE, (client: Client, { chips }: { chips: number }) => {
       const player = <Player>this.checkBeforeAction(client);
-      if (player.turn === this.state.currentTurn) return;
+      if (!player || player.turn === this.state.currentTurn) return;
       if (chips < this.betChip / 2) return;
       player.action = RAISE;
       player.accumulatedBet += chips;
@@ -188,9 +188,8 @@ export default class GameRoom extends Room<RoomState> {
     });
     // CALL
     this.onMessage(CALL, (client: Client) => {
-      console.log('chip dang bet hien tai:::::', this.betChip);
       const player = <Player>this.checkBeforeAction(client);
-      if (player.turn === this.state.currentTurn) return;
+      if (!player || player.turn === this.state.currentTurn) return;
       let callValue: number;
       if (player.action === RAISE && player.betEachAction < this.betChip) {
         callValue = this.betChip - player.betEachAction;
@@ -212,7 +211,7 @@ export default class GameRoom extends Room<RoomState> {
     // CHECK
     this.onMessage(CHECK, (client: Client) => {
       const player = <Player>this.checkBeforeAction(client);
-      if (player.turn === this.state.currentTurn) return;
+      if (!player || player.turn === this.state.currentTurn) return;
       player.action = CHECK;
 
       this.state.currentTurn = player.turn;
@@ -224,7 +223,7 @@ export default class GameRoom extends Room<RoomState> {
     // ALLIN
     this.onMessage(ALLIN, (client: Client) => {
       const player = <Player>this.checkBeforeAction(client);
-      if (player.turn === this.state.currentTurn) return;
+      if (!player || player.turn === this.state.currentTurn) return;
 
       player.action = ALLIN;
       player.accumulatedBet += player.chips;
@@ -250,8 +249,6 @@ export default class GameRoom extends Room<RoomState> {
       this.state.potSize += player.accumulatedBet;
       this.state.currentTurn = player.turn;
 
-      this.remainingTurn = this.remainingPlayerArr.length - 1;
-      this.state.remainingPlayer--;
       this.remainingTurn--;
 
       console.log('allin:::::', this.remainingTurn);
@@ -260,7 +257,7 @@ export default class GameRoom extends Room<RoomState> {
     // FOLD
     this.onMessage(FOLD, (client: Client, _) => {
       const player = <Player>this.checkBeforeAction(client);
-      if (player.turn === this.state.currentTurn) return;
+      if (!player || player.turn === this.state.currentTurn) return;
 
       player.action = FOLD;
       player.isFold = true;
@@ -403,6 +400,8 @@ export default class GameRoom extends Room<RoomState> {
   private startGame(client: Client) {
     // check game is ready or not
     if (this.state.onReady) return;
+    // check bot has been added
+
     // check accept only host
     const host = <Player>this.state.players.get(client.sessionId);
     if (!host.isHost) return; // accept only host

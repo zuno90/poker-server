@@ -44,6 +44,7 @@ export class BotClient {
     // HANDLE STATECHANGE
     this.room.onStateChange(async state => {
       if (!state.onReady) return;
+      console.log(23234);
       this.botState = <Player>state.players.get(this.sessionId);
       console.log('current turn', state.currentTurn);
       // xac dinh ai vua di va turn nao
