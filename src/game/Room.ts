@@ -4,7 +4,7 @@ import { ERound, RoomState } from './schemas/room.schema';
 import { ERole, EStatement, Player } from './schemas/player.schema';
 import { ROOM_CHAT, ROOM_DISPOSE, START_GAME } from './constants/room.constant';
 import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
-import { DEAL, RANK, RESET_CD, RESULT } from './constants/server-emit.constant';
+import { DEAL, RANK, RESULT } from './constants/server-emit.constant';
 import { deal } from './modules/handleCard';
 import { parseUserFromJwt } from '../utils/jwtChecking';
 import { arrangeSeat, arrangeTurn, removePlayer, sortedArr } from './modules/handlePlayer';
@@ -39,6 +39,7 @@ export default class GameRoom extends Room<RoomState> {
   readonly maxClients: number = 5;
   private readonly MIN_CHIP = 1000;
   private readonly initBetChip: number = 100;
+  private isBotAdded: boolean = false;
   private betChip: number = 0; // chỉ gán cho action RAISE và ALLIN
   private banker5Cards: Array<string> = [];
   private player2Cards: Array<string[]> = [];
@@ -49,7 +50,10 @@ export default class GameRoom extends Room<RoomState> {
 
   async onAuth(_: Client, options: TJwtAuth, req: Request) {
     // is BOT
-    if (this.state.players.size === 1 && options.isBot && !options.jwt) return botInfo;
+    if (this.state.players.size === 1 && options.isBot && !options.jwt) {
+      console.log(botInfo);
+      return botInfo;
+    }
     // IS REAL PLAYER -> CHECK AUTH
     const existedPlayer = await parseUserFromJwt(options.jwt);
     // is HOST
@@ -106,6 +110,7 @@ export default class GameRoom extends Room<RoomState> {
     if (player.isHost) {
       this.state.players.set(client.sessionId, new Player(player)); // set host and bot first
       await this.addBot();
+      this.isBotAdded = true;
       return;
     }
     return this.state.players.set(client.sessionId, new Player(player)); // set player every joining
@@ -118,6 +123,7 @@ export default class GameRoom extends Room<RoomState> {
     if (leavingPlayer.role === ERole.Bot) {
       console.log('bot ' + client.sessionId + ' has just left');
       this.state.players.delete(client.sessionId);
+      this.isBotAdded = false;
       if (this.state.players.size < 2) await this.addBot(); // add new BOT
       return;
     }
@@ -302,16 +308,13 @@ export default class GameRoom extends Room<RoomState> {
   private async handleEndEachRound(round: ERound) {
     // check winner first (river -> showdown)
     if (round === ERound.RIVER) {
+      await sleep(3);
       this.state.round = ERound.SHOWDOWN;
       const resArr = await this.pickWinner();
       // count down for result
-      await sleep(3);
       this.broadcast(RESULT, resArr);
       await sleep(10);
       this.resetGame();
-
-      // count down for reset game
-      // this.countdown();
     }
     // preflop -> flop
     if (round === ERound.PREFLOP) {
@@ -398,13 +401,11 @@ export default class GameRoom extends Room<RoomState> {
   }
 
   private startGame(client: Client) {
-    // check game is ready or not
-    if (this.state.onReady) return;
-    // check bot has been added
-
+    if (this.state.onReady) return; // check game is ready or not
+    if (!this.isBotAdded) return; // check bot has been added
     // check accept only host
     const host = <Player>this.state.players.get(client.sessionId);
-    if (!host.isHost) return; // accept only host
+    if (!host.isHost) return;
 
     const { onHandCards, banker5Cards } = deal(this.state.players.size);
     this.banker5Cards = banker5Cards; // cache 5 cards of banker first
@@ -483,48 +484,31 @@ export default class GameRoom extends Room<RoomState> {
   // handle special cases
   private async isLastAllin() {
     console.log('tính tiền luôn, thằng cuối nó allin rồi');
+    await sleep(3);
     this.state.round = ERound.SHOWDOWN;
     this.state.bankerCards = this.banker5Cards;
 
     const resArr = await this.pickWinner(ALLIN);
     // count down for result
-    await sleep(3);
+
     this.broadcast(RESULT, resArr);
     await sleep(10);
     this.resetGame();
-
-    // count down for reset game
-    // this.countdown();
   }
 
   private async isFoldAll() {
     console.log('tính tiền luôn, còn có thằng kia ah!');
+    await sleep(3);
     this.state.round = ERound.SHOWDOWN;
     this.state.players.forEach(async (player: Player, _) => {
       if (player.statement === EStatement.Playing && !player.isFold) {
         player.chips += this.state.potSize;
         // count down for result
-        await sleep(3);
         this.broadcast(RESULT, [{ t: player.turn, w: true }]);
         await sleep(10);
         this.resetGame();
-
-        // count down for reset game
-        // this.countdown();
       }
     });
-  }
-
-  private countdown() {
-    let resetCd = 5;
-    const resetCountdownInterval: any = setInterval(() => {
-      this.broadcast(RESET_CD, resetCd);
-      if (resetCd === 0) {
-        this.broadcast(RESET_CD, 'Reset done');
-        return clearInterval(resetCountdownInterval);
-      }
-      resetCd--;
-    }, 1000);
   }
 
   private async addBot() {

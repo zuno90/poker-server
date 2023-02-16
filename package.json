@@ -26,6 +26,7 @@
   "dependencies": {
     "@colyseus/monitor": "^0.14.22",
     "@colyseus/proxy": "^0.12.9",
+    "@colyseus/redis-driver": "^0.14.23",
     "@colyseus/social": "^0.11.7",
     "bcrypt": "^5.1.0",
     "colyseus": "^0.14.24",

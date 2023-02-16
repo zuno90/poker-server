@@ -1,9 +1,10 @@
 import express, { Express, Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import { MongooseDriver, RedisPresence, Server } from 'colyseus';
+import { RedisPresence, Server } from 'colyseus';
 import { monitor } from '@colyseus/monitor';
 import { WebSocketTransport } from '@colyseus/ws-transport';
+import { RedisDriver } from '@colyseus/redis-driver';
 import { createServer } from 'http';
 import GameRoom from './game/Room';
 import initDatabase from './init/db';
@@ -35,15 +36,20 @@ async function bootstrap() {
 
   // init game server
   const gameServer = new Server({
-    transport: new WebSocketTransport({ server: createServer(app) }),
+    transport: new WebSocketTransport({
+      server: createServer(app),
+      pingInterval: 150,
+      pingMaxRetries: 1,
+    }),
     presence: new RedisPresence({
       url: process.env.NODE_ENV === 'production' ? process.env.REDIS_URL : 'redis://localhost:6379',
     }),
-    driver: new MongooseDriver(
-      process.env.NODE_ENV === 'production'
-        ? process.env.MONGO_URI
-        : `mongodb://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@localhost:27017`,
-    ),
+    driver: new RedisDriver(),
+    // driver: new MongooseDriver(
+    //   process.env.NODE_ENV === 'production'
+    //     ? process.env.MONGO_URI
+    //     : `mongodb://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@localhost:27017`,
+    // ),
   });
 
   // define each level of Room
