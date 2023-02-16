@@ -1,6 +1,6 @@
 node_modules
 dist
-services
+/services
 mongo_data
 docker-compose.yaml
 ../docker-compose.yml
