@@ -114,12 +114,11 @@ export default class GameRoom extends Room<RoomState> {
 
   async onLeave(client: Client, consented: boolean) {
     const leavingPlayer = <Player>this.state.players.get(client.sessionId);
-    if (!leavingPlayer) return;
-    if (leavingPlayer.statement === EStatement.Playing) return;
+    if (!leavingPlayer) throw new Error('ko co thang client can thoat');
+    if (leavingPlayer.statement === EStatement.Playing) throw new Error('dang choi ko thoat dc!');
     if (leavingPlayer.role === ERole.Bot) {
       console.log('bot ' + client.sessionId + ' has just left');
       this.state.players.delete(client.sessionId);
-      await sleep(2);
       this.state.players.size < 2 && (await this.addBot()); // add new BOT
       return;
     }
@@ -154,7 +153,6 @@ export default class GameRoom extends Room<RoomState> {
   async onDispose() {
     console.log('room ', this.roomId, ' is disposing...');
     this.bot = null;
-    this.broadcast(ROOM_DISPOSE, 'room bi dispose');
   }
 
   // HANDLE ALL ACTIONS
