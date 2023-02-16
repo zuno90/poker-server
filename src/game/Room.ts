@@ -2,7 +2,7 @@ import { Client, Room } from 'colyseus';
 import { Request } from 'express';
 import { ERound, RoomState } from './schemas/room.schema';
 import { ERole, EStatement, Player } from './schemas/player.schema';
-import { ROOM_CHAT, ROOM_DISPOSE, START_GAME } from './constants/room.constant';
+import { ROOM_CHAT, START_GAME } from './constants/room.constant';
 import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
 import { DEAL, RANK, RESULT } from './constants/server-emit.constant';
 import { deal } from './modules/handleCard';
@@ -65,7 +65,7 @@ export default class GameRoom extends Room<RoomState> {
         role: ERole.Player,
       };
     // IS NOT HOST AND PLAYER NUMBER > 2
-    if (this.state.players.size >= 2) {
+    if (this.state.players.size >= 1) {
       let playerSeatArr: number[] = [];
       this.state.players.forEach((player: Player, _) => playerSeatArr.push(player.seat));
       // find out next seat for this player
