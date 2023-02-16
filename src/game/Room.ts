@@ -104,11 +104,11 @@ export default class GameRoom extends Room<RoomState> {
   async onJoin(client: Client, options: TJwtAuth, player: Player) {
     // SET INITIAL PLAYER STATE
     if (player.chips < this.MIN_CHIP) return;
-    if (player.isHost) {
-      this.state.players.set(client.sessionId, new Player(player)); // set host and bot first
-      await this.addBot();
-      return;
-    }
+    // if (player.isHost) {
+    //   this.state.players.set(client.sessionId, new Player(player)); // set host and bot first
+    //   await this.addBot();
+    //   return;
+    // }
     return this.state.players.set(client.sessionId, new Player(player)); // set player every joining
   }
 
@@ -480,7 +480,6 @@ export default class GameRoom extends Room<RoomState> {
   // handle special cases
   private async isLastAllin() {
     console.log('tính tiền luôn, thằng cuối nó allin rồi');
-
     this.state.round = ERound.SHOWDOWN;
     this.state.bankerCards = this.banker5Cards;
 
