@@ -36,11 +36,7 @@ async function bootstrap() {
 
   // init game server
   const gameServer = new Server({
-    transport: new WebSocketTransport({
-      server: createServer(app),
-      pingInterval: 150,
-      pingMaxRetries: 1,
-    }),
+    transport: new WebSocketTransport({ server: createServer(app) }),
     presence: new RedisPresence({
       url: process.env.NODE_ENV === 'production' ? process.env.REDIS_URL : 'redis://localhost:6379',
     }),
