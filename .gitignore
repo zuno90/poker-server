@@ -2,7 +2,7 @@ node_modules
 dist
 services
 mongo_data
-./docker-compose.yaml
+docker-compose.yaml
 ../docker-compose.yml
 res.http
 .env
