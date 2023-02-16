@@ -245,16 +245,19 @@ export default class GameRoom extends Room<RoomState> {
             v: raisedPlayer.chips + raisedPlayer.accumulatedBet,
           });
       });
+
       this.allinArr.push({ i: client.sessionId, t: player.turn, v: player.accumulatedBet });
 
       this.betChip += player.accumulatedBet;
       this.state.potSize += player.accumulatedBet;
       this.state.currentTurn = player.turn;
 
-      this.remainingTurn = this.state.remainingPlayer - 1;
+      this.state.remainingPlayer--;
       this.remainingTurn--;
 
       console.log('allin:::::', this.remainingTurn);
+      this.remainingPlayerArr = removePlayer(player.turn, this.remainingPlayerArr);
+      if (this.remainingPlayerArr.length === 1) return this.isLastAllin();
       if (this.remainingTurn === 0) return this.isLastAllin();
     });
     // FOLD
@@ -305,7 +308,6 @@ export default class GameRoom extends Room<RoomState> {
   private async handleEndEachRound(round: ERound) {
     // check winner first (river -> showdown)
     if (round === ERound.RIVER) {
-      await sleep(3);
       this.state.round = ERound.SHOWDOWN;
       const resArr = await this.pickWinner();
       // count down for result
@@ -480,7 +482,7 @@ export default class GameRoom extends Room<RoomState> {
   // handle special cases
   private async isLastAllin() {
     console.log('tính tiền luôn, thằng cuối nó allin rồi');
-    await sleep(3);
+
     this.state.round = ERound.SHOWDOWN;
     this.state.bankerCards = this.banker5Cards;
 
@@ -494,7 +496,7 @@ export default class GameRoom extends Room<RoomState> {
 
   private async isFoldAll() {
     console.log('tính tiền luôn, còn có thằng kia ah!');
-    await sleep(3);
+
     this.state.round = ERound.SHOWDOWN;
     this.state.players.forEach(async (player: Player, _) => {
       if (player.statement === EStatement.Playing && !player.isFold) {
