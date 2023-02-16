@@ -107,7 +107,6 @@ export default class GameRoom extends Room<RoomState> {
     if (player.isHost) {
       this.state.players.set(client.sessionId, new Player(player)); // set host and bot first
       await this.addBot();
-      this.isBotAdded = true;
       return;
     }
     return this.state.players.set(client.sessionId, new Player(player)); // set player every joining
@@ -120,7 +119,6 @@ export default class GameRoom extends Room<RoomState> {
     if (leavingPlayer.role === ERole.Bot) {
       console.log('bot ' + client.sessionId + ' has just left');
       this.state.players.delete(client.sessionId);
-      this.isBotAdded = false;
       await sleep(2);
       this.state.players.size < 2 && (await this.addBot()); // add new BOT
       return;
@@ -400,7 +398,6 @@ export default class GameRoom extends Room<RoomState> {
 
   private startGame(client: Client) {
     if (this.state.onReady) return; // check game is ready or not
-    if (!this.isBotAdded) return; // check bot has been added
     // check accept only host
     const host = <Player>this.state.players.get(client.sessionId);
     if (!host.isHost) return;
