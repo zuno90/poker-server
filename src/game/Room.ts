@@ -244,7 +244,13 @@ export default class GameRoom extends Room<RoomState> {
           });
       });
 
+      console.log(this.remainingPlayerArr);
+
+      console.log(this.allinArr, 'truoc');
+
       this.allinArr.push({ i: client.sessionId, t: player.turn, v: player.accumulatedBet });
+
+      console.log(this.allinArr, 'sau');
 
       this.betChip += player.accumulatedBet;
       this.state.potSize += player.accumulatedBet;
