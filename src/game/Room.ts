@@ -251,6 +251,7 @@ export default class GameRoom extends Room<RoomState> {
       this.state.potSize += player.accumulatedBet;
       this.state.currentTurn = player.turn;
 
+      this.remainingTurn = this.state.remainingPlayer - 1;
       this.remainingTurn--;
 
       console.log('allin:::::', this.remainingTurn);
