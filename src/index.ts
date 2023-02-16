@@ -44,7 +44,9 @@ async function bootstrap() {
     presence: new RedisPresence({
       url: process.env.NODE_ENV === 'production' ? process.env.REDIS_URL : 'redis://localhost:6379',
     }),
-    driver: new RedisDriver(),
+    driver: new RedisDriver({
+      url: process.env.NODE_ENV === 'production' ? process.env.REDIS_URL : 'redis://localhost:6379',
+    }),
     // driver: new MongooseDriver(
     //   process.env.NODE_ENV === 'production'
     //     ? process.env.MONGO_URI
