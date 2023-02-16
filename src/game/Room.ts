@@ -65,7 +65,7 @@ export default class GameRoom extends Room<RoomState> {
         role: ERole.Player,
       };
     // IS NOT HOST AND PLAYER NUMBER > 2
-    if (this.state.players.size >= 1) {
+    if (this.state.players.size >= 2) {
       let playerSeatArr: number[] = [];
       this.state.players.forEach((player: Player, _) => playerSeatArr.push(player.seat));
       // find out next seat for this player
@@ -104,11 +104,11 @@ export default class GameRoom extends Room<RoomState> {
   async onJoin(client: Client, options: TJwtAuth, player: Player) {
     // SET INITIAL PLAYER STATE
     if (player.chips < this.MIN_CHIP) return;
-    // if (player.isHost) {
-    //   this.state.players.set(client.sessionId, new Player(player)); // set host and bot first
-    //   await this.addBot();
-    //   return;
-    // }
+    if (player.isHost) {
+      this.state.players.set(client.sessionId, new Player(player)); // set host and bot first
+      await this.addBot();
+      return;
+    }
     return this.state.players.set(client.sessionId, new Player(player)); // set player every joining
   }
 
