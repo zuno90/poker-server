@@ -50,10 +50,7 @@ export default class GameRoom extends Room<RoomState> {
 
   async onAuth(_: Client, options: TJwtAuth, req: Request) {
     // is BOT
-    if (this.state.players.size === 1 && options.isBot && !options.jwt) {
-      console.log(botInfo);
-      return botInfo;
-    }
+    if (this.state.players.size === 1 && options.isBot && !options.jwt) return botInfo();
     // IS REAL PLAYER -> CHECK AUTH
     const existedPlayer = await parseUserFromJwt(options.jwt);
     // is HOST
@@ -124,7 +121,8 @@ export default class GameRoom extends Room<RoomState> {
       console.log('bot ' + client.sessionId + ' has just left');
       this.state.players.delete(client.sessionId);
       this.isBotAdded = false;
-      if (this.state.players.size < 2) await this.addBot(); // add new BOT
+      await sleep(2);
+      this.state.players.size < 2 && (await this.addBot()); // add new BOT
       return;
     }
     await updateChip(leavingPlayer.id, leavingPlayer.chips);

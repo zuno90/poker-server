@@ -25,13 +25,15 @@ const username = [
   'Obito',
 ];
 
-export const botInfo = {
-  id: 'BOTGPT-wibu',
-  username: username[Math.floor(Math.random() * username.length)],
-  email: null,
-  chips: 10000,
-  isHost: false,
-  seat: 5,
-  role: ERole.Bot,
-  connected: false,
+export const botInfo = () => {
+  return {
+    id: 'BOTGPT-wibu',
+    username: username[Math.floor(Math.random() * username.length)],
+    email: null,
+    chips: 10000,
+    isHost: false,
+    seat: 5,
+    role: ERole.Bot,
+    connected: false,
+  };
 };
