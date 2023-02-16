@@ -1,20 +1,25 @@
-import { Client, Room } from 'colyseus';
-import { Request } from 'express';
-import { ERound, RoomState } from './schemas/room.schema';
-import { ERole, EStatement, Player } from './schemas/player.schema';
-import { ROOM_CHAT, START_GAME } from './constants/room.constant';
-import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
-import { DEAL, RANK, RESULT } from './constants/server-emit.constant';
-import { deal } from './modules/handleCard';
-import { parseUserFromJwt } from '../utils/jwtChecking';
-import { arrangeSeat, arrangeTurn, removePlayer, sortedArr } from './modules/handlePlayer';
-import { calculateAllinPlayer, checkPlayerRank } from './modules/handleRank';
-import { BotClient } from './BotGPT';
-import { botInfo } from './constants/bot.constant';
-import { sleep } from '../utils/sleep';
-import { updateChip } from '../services/game.service';
+import { Client, Room } from "colyseus";
+import { Request } from "express";
+import { ERound, RoomState } from "./schemas/room.schema";
+import { ERole, EStatement, Player } from "./schemas/player.schema";
+import { ROOM_CHAT, START_GAME } from "./constants/room.constant";
+import { ALLIN, CALL, CHECK, FOLD, RAISE } from "./constants/action.constant";
+import { DEAL, RANK, RESULT } from "./constants/server-emit.constant";
+import { deal } from "./modules/handleCard";
+import { parseUserFromJwt } from "../utils/jwtChecking";
+import {
+  arrangeSeat,
+  arrangeTurn,
+  removePlayer,
+  sortedArr,
+} from "./modules/handlePlayer";
+import { calculateAllinPlayer, checkPlayerRank } from "./modules/handleRank";
+import { BotClient } from "./BotGPT";
+import { botInfo } from "./constants/bot.constant";
+import { sleep } from "../utils/sleep";
+import { updateChip } from "../services/game.service";
 
-const Hand = require('pokersolver').Hand; // func handle winner
+const Hand = require("pokersolver").Hand; // func handle winner
 
 type TJwtAuth = {
   jwt: string;
@@ -39,7 +44,6 @@ export default class GameRoom extends Room<RoomState> {
   readonly maxClients: number = 5;
   private readonly MIN_CHIP = 1000;
   private readonly initBetChip: number = 100;
-  private isBotAdded: boolean = false;
   private betChip: number = 0; // chỉ gán cho action RAISE và ALLIN
   private banker5Cards: Array<string> = [];
   private player2Cards: Array<string[]> = [];
@@ -50,11 +54,14 @@ export default class GameRoom extends Room<RoomState> {
 
   async onAuth(_: Client, options: TJwtAuth, req: Request) {
     // is BOT
-    if (this.state.players.size === 1 && options.isBot && !options.jwt) return botInfo();
+    if (this.state.players.size === 1 && options.isBot && !options.jwt)
+      return botInfo();
     // IS REAL PLAYER -> CHECK AUTH
     const existedPlayer = await parseUserFromJwt(options.jwt);
-    // is HOST
+    if (existedPlayer.chips < this.MIN_CHIP)
+      throw new Error("This room is required for " + this.MIN_CHIP);
     if (!this.state.players.size)
+      // is HOST
       return {
         id: existedPlayer.id,
         username: existedPlayer.username ?? existedPlayer.email,
@@ -64,10 +71,13 @@ export default class GameRoom extends Room<RoomState> {
         turn: 0,
         role: ERole.Player,
       };
+
     // IS NOT HOST AND PLAYER NUMBER > 2
     if (this.state.players.size >= 2) {
       let playerSeatArr: number[] = [];
-      this.state.players.forEach((player: Player, _) => playerSeatArr.push(player.seat));
+      this.state.players.forEach((player: Player, _) =>
+        playerSeatArr.push(player.seat)
+      );
       // find out next seat for this player
       const nextSeat = arrangeSeat(playerSeatArr); // next seat - 1 = 1
 
@@ -96,62 +106,57 @@ export default class GameRoom extends Room<RoomState> {
       // HANDLE ALL ACTION FROM PLAYER
       this.handleAction();
     } catch (err) {
-      console.error('error:::::', err);
-      // await this.disconnect();
+      console.error("error:::::", err);
     }
   }
 
   async onJoin(client: Client, options: TJwtAuth, player: Player) {
     // SET INITIAL PLAYER STATE
-    if (player.chips < this.MIN_CHIP) return;
-    if (player.isHost) {
-      this.state.players.set(client.sessionId, new Player(player)); // set host and bot first
-      await this.addBot();
-      return;
+    try {
+      if (player.isHost) {
+        this.state.players.set(client.sessionId, new Player(player)); // set host and bot first
+        await this.addBot();
+        return;
+      }
+      return this.state.players.set(client.sessionId, new Player(player)); // set player every joining
+    } catch (err) {
+      console.error(err);
     }
-    return this.state.players.set(client.sessionId, new Player(player)); // set player every joining
   }
 
   async onLeave(client: Client, consented: boolean) {
     const leavingPlayer = <Player>this.state.players.get(client.sessionId);
-    if (!leavingPlayer) throw new Error('ko co thang client can thoat');
-    if (leavingPlayer.statement === EStatement.Playing) throw new Error('dang choi ko thoat dc!');
+    if (!leavingPlayer) throw new Error("ko co thang client can thoat");
+    if (leavingPlayer.statement === EStatement.Playing)
+      throw new Error("dang choi ko thoat dc!");
     if (leavingPlayer.role === ERole.Bot) {
-      console.log('bot ' + client.sessionId + ' has just left');
+      console.log("bot " + client.sessionId + " has just left");
       this.state.players.delete(client.sessionId);
       this.state.players.size < 2 && (await this.addBot()); // add new BOT
       return;
     }
     await updateChip(leavingPlayer.id, leavingPlayer.chips);
-    if (leavingPlayer.isHost && this.state.players.size >= 2) {
-      // handle change host & delete bot
-      this.state.players.forEach((player: Player, _) => {
-        if (player.turn === 1) {
+    // remove bot if only host + bot
+    if (leavingPlayer.isHost && this.state.players.size === 2) {
+      console.log("con con bot");
+      await this.disconnect();
+    }
+    // handle change host to player
+    if (leavingPlayer.isHost && this.state.players.size >= 3) {
+      this.state.players.forEach((player: Player, _: string) => {
+        if (player.turn === 1 && player.role === ERole.Player) {
           player.isHost = true;
           player.seat = 1;
           player.turn = 0;
         }
       });
     }
-    console.log('client ' + client.sessionId + ' has just left');
+    console.log("client " + client.sessionId + " has just left");
     return this.state.players.delete(client.sessionId);
-    // leavingPlayer.connected = false;
-    // try {
-    //   // update chip
-    //   if (leavingPlayer.role === 'Player') await updateChip(leavingPlayer.id, leavingPlayer.chips);
-    //   // allow disconnected client to reconnect into this room until 20 seconds
-    //   const reconnection = await this.allowReconnection(client, 10);
-    //   // client returned! let's re-activate it.
-    //   leavingPlayer.connected = true;
-    // } catch (e) {
-    //   // 10 seconds expired. let's remove the client.
-    //   this.state.players.delete(client.sessionId);
-    //   console.log('client ' + client.sessionId + ' has just left');
-    // }
   }
 
   async onDispose() {
-    console.log('room ', this.roomId, ' is disposing...');
+    console.log("room ", this.roomId, " is disposing...");
     this.bot = null;
   }
 
@@ -173,7 +178,7 @@ export default class GameRoom extends Room<RoomState> {
     this.onMessage(RAISE, (client: Client, { chips }: { chips: number }) => {
       const player = <Player>this.checkBeforeAction(client);
       if (!player || player.turn === this.state.currentTurn) return;
-      if (chips < this.betChip / 2) return;
+      if (chips > player.chips || chips < this.betChip / 2) return;
       player.action = RAISE;
       player.accumulatedBet += chips;
       player.betEachAction = chips;
@@ -184,7 +189,7 @@ export default class GameRoom extends Room<RoomState> {
       this.state.currentTurn = player.turn;
 
       this.remainingTurn = this.state.remainingPlayer - 1;
-      console.log('raise:::::', this.remainingTurn);
+      console.log("raise:::::", this.remainingTurn);
     });
     // CALL
     this.onMessage(CALL, (client: Client) => {
@@ -199,14 +204,16 @@ export default class GameRoom extends Room<RoomState> {
 
       player.action = CALL;
       player.accumulatedBet += callValue;
+      player.betEachAction = callValue;
       player.chips -= callValue;
 
       this.state.potSize += callValue;
       this.state.currentTurn = player.turn;
 
       this.remainingTurn--;
-      console.log('call:::::', this.remainingTurn);
-      if (this.remainingTurn === 0) return this.handleEndEachRound(this.state.round);
+      console.log("call:::::", this.remainingTurn);
+      if (this.remainingTurn === 0)
+        return this.handleEndEachRound(this.state.round);
     });
     // CHECK
     this.onMessage(CHECK, (client: Client) => {
@@ -217,8 +224,9 @@ export default class GameRoom extends Room<RoomState> {
       this.state.currentTurn = player.turn;
 
       this.remainingTurn--;
-      console.log('check:::::', this.remainingTurn);
-      if (this.remainingTurn === 0) return this.handleEndEachRound(this.state.round);
+      console.log("check:::::", this.remainingTurn);
+      if (this.remainingTurn === 0)
+        return this.handleEndEachRound(this.state.round);
     });
     // ALLIN
     this.onMessage(ALLIN, (client: Client) => {
@@ -244,13 +252,11 @@ export default class GameRoom extends Room<RoomState> {
           });
       });
 
-      console.log(this.remainingPlayerArr);
-
-      console.log(this.allinArr, 'truoc');
-
-      this.allinArr.push({ i: client.sessionId, t: player.turn, v: player.accumulatedBet });
-
-      console.log(this.allinArr, 'sau');
+      this.allinArr.push({
+        i: client.sessionId,
+        t: player.turn,
+        v: player.accumulatedBet,
+      });
 
       this.betChip += player.accumulatedBet;
       this.state.potSize += player.accumulatedBet;
@@ -259,8 +265,11 @@ export default class GameRoom extends Room<RoomState> {
       this.state.remainingPlayer--;
       this.remainingTurn--;
 
-      console.log('allin:::::', this.remainingTurn);
-      this.remainingPlayerArr = removePlayer(player.turn, this.remainingPlayerArr);
+      console.log("allin:::::", this.remainingTurn);
+      this.remainingPlayerArr = removePlayer(
+        player.turn,
+        this.remainingPlayerArr
+      );
 
       if (this.state.remainingPlayer === 0) return this.isLastAllin();
       if (this.remainingTurn === 0) return this.isLastAllin();
@@ -277,10 +286,14 @@ export default class GameRoom extends Room<RoomState> {
 
       this.state.remainingPlayer--;
       this.remainingTurn--;
-      console.log('fold:::::', this.remainingTurn);
-      this.remainingPlayerArr = removePlayer(player.turn, this.remainingPlayerArr);
+      console.log("fold:::::", this.remainingTurn);
+      this.remainingPlayerArr = removePlayer(
+        player.turn,
+        this.remainingPlayerArr
+      );
       if (this.remainingPlayerArr.length === 1) return this.isFoldAll();
-      if (this.remainingTurn === 0) return this.handleEndEachRound(this.state.round);
+      if (this.remainingTurn === 0)
+        return this.handleEndEachRound(this.state.round);
     });
   }
 
@@ -291,7 +304,9 @@ export default class GameRoom extends Room<RoomState> {
       const rankInfo = checkPlayerRank([
         {
           sessionId: client.sessionId,
-          combinedCards: [...this.state.bankerCards].concat([...this.player2Cards[player.turn]]),
+          combinedCards: [...this.state.bankerCards].concat([
+            ...this.player2Cards[player.turn],
+          ]),
         },
       ]);
       client.send(DEAL, {
@@ -306,7 +321,7 @@ export default class GameRoom extends Room<RoomState> {
     if (!this.state.onReady) return;
     const player = <Player>this.state.players.get(client.sessionId);
     if (!player || player.isFold) return;
-    if (player.statement === 'Waiting') return;
+    if (player.statement === "Waiting") return;
     return player;
   }
 
@@ -338,7 +353,7 @@ export default class GameRoom extends Room<RoomState> {
     this.betChip = 0;
     this.remainingTurn = this.state.remainingPlayer;
     for (const p of this.state.players.values()) {
-      if (p.statement === 'Playing') p.betEachAction = 0;
+      if (p.statement === "Playing") p.betEachAction = 0;
     }
     return this.sendRankEachRound();
   }
@@ -350,7 +365,9 @@ export default class GameRoom extends Room<RoomState> {
         const rankInfo = checkPlayerRank([
           {
             sessionId: client.sessionId,
-            combinedCards: [...this.state.bankerCards].concat([...this.player2Cards[player.turn]]),
+            combinedCards: [...this.state.bankerCards].concat([
+              ...this.player2Cards[player.turn],
+            ]),
           },
         ]);
         return client.send(RANK, { r: rankInfo[0].rank, d: rankInfo[0].name });
@@ -366,7 +383,9 @@ export default class GameRoom extends Room<RoomState> {
         const rankInfo = checkPlayerRank([
           {
             sessionId,
-            combinedCards: [...this.banker5Cards].concat([...this.player2Cards[player.turn]]),
+            combinedCards: [...this.banker5Cards].concat([
+              ...this.player2Cards[player.turn],
+            ]),
           },
         ]);
         winCardsArr.push(rankInfo[0]);
@@ -389,9 +408,9 @@ export default class GameRoom extends Room<RoomState> {
         if (allinPlayer.i === winHand.sessionId) allinPlayer.w = true;
         totalAllin += allinPlayer.v;
       }
-      console.log('dau vao', this.allinArr);
+      console.log("dau vao", this.allinArr);
       const remainingAllinArr = calculateAllinPlayer(this.allinArr);
-      console.log(remainingAllinArr);
+      console.log("ong pha", remainingAllinArr);
       for (const r of remainingAllinArr) {
         const p = <Player>this.state.players.get(r.i);
         p.chips = r.v;
@@ -421,7 +440,9 @@ export default class GameRoom extends Room<RoomState> {
     this.state.round = ERound.PREFLOP;
     this.state.potSize = this.state.players.size * this.initBetChip;
     this.state.remainingPlayer = this.state.players.size;
-    const randomTurn = Math.round((Math.random() * 10) % (this.state.players.size - 1));
+    const randomTurn = Math.round(
+      (Math.random() * 10) % (this.state.players.size - 1)
+    );
     this.state.currentTurn = randomTurn - 1;
 
     // initialize state of player
@@ -437,7 +458,10 @@ export default class GameRoom extends Room<RoomState> {
     // gán turn vào
     this.state.players.forEach((player: Player, _) => {
       player.turn = arrangeTurn(player.seat, playerSeatArr) as number;
-      this.remainingPlayerArr = sortedArr([...this.remainingPlayerArr, player.turn]);
+      this.remainingPlayerArr = sortedArr([
+        ...this.remainingPlayerArr,
+        player.turn,
+      ]);
     });
     // send to player 2 cards
     this.send2Cards();
@@ -486,7 +510,7 @@ export default class GameRoom extends Room<RoomState> {
 
   // handle special cases
   private async isLastAllin() {
-    console.log('tính tiền luôn, thằng cuối nó allin rồi');
+    console.log("tính tiền luôn, thằng cuối nó allin rồi");
     this.state.round = ERound.SHOWDOWN;
     this.state.bankerCards = this.banker5Cards;
 
@@ -499,7 +523,7 @@ export default class GameRoom extends Room<RoomState> {
   }
 
   private async isFoldAll() {
-    console.log('tính tiền luôn, còn có thằng kia ah!');
+    console.log("tính tiền luôn, còn có thằng kia ah!");
 
     this.state.round = ERound.SHOWDOWN;
     this.state.players.forEach(async (player: Player, _) => {
@@ -514,8 +538,11 @@ export default class GameRoom extends Room<RoomState> {
   }
 
   private async addBot() {
+    if (this.clients.length === this.maxClients) return;
     const bot = new BotClient(
-      process.env.NODE_ENV === 'production' ? `${process.env.WS_SERVER}` : 'ws://localhost:9000',
+      process.env.NODE_ENV === "production"
+        ? `${process.env.WS_SERVER}`
+        : "ws://localhost:9000"
     );
     await bot.joinRoom(this.roomId);
     this.bot?.set(bot.sessionId, bot);

@@ -1,13 +1,13 @@
 node_modules
 dist
+services
 mongo_data
+./docker-compose.yaml
 ../docker-compose.yml
 res.http
 .env
 .prettierrc
 .idea
 ./loadtest.*
-keydb.conf
-keydb
 redis
 ../testgame.html
