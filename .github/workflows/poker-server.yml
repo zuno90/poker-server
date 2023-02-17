@@ -26,11 +26,5 @@ jobs:
                 -e HOST=172.31.31.206 \
                 -e WS_SERVER=${{ secrets.WS_SERVER }} \
                 -e REDIS_URL=${{ secrets.REDIS_URL }} \
-                -e MONGO_URI=${{ secrets.MONGO_URI }} \
-                -e MONGO_HOST=${{ secrets.MONGO_HOST }} \
-                -e MONGO_PORT=${{ secrets.MONGO_PORT }} \
-                -e MONGO_USERNAME=${{ secrets.MONGO_USERNAME }} \
-                -e MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }} \
-                -e MONGO_DATABASE_NAME=${{ secrets.MONGO_DATABASE_NAME }} \
-                -e JWT_SECRET=${{ secrets.JWT_SECRET }} \
+                -e CMS_URL=${{ secrets.CMS_URL }} \
                 poker-server:$GITHUB_RUN_NUMBER

@@ -4,9 +4,10 @@ import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
 import { DEAL, RANK, RESULT } from './constants/server-emit.constant';
 import { EStatement, Player } from './schemas/player.schema';
 import { sleep } from '../utils/sleep';
-import { sortedArr } from './modules/handlePlayer';
+import { removePlayer, sortedArr } from './modules/handlePlayer';
 
 type TCurrentBetInfo = {
+  turn: number;
   action: string | undefined;
   chips: number;
   betEachAction: number;
@@ -68,10 +69,11 @@ export class BotClient {
       let remainingPlayerTurn: number[] = [];
       state.players.forEach((player: Player, _: string) => {
         if (player.statement === EStatement.Playing) {
-          if (!player.isFold)
+          if (!player.isFold && player.chips > 0)
             remainingPlayerTurn = sortedArr([...remainingPlayerTurn, player.turn]);
           if (state.currentTurn === player.turn)
             this.currentBetInfo = {
+              turn: player.turn,
               action: player.action,
               chips: player.chips,
               betEachAction: player.betEachAction,
@@ -89,7 +91,7 @@ export class BotClient {
       } // reset BOT
       console.log('end game', this.isEndGame);
       if (this.isEndGame) return;
-      this.botReadyToAction(state.currentTurn as number, remainingPlayerTurn); // active/deactive bot
+      this.botReadyToAction(this.botState.turn, state.currentTurn, remainingPlayerTurn); // active/deactive bot
       if (!this.isActive) return;
       return this.betAlgorithm(state.round, this.botState); // run algorithm of bot
     });
@@ -110,7 +112,11 @@ export class BotClient {
   }
 
   // check bot goes first
-  private botReadyToAction(currentTurn: number, sortedRemainingPlayerTurn: number[]) {
+  private botReadyToAction(
+    botTurn: number,
+    currentTurn: number,
+    sortedRemainingPlayerTurn: number[],
+  ) {
     if (currentTurn === -1) return;
     if (sortedRemainingPlayerTurn.length === 1) {
       this.isEndGame = true;
@@ -119,12 +125,19 @@ export class BotClient {
     } // case fold con 1
 
     let rIFPlayer = [];
-    if (this.currentBetInfo?.action === FOLD || this.currentBetInfo?.action === ALLIN)
-      rIFPlayer = sortedArr([currentTurn, ...sortedRemainingPlayerTurn]);
-    else rIFPlayer = sortedArr([...new Set([currentTurn, ...sortedRemainingPlayerTurn])]);
+    if (this.currentBetInfo.action === FOLD || this.currentBetInfo.action === ALLIN) {
+      rIFPlayer = removePlayer(this.currentBetInfo.turn, sortedRemainingPlayerTurn);
+      console.log(rIFPlayer, 'fold & allin');
+    } else {
+      rIFPlayer = sortedArr([...new Set([...sortedRemainingPlayerTurn])]);
+      console.log(rIFPlayer, 'others');
+    }
+
+    // check bot is fold or allin
+    const isHasBotTurn = rIFPlayer.find(turn => turn === botTurn);
 
     // bot action if previous player action
-    if (rIFPlayer[rIFPlayer.length - 2] === currentTurn) {
+    if (rIFPlayer[rIFPlayer.length - 2] === this.currentBetInfo.turn && isHasBotTurn) {
       // check game end?
       console.log(this.currentBetInfo);
       if (!this.currentBetInfo.action) this.isGoFirst = true; // at turn preflop

@@ -1,4 +1,4 @@
-FROM node:alpine
+FROM node:alpine as build
 WORKDIR /usr/src/app/poker-server
 COPY ./package*.json .
 RUN yarn
