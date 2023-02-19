@@ -136,20 +136,16 @@ export default class RoomGame extends Room<RoomState> {
   async onLeave(client: Client, consented: boolean) {
     try {
       const leavingPlayer = <Player>this.state.players.get(client.sessionId);
-      if (!leavingPlayer) throw new Error('ko co thang client can thoat');
-      console.log(leavingPlayer.toJSON());
-      if (leavingPlayer.statement === EStatement.Playing) throw new Error('dang choi ko thoat dc!');
+      if (!leavingPlayer) return;
       if (leavingPlayer.role === ERole.Bot) {
         console.log('bot ' + client.sessionId + ' has just left');
         this.state.players.delete(client.sessionId);
-        this.state.players.size <= 2 && (await this.addBot()); // add new BOT
+        if (this.state.players.size <= 2) {
+          setTimeout(() => this.addBot(), 2000);
+        } // add new BOT after 2s
         return;
       }
-      await this.presence.publish(
-        'poker:update:chip',
-        JSON.stringify({ id: leavingPlayer.id, chips: leavingPlayer.chips }),
-      );
-      console.log(this.clients.length, 'client dang trong room');
+
       // handle change host to player
       const seatArr: any[] = [];
       if (leavingPlayer.isHost) {
@@ -172,6 +168,10 @@ export default class RoomGame extends Room<RoomState> {
       }
 
       console.log('client ' + client.sessionId + ' has just left');
+      await this.presence.publish(
+        'poker:update:chip',
+        JSON.stringify({ id: leavingPlayer.id, chips: leavingPlayer.chips }),
+      );
       return this.state.players.delete(client.sessionId);
     } catch (err) {
       console.error(err);
@@ -497,7 +497,7 @@ export default class RoomGame extends Room<RoomState> {
             const { emitResultArr, finalCalculateResult } = this.pickWinner1();
             for (const c of finalCalculateResult) {
               const allinPlayer = <Player>this.state.players.get(c.i);
-              allinPlayer.chips = c.v;
+              allinPlayer.chips += c.v;
             }
             return this.endGame(emitResultArr);
           }
@@ -510,7 +510,7 @@ export default class RoomGame extends Room<RoomState> {
       const { emitResultArr, finalCalculateResult } = this.pickWinner1();
       for (const c of finalCalculateResult) {
         const allinPlayer = <Player>this.state.players.get(c.i);
-        allinPlayer.chips = c.v;
+        allinPlayer.chips += c.v;
       }
       return this.endGame(emitResultArr);
     }
@@ -554,7 +554,7 @@ export default class RoomGame extends Room<RoomState> {
             const { emitResultArr, finalCalculateResult } = this.pickWinner1();
             for (const c of finalCalculateResult) {
               const allinPlayer = <Player>this.state.players.get(c.i);
-              allinPlayer.chips = c.v;
+              allinPlayer.chips += c.v;
             }
             return this.endGame(emitResultArr);
           }
@@ -575,7 +575,7 @@ export default class RoomGame extends Room<RoomState> {
 
     this.clock.setTimeout(() => {
       this.delayedTimeOut.clear();
-      // this.resetGame();
+      this.resetGame();
       console.log('reset game');
     }, 10000);
   }

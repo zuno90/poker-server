@@ -11,3 +11,4 @@ res.http
 ./loadtest.*
 redis
 ../testgame.html
+test.js
