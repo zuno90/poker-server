@@ -494,6 +494,7 @@ export default class RoomGame extends Room<RoomState> {
         if (bet.t === remainTurn[0]) {
           const remainP = <Player>this.state.players.get(bet.i);
           if (remainP.accumulatedBet > this.currentBet) {
+            console.log('case do day!!!!!!');
             const { emitResultArr, finalCalculateResult } = this.pickWinner1();
             for (const c of finalCalculateResult) {
               const allinPlayer = <Player>this.state.players.get(c.i);

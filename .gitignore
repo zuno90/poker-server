@@ -10,5 +10,6 @@ res.http
 .idea
 ./loadtest.*
 redis
-../testgame.html
+testgame.html
+testgame1.html
 test.js

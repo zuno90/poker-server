@@ -7,7 +7,7 @@ import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
 import { DEAL, RANK, RESULT } from './constants/server-emit.constant';
 import { deal } from './modules/handleCard';
 import { arrangeSeat, arrangeTurn, getNonDupItem, sortedArr } from './modules/handlePlayer';
-import { checkPlayerRank } from './modules/handleRank';
+import { calculateAllinPlayer, checkPlayerRank } from './modules/handleRank';
 import { BotClient } from './BotGPT';
 import { botInfo } from './constants/bot.constant';
 import axios from 'axios';
@@ -36,16 +36,17 @@ export default class RoomGame extends Room<RoomState> {
   readonly maxClients: number = 5;
   private readonly MIN_CHIP = 1000;
   private readonly initBetChip: number = 100;
+  private currentBet: number = 0;
   private banker5Cards: Array<string> = [];
   private player2Cards: Array<string[]> = [];
   private remainingPlayerArr: number[] = [];
   private remainingTurn: number;
-  private allinArr: TAllinPlayer[] = [];
+  private allinArr: number[] = [];
+  private allinList: TAllinPlayer[] = [];
   private foldArr: number[] = [];
 
   private bot: Map<string, BotClient> | null = new Map<string, BotClient>(); // new bot
 
-  private currentBet: number = 0;
   public delayedTimeOut!: Delayed;
 
   async onAuth(client: Client, options: TJwtAuth, req: Request) {
@@ -135,26 +136,22 @@ export default class RoomGame extends Room<RoomState> {
   async onLeave(client: Client, consented: boolean) {
     try {
       const leavingPlayer = <Player>this.state.players.get(client.sessionId);
-      if (!leavingPlayer) throw new Error('ko co thang client can thoat');
-      if (leavingPlayer.statement === EStatement.Playing) throw new Error('dang choi ko thoat dc!');
+      if (!leavingPlayer) return;
       if (leavingPlayer.role === ERole.Bot) {
         console.log('bot ' + client.sessionId + ' has just left');
         this.state.players.delete(client.sessionId);
-        this.state.players.size <= 2 && (await this.addBot()); // add new BOT
+        if (this.state.players.size <= 2) {
+          setTimeout(() => this.addBot(), 2000);
+        } // add new BOT after 2s
         return;
       }
-      await this.presence.publish(
-        'poker:update:chip',
-        JSON.stringify({ id: leavingPlayer.id, chips: leavingPlayer.chips }),
-      );
-      console.log(this.clients.length, 'client dang trong room');
+
       // handle change host to player
       const seatArr: any[] = [];
       if (leavingPlayer.isHost) {
         this.state.players.forEach((player: Player, sessionId: string) => {
           if (player.role === ERole.Player) seatArr.push({ sessionId, seat: player.seat });
         });
-        console.log(seatArr, 'seat');
         if (seatArr.length === 0) await this.disconnect();
         if (seatArr.length === 1) {
           const newHost = <Player>this.state.players.get(seatArr[0].sessionId);
@@ -171,9 +168,14 @@ export default class RoomGame extends Room<RoomState> {
       }
 
       console.log('client ' + client.sessionId + ' has just left');
+      await this.presence.publish(
+        'poker:update:chip',
+        JSON.stringify({ id: leavingPlayer.id, chips: leavingPlayer.chips }),
+      );
       return this.state.players.delete(client.sessionId);
     } catch (err) {
-      client.leave(1001);
+      console.error(err);
+      // client.leave(1001);
     }
   }
 
@@ -200,10 +202,10 @@ export default class RoomGame extends Room<RoomState> {
     this.onMessage(RAISE, (client: Client, { chips }: { chips: number }) => {
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return; // không cho gửi 2 lần
-      if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
-        const nextTurn = Math.min(...this.remainingPlayerArr);
-        if (nextTurn !== player.turn) return;
-      }
+      // if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
+      //   const nextTurn = Math.min(...this.remainingPlayerArr);
+      //   if (nextTurn !== player.turn) return;
+      // }
 
       if (this.currentBet > chips / 2) return; // chỉ cho phép raise lệnh hơn 2 lần current bet
       if (player.chips <= chips) return this.allinAction(client.sessionId, player, chips); // trường hợp này chuyển sang allin
@@ -215,10 +217,10 @@ export default class RoomGame extends Room<RoomState> {
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return;
       if (this.state.currentTurn === -1) return;
-      if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
-        const nextTurn = Math.min(...this.remainingPlayerArr);
-        if (nextTurn !== player.turn) return;
-      }
+      // if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
+      //   const nextTurn = Math.min(...this.remainingPlayerArr);
+      //   if (nextTurn !== player.turn) return;
+      // }
       let callValue = 0;
       if (player.betEachAction === 0) {
         // tại round mới và nó chưa action gì
@@ -228,7 +230,7 @@ export default class RoomGame extends Room<RoomState> {
         callValue = this.currentBet - player.betEachAction;
       }
 
-      // nếu lệnh call này nhiều hơn chip nó đang còn
+      // nếu lệnh call này >= chip nó đang còn
       if (callValue >= player.chips) return this.allinAction(client.sessionId, player, callValue);
 
       return this.callAction(player, callValue);
@@ -237,10 +239,10 @@ export default class RoomGame extends Room<RoomState> {
     this.onMessage(CHECK, (client: Client) => {
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return;
-      if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
-        const nextTurn = Math.min(...this.remainingPlayerArr);
-        if (nextTurn !== player.turn) return;
-      }
+      // if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
+      //   const nextTurn = Math.min(...this.remainingPlayerArr);
+      //   if (nextTurn !== player.turn) return;
+      // }
 
       this.checkAction(player);
     });
@@ -248,10 +250,10 @@ export default class RoomGame extends Room<RoomState> {
     this.onMessage(ALLIN, (client: Client) => {
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return;
-      if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
-        const nextTurn = Math.min(...this.remainingPlayerArr);
-        if (nextTurn !== player.turn) return;
-      }
+      // if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
+      //   const nextTurn = Math.min(...this.remainingPlayerArr);
+      //   if (nextTurn !== player.turn) return;
+      // }
 
       this.allinAction(client.sessionId, player, player.chips);
     });
@@ -285,9 +287,12 @@ export default class RoomGame extends Room<RoomState> {
   private async changeNextRound(round: ERound) {
     // check winner first (river -> showdown)
     if (round === ERound.RIVER) {
-      const { winPlayer, resultArr } = this.pickWinner1();
-      winPlayer.chips += this.state.potSize;
-      return this.endGame(resultArr);
+      const { emitResultArr, finalCalculateResult } = this.pickWinner1();
+      for (const c of finalCalculateResult) {
+        const allinPlayer = <Player>this.state.players.get(c.i);
+        allinPlayer.chips = c.v;
+      }
+      return this.endGame(emitResultArr);
     }
     this.currentBet = 0;
     this.remainingTurn = this.state.remainingPlayer;
@@ -382,6 +387,8 @@ export default class RoomGame extends Room<RoomState> {
     this.player2Cards = [];
     this.remainingPlayerArr = [];
     this.allinArr = [];
+    this.allinList = [];
+    this.foldArr = [];
 
     // room state
     this.state.onReady = false;
@@ -390,6 +397,7 @@ export default class RoomGame extends Room<RoomState> {
     this.state.bankerCards = [];
     this.state.remainingPlayer = 0;
     this.state.currentTurn = 6969;
+
     // player state
     this.state.players.forEach((player: Player, sessionId: string) => {
       const newPlayer = {
@@ -422,7 +430,7 @@ export default class RoomGame extends Room<RoomState> {
 
     this.currentBet = chip;
 
-    this.remainingTurn = this.remainingPlayerArr.length - 1;
+    this.remainingTurn = this.state.remainingPlayer - 1;
     console.log('RAISE, turn con', this.remainingTurn);
   }
 
@@ -455,19 +463,7 @@ export default class RoomGame extends Room<RoomState> {
     player.action = ALLIN;
     player.betEachAction = chip;
 
-    const allinA: any[] = [];
-
-    if (chip > this.currentBet) {
-      // thằng allin này thành raise
-      this.currentBet = chip;
-    } else {
-      this.state.players.forEach((betPlayer: Player, sessionId: string) => {
-        if (betPlayer.betEachAction > player.chips) {
-          allinA.push({ i: sessionId, t: betPlayer.turn, v: betPlayer.accumulatedBet });
-        }
-      });
-    }
-    console.log('log phia tren', allinA);
+    if (chip > this.currentBet) this.currentBet = chip;
 
     player.betEachAction = chip;
     player.accumulatedBet += chip;
@@ -478,24 +474,47 @@ export default class RoomGame extends Room<RoomState> {
     this.state.remainingPlayer--;
     this.remainingTurn--;
 
-    allinA.push({
-      i: sessionId,
-      t: player.turn,
-      v: player.accumulatedBet,
-    });
+    this.allinArr.push(player.turn);
+    this.allinList.push({ i: sessionId, t: player.turn, v: player.accumulatedBet });
 
     console.log('ALLIN, turn con', this.remainingTurn);
 
-    console.log('allin arr', allinA);
+    const mergeArr = [...this.remainingPlayerArr, ...this.allinArr, ...this.foldArr];
+    const remainTurn = getNonDupItem(mergeArr);
 
-    const x = new Set([...this.allinArr]);
+    if (this.state.remainingPlayer === 1) {
+      console.log('so ng con 1 vo day');
+      const betP: any[] = [];
+      this.state.players.forEach((p: Player, sessionId: string) => {
+        if (p.statement === EStatement.Playing && !p.isFold) {
+          betP.push({ i: sessionId, t: p.turn, v: p.accumulatedBet });
+        }
+      });
+      for (const bet of betP) {
+        if (bet.t === remainTurn[0]) {
+          const remainP = <Player>this.state.players.get(bet.i);
+          if (remainP.accumulatedBet > this.currentBet) {
+            console.log('case do day!!!!!!');
+            const { emitResultArr, finalCalculateResult } = this.pickWinner1();
+            for (const c of finalCalculateResult) {
+              const allinPlayer = <Player>this.state.players.get(c.i);
+              allinPlayer.chips += c.v;
+            }
+            return this.endGame(emitResultArr);
+          }
+        }
+      }
+    }
 
-    // console.log(aArr);
-    // if (aArr.length === this.remainingPlayerArr) {
-    //   const { winPlayer, resultArr } = this.pickWinner1();
-    //   console.log('res', resultArr);
-    //   return this.endGame(resultArr);
-    // }
+    if (this.state.remainingPlayer === 0) {
+      console.log('het nguoi roi, tat ca allin');
+      const { emitResultArr, finalCalculateResult } = this.pickWinner1();
+      for (const c of finalCalculateResult) {
+        const allinPlayer = <Player>this.state.players.get(c.i);
+        allinPlayer.chips += c.v;
+      }
+      return this.endGame(emitResultArr);
+    }
 
     if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
   }
@@ -509,24 +528,40 @@ export default class RoomGame extends Room<RoomState> {
 
     this.foldArr.push(player.turn);
 
-    console.log('foldArr', this.foldArr);
-    console.log('tong so ng choi', this.remainingPlayerArr);
+    console.log('FOLD, turn con', this.remainingTurn);
 
-    const mergeFoldArr = [...this.remainingPlayerArr, ...this.foldArr];
-    const fArr = getNonDupItem(mergeFoldArr);
+    const mergeArr = [...this.remainingPlayerArr, ...this.allinArr, ...this.foldArr];
+    const remainTurn = getNonDupItem(mergeArr);
 
-    if (fArr.length === 1) {
-      const result = [];
-      for (const p of this.state.players.values()) {
-        if (p.turn === fArr[0]) {
-          p.chips += this.state.potSize;
-          result.push([{ t: p.turn, w: true }]);
+    if (this.state.remainingPlayer === 1) {
+      let result = [];
+      // fold all
+      const betP: any[] = [];
+      this.state.players.forEach((p: Player, sessionId: string) => {
+        if (p.statement === EStatement.Playing && !p.isFold) {
+          betP.push({ i: sessionId, t: p.turn, v: p.accumulatedBet });
+        }
+      });
+      if (betP.length === 1) {
+        result = [{ t: betP[0].t, w: true }];
+        return this.endGame(result);
+      }
+      if (betP.length > 1) {
+        const betVal: number[] = [];
+        for (const b of betP) betVal.push(b.v);
+        for (const bet of betP) {
+          if (bet.t === remainTurn[0] && Math.max(...betVal) === bet.v) {
+            console.log('da vo dc trong nay fold');
+            const { emitResultArr, finalCalculateResult } = this.pickWinner1();
+            for (const c of finalCalculateResult) {
+              const allinPlayer = <Player>this.state.players.get(c.i);
+              allinPlayer.chips += c.v;
+            }
+            return this.endGame(emitResultArr);
+          }
         }
       }
-      return this.endGame(result);
     }
-
-    console.log('FOLD, turn con', this.remainingTurn);
 
     if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
   }
@@ -541,42 +576,55 @@ export default class RoomGame extends Room<RoomState> {
 
     this.clock.setTimeout(() => {
       this.delayedTimeOut.clear();
-      // this.resetGame();
+      this.resetGame();
       console.log('reset game');
     }, 10000);
   }
 
   private pickWinner1() {
-    let winCardsArr: any[] = [];
-    let resultArr: any[] = [];
+    const winCardsArr: any[] = [];
+    const emitResultArr: any[] = [];
+    const calculateResultArr: any[] = [];
     this.state.players.forEach((player: Player, sessionId: string) => {
-      if (player.statement === EStatement.Playing && !player.isFold) {
-        const rankInfo = checkPlayerRank([
-          {
-            sessionId,
-            combinedCards: [...this.banker5Cards].concat([...this.player2Cards[player.turn]]),
-          },
-        ]);
-        winCardsArr.push(rankInfo[0]);
-        resultArr.push({
-          t: player.turn,
-          c: this.player2Cards[player.turn],
-          d: rankInfo[0].name,
-          i: rankInfo[0].sessionId,
-        });
+      if (player.statement === EStatement.Playing) {
+        if (!player.isFold) {
+          const rankInfo = checkPlayerRank([
+            {
+              sessionId,
+              combinedCards: [...this.banker5Cards].concat([...this.player2Cards[player.turn]]),
+            },
+          ]);
+          winCardsArr.push(rankInfo[0]);
+          emitResultArr.push({
+            t: player.turn,
+            c: this.player2Cards[player.turn],
+            d: rankInfo[0].name,
+            i: rankInfo[0].sessionId,
+          });
+          calculateResultArr.push({
+            i: sessionId,
+            t: player.turn,
+            v: player.accumulatedBet,
+          });
+        }
       }
     });
+
+    console.log('pick winner trong nay', calculateResultArr);
 
     // handle winner tại đây và show kết quả
     const winHand = Hand.winners(winCardsArr)[0];
     const winPlayer = <Player>this.state.players.get(winHand.sessionId);
-    for (const result of resultArr) {
-      if (winHand.sessionId === result.i) result.w = true;
-      delete result.i;
+    for (const emitResult of emitResultArr) {
+      if (winHand.sessionId === emitResult.i) emitResult.w = true;
+      delete emitResult.i;
     }
-
+    for (const calculateResult of calculateResultArr) {
+      if (winHand.sessionId === calculateResult.i) calculateResult.w = true;
+    }
     // tính toán tiền còn lại mỗi đứa
-    return { winPlayer, resultArr };
+    const finalCalculateResult = calculateAllinPlayer(calculateResultArr);
+    return { winPlayer, emitResultArr, finalCalculateResult };
   }
 
   private emitResult(result: any[]) {

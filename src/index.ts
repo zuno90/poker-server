@@ -50,7 +50,7 @@ async function bootstrap() {
   });
 
   // define each level of Room
-  gameServer.define('noob', RoomGame);
+  gameServer.define('noob', GameRoom);
   gameServer.define('normal', GameRoom);
   gameServer.define('pro', GameRoom);
 
