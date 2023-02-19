@@ -8,6 +8,7 @@ import { WebSocketTransport } from '@colyseus/ws-transport';
 import { RedisDriver } from '@colyseus/redis-driver';
 import { createServer } from 'http';
 import GameRoom from './game/Room';
+import RoomGame from './game/RoomGame';
 
 dotenv.config();
 
@@ -49,7 +50,7 @@ async function bootstrap() {
   });
 
   // define each level of Room
-  gameServer.define('noob', GameRoom);
+  gameServer.define('noob', RoomGame);
   gameServer.define('normal', GameRoom);
   gameServer.define('pro', GameRoom);
 

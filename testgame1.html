@@ -14,7 +14,7 @@
         const client = new Colyseus.Client('ws://localhost:9000');
 
         const room = await client.joinOrCreate('noob', {
-          jwt: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYzZWU2YzE5OTBlOGM2YWM1MjYwNWZjMCIsInVzZXJuYW1lIjoienVub2hhbiIsImlhdCI6MTY3NjU2OTYyOCwiZXhwIjoxNjc5MTYxNjI4fQ.frLdYfIsOeXm5_DOhPFgWML0UqzQUg91QH9v5QQGnd8',
+          jwt: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYzZjA4ZWM1NjJjMmQ3Y2MxYmI0YjA4MSIsInVzZXJuYW1lIjoienVub2hhbjEiLCJpYXQiOjE2NzY3MDk1NzksImV4cCI6MTY3OTMwMTU3OX0.8CVR7OHw8cXnZTek5Sqy2FrMUhN3aJY27hAjy-x97YY',
         });
 
         room.onMessage('DEAL', data => {
@@ -90,7 +90,21 @@
           } catch (e) {}
         });
       };
-      const arr = [1, 4, 5]; // co 3 ng
+
+      // async function callLogin() {
+      //   const res = await fetch('http://localhost:9000/auth/signin', {
+      //     headers: {
+      //       Accept: 'application/json',
+      //       'Content-Type': 'application/json',
+      //     },
+      //     method: 'POST',
+      //     body: JSON.stringify({ username: 'test', password: 'test' }),
+      //   });
+      //   console.log(res);
+      // }
+      // callLogin();
+
+      const arr = [0, 1, 4]; // co 3 ng
       console.log(arr[arr.length - 2]);
     </script>
     <div class="container is-max-widescreen">

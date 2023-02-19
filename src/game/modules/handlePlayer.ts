@@ -1,7 +1,6 @@
 export const arrangeSeat = (seatArr: number[]) => {
   // if only host (case is not BOT here)
   if (seatArr.length === 1) return 2;
-
   // if had BOT here
   // const seatArrSort = [...seatArr].sort((a: number, b: number) => a - b);
   const seatArrSort = sortedArr(seatArr);
@@ -18,7 +17,6 @@ export const arrangeSeat = (seatArr: number[]) => {
 };
 
 export const arrangeTurn = (seat: number, seatArr: number[]) => {
-  // const seatArrSort = [...seatArr].sort((a: number, b: number) => a - b);
   const seatArrSort = sortedArr(seatArr);
   for (let i = 0; i < seatArrSort.length; i++) {
     if (seat === seatArrSort[i]) return i;
@@ -30,3 +28,7 @@ export const removePlayer = (turn: number, turnArr: number[]) => {
 };
 
 export const sortedArr = (arr: number[]) => [...arr].sort((a: number, b: number) => a - b);
+
+export const getNonDupItem = (arr: any[]) => {
+  return arr.filter(num => arr.indexOf(num) === arr.lastIndexOf(num));
+};
