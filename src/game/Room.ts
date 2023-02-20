@@ -286,8 +286,8 @@ export default class RoomGame extends Room<RoomState> {
     if (round === ERound.RIVER) {
       const { emitResultArr, finalCalculateResult } = this.pickWinner1();
       for (const c of finalCalculateResult) {
-        const allinPlayer = <Player>this.state.players.get(c.i);
-        allinPlayer.chips = c.v;
+        const betPlayer = <Player>this.state.players.get(c.i);
+        betPlayer.chips += c.v;
       }
       this.state.round = ERound.SHOWDOWN;
       this.state.bankerCards = this.banker5Cards;
@@ -498,8 +498,8 @@ export default class RoomGame extends Room<RoomState> {
             const { emitResultArr, finalCalculateResult } = this.pickWinner1();
             result = emitResultArr;
             for (const c of finalCalculateResult) {
-              const allinPlayer = <Player>this.state.players.get(c.i);
-              allinPlayer.chips += c.v;
+              const betPlayer = <Player>this.state.players.get(c.i);
+              betPlayer.chips += c.v;
             }
           }
         }
@@ -514,8 +514,8 @@ export default class RoomGame extends Room<RoomState> {
       console.log('het nguoi roi, tat ca allin');
       const { emitResultArr, finalCalculateResult } = this.pickWinner1();
       for (const c of finalCalculateResult) {
-        const allinPlayer = <Player>this.state.players.get(c.i);
-        allinPlayer.chips += c.v;
+        const betPlayer = <Player>this.state.players.get(c.i);
+        betPlayer.chips += c.v;
       }
       this.state.bankerCards = this.banker5Cards;
       return this.endGame(emitResultArr);
@@ -560,8 +560,8 @@ export default class RoomGame extends Room<RoomState> {
             const { emitResultArr, finalCalculateResult } = this.pickWinner1();
             result = emitResultArr;
             for (const c of finalCalculateResult) {
-              const allinPlayer = <Player>this.state.players.get(c.i);
-              allinPlayer.chips += c.v;
+              const betPlayer = <Player>this.state.players.get(c.i);
+              betPlayer.chips += c.v;
             }
           }
         }
