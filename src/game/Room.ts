@@ -490,13 +490,13 @@ export default class RoomGame extends Room<RoomState> {
         }
       });
 
-      let rArr = [];
+      let result: any[] = [];
       for (const bet of betP) {
         if (bet.t === remainTurn[0]) {
           const remainP = <Player>this.state.players.get(bet.i);
           if (remainP.accumulatedBet > this.currentBet) {
             const { emitResultArr, finalCalculateResult } = this.pickWinner1();
-            rArr = emitResultArr;
+            result = emitResultArr;
             for (const c of finalCalculateResult) {
               const allinPlayer = <Player>this.state.players.get(c.i);
               allinPlayer.chips += c.v;
@@ -504,11 +504,9 @@ export default class RoomGame extends Room<RoomState> {
           }
         }
       }
-      if (rArr.length > 0) {
-        this.state.round = ERound.SHOWDOWN;
+      if (result.length > 0) {
         this.state.bankerCards = this.banker5Cards;
-        this.emitResult(rArr);
-        return this.endGame(rArr);
+        return this.endGame(result);
       }
     }
 
@@ -519,9 +517,7 @@ export default class RoomGame extends Room<RoomState> {
         const allinPlayer = <Player>this.state.players.get(c.i);
         allinPlayer.chips += c.v;
       }
-      this.state.round = ERound.SHOWDOWN;
       this.state.bankerCards = this.banker5Cards;
-      this.emitResult(emitResultArr);
       return this.endGame(emitResultArr);
     }
 
@@ -543,7 +539,7 @@ export default class RoomGame extends Room<RoomState> {
     const remainTurn = getNonDupItem(mergeArr);
 
     if (this.state.remainingPlayer === 1) {
-      let result = [];
+      let result: any[] = [];
       // fold all
       const betP: any[] = [];
       this.state.players.forEach((p: Player, sessionId: string) => {
@@ -553,23 +549,22 @@ export default class RoomGame extends Room<RoomState> {
       });
       if (betP.length === 1) {
         result = [{ t: betP[0].t, w: true }];
-        return this.endGame(result);
       }
       if (betP.length > 1) {
         const betVal: number[] = [];
         for (const b of betP) betVal.push(b.v);
         for (const bet of betP) {
           if (bet.t === remainTurn[0] && Math.max(...betVal) === bet.v) {
-            console.log('da vo dc trong nay fold');
             const { emitResultArr, finalCalculateResult } = this.pickWinner1();
+            result = emitResultArr;
             for (const c of finalCalculateResult) {
               const allinPlayer = <Player>this.state.players.get(c.i);
               allinPlayer.chips += c.v;
             }
-            return this.endGame(emitResultArr);
           }
         }
       }
+      return this.endGame(result);
     }
 
     if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
