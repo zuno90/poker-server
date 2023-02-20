@@ -15,8 +15,9 @@ dotenv.config();
 async function bootstrap() {
   const app: Express = express();
 
-  app.use(cors());
   app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+  app.use(cors({ origin: '*', credentials: true }));
   const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100000,
@@ -54,11 +55,11 @@ async function bootstrap() {
   gameServer.define('normal', GameRoom);
   gameServer.define('pro', GameRoom);
 
-  const SERVER_IP = process.env.SERVER_IP || '175.41.154.239';
+  const SERVER_URL = process.env.SERVER_URL || 'poker.dadsnetwork.net';
   const PORT = process.env.PORT || 9000;
   await gameServer.listen(+PORT);
 
-  console.log(`🚀 Server is ready at http://${SERVER_IP}:${PORT} and ws://${SERVER_IP}:${PORT} 🚀`);
+  console.log(`🚀 Server is ready at https://${SERVER_URL} and wss://${SERVER_URL} 🚀`);
   gameServer.onShutdown(() => {
     console.log('Master process is being shut down!');
   });
