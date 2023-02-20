@@ -289,6 +289,9 @@ export default class RoomGame extends Room<RoomState> {
         const allinPlayer = <Player>this.state.players.get(c.i);
         allinPlayer.chips = c.v;
       }
+      this.state.round = ERound.SHOWDOWN;
+      this.state.bankerCards = this.banker5Cards;
+      this.emitResult(emitResultArr);
       return this.endGame(emitResultArr);
     }
     this.currentBet = 0;
@@ -312,7 +315,6 @@ export default class RoomGame extends Room<RoomState> {
       this.state.round = ERound.RIVER;
       this.state.bankerCards = [...this.banker5Cards];
     }
-
     return this.emitRank();
   }
 
@@ -498,6 +500,9 @@ export default class RoomGame extends Room<RoomState> {
               const allinPlayer = <Player>this.state.players.get(c.i);
               allinPlayer.chips += c.v;
             }
+            this.state.round = ERound.SHOWDOWN;
+            this.state.bankerCards = this.banker5Cards;
+            this.emitResult(emitResultArr);
             return this.endGame(emitResultArr);
           }
         }
@@ -511,6 +516,9 @@ export default class RoomGame extends Room<RoomState> {
         const allinPlayer = <Player>this.state.players.get(c.i);
         allinPlayer.chips += c.v;
       }
+      this.state.round = ERound.SHOWDOWN;
+      this.state.bankerCards = this.banker5Cards;
+      this.emitResult(emitResultArr);
       return this.endGame(emitResultArr);
     }
 
