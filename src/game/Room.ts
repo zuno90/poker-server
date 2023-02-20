@@ -483,29 +483,32 @@ export default class RoomGame extends Room<RoomState> {
     const remainTurn = getNonDupItem(mergeArr);
 
     if (this.state.remainingPlayer === 1) {
-      console.log('so ng con 1 vo day');
       const betP: any[] = [];
       this.state.players.forEach((p: Player, sessionId: string) => {
         if (p.statement === EStatement.Playing && !p.isFold) {
           betP.push({ i: sessionId, t: p.turn, v: p.accumulatedBet });
         }
       });
+
+      let rArr = [];
       for (const bet of betP) {
         if (bet.t === remainTurn[0]) {
           const remainP = <Player>this.state.players.get(bet.i);
           if (remainP.accumulatedBet > this.currentBet) {
-            console.log('case do day!!!!!!');
             const { emitResultArr, finalCalculateResult } = this.pickWinner1();
+            rArr = emitResultArr;
             for (const c of finalCalculateResult) {
               const allinPlayer = <Player>this.state.players.get(c.i);
               allinPlayer.chips += c.v;
             }
-            this.state.round = ERound.SHOWDOWN;
-            this.state.bankerCards = this.banker5Cards;
-            this.emitResult(emitResultArr);
-            return this.endGame(emitResultArr);
           }
         }
+      }
+      if (rArr.length > 0) {
+        this.state.round = ERound.SHOWDOWN;
+        this.state.bankerCards = this.banker5Cards;
+        this.emitResult(rArr);
+        return this.endGame(rArr);
       }
     }
 
