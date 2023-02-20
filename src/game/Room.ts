@@ -62,6 +62,7 @@ export default class RoomGame extends Room<RoomState> {
           headers: { Authorization: 'Bearer ' + options.jwt },
         },
       );
+
       if (!res.data.success) return client.leave(1001);
       const existedPlayer = res.data.data;
       if (existedPlayer.chips < this.MIN_CHIP)
@@ -94,8 +95,10 @@ export default class RoomGame extends Room<RoomState> {
           role: ERole.Player,
         };
       }
+      throw Error('Bot is on room -> dispose room!');
     } catch (err) {
-      client.leave(1001);
+      console.error(err);
+      await this.disconnect();
     }
   }
 
@@ -129,30 +132,31 @@ export default class RoomGame extends Room<RoomState> {
       return this.state.players.set(client.sessionId, new Player(player)); // set player every joining
     } catch (err) {
       console.error(err);
-      client.leave(1001);
     }
   }
 
   async onLeave(client: Client, consented: boolean) {
     try {
       const leavingPlayer = <Player>this.state.players.get(client.sessionId);
-      if (!leavingPlayer) return;
+      console.log('client ' + client.sessionId + ' has just left');
+      await this.presence.publish(
+        'poker:update:chip',
+        JSON.stringify({ id: leavingPlayer.id, chips: leavingPlayer.chips }),
+      );
+      this.state.players.delete(client.sessionId);
       if (leavingPlayer.role === ERole.Bot) {
         console.log('bot ' + client.sessionId + ' has just left');
         this.state.players.delete(client.sessionId);
-        if (this.state.players.size <= 2) {
-          setTimeout(() => this.addBot(), 2000);
-        } // add new BOT after 2s
+        if (this.state.players.size <= 2) await this.addBot();
         return;
       }
-
       // handle change host to player
       const seatArr: any[] = [];
       if (leavingPlayer.isHost) {
         this.state.players.forEach((player: Player, sessionId: string) => {
           if (player.role === ERole.Player) seatArr.push({ sessionId, seat: player.seat });
         });
-        if (seatArr.length === 0) await this.disconnect();
+        if (seatArr.length === 0) throw Error('Không còn người trong room!');
         if (seatArr.length === 1) {
           const newHost = <Player>this.state.players.get(seatArr[0].sessionId);
           newHost.isHost = true;
@@ -166,16 +170,9 @@ export default class RoomGame extends Room<RoomState> {
           newHost.turn = 0;
         }
       }
-
-      console.log('client ' + client.sessionId + ' has just left');
-      await this.presence.publish(
-        'poker:update:chip',
-        JSON.stringify({ id: leavingPlayer.id, chips: leavingPlayer.chips }),
-      );
-      return this.state.players.delete(client.sessionId);
     } catch (err) {
       console.error(err);
-      // client.leave(1001);
+      return await this.disconnect();
     }
   }
 
@@ -438,6 +435,7 @@ export default class RoomGame extends Room<RoomState> {
     if (chip === 0) return this.checkAction(player);
     player.action = CALL;
     player.betEachAction = chip;
+    console.log('call bet', player.accumulatedBet);
     player.accumulatedBet += chip;
     player.chips -= chip;
 
