@@ -483,6 +483,7 @@ export default class RoomGame extends Room<RoomState> {
     const remainTurn = getNonDupItem(mergeArr);
 
     if (this.state.remainingPlayer === 1) {
+      let result: any[] = [];
       const betP: any[] = [];
       this.state.players.forEach((p: Player, sessionId: string) => {
         if (p.statement === EStatement.Playing && !p.isFold) {
@@ -490,7 +491,6 @@ export default class RoomGame extends Room<RoomState> {
         }
       });
 
-      let result: any[] = [];
       for (const bet of betP) {
         if (bet.t === remainTurn[0]) {
           const remainP = <Player>this.state.players.get(bet.i);
@@ -549,6 +549,7 @@ export default class RoomGame extends Room<RoomState> {
       });
       if (betP.length === 1) {
         result = [{ t: betP[0].t, w: true }];
+        return this.endGame(result);
       }
       if (betP.length > 1) {
         const betVal: number[] = [];
@@ -563,8 +564,8 @@ export default class RoomGame extends Room<RoomState> {
             }
           }
         }
+        return this.endGame(result);
       }
-      return this.endGame(result);
     }
 
     if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
