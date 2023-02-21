@@ -373,10 +373,6 @@ export default class RoomGame extends Room<RoomState> {
       this.remainingPlayerArr = sortedArr([...this.remainingPlayerArr, player.turn]);
     });
     this.emitDealCards();
-    // send to player 2 cards
-    // this.clock.setTimeout(() => {
-    //   this.emitDealCards();
-    // }, 2000);
     this.state.round = ERound.PREFLOP;
   }
 
