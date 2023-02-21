@@ -352,7 +352,6 @@ export default class RoomGame extends Room<RoomState> {
     console.log({ banker: this.banker5Cards, player: this.player2Cards });
 
     this.state.onReady = true; // change room state -> TRUE
-    this.state.round = ERound.PREFLOP;
     this.state.potSize = this.state.players.size * this.initBetChip;
     this.state.remainingPlayer = this.state.players.size;
     const randomTurn = Math.round((Math.random() * 10) % (this.state.players.size - 1));
@@ -373,10 +372,12 @@ export default class RoomGame extends Room<RoomState> {
       player.turn = arrangeTurn(player.seat, playerSeatArr) as number;
       this.remainingPlayerArr = sortedArr([...this.remainingPlayerArr, player.turn]);
     });
+    this.emitDealCards();
     // send to player 2 cards
     // this.clock.setTimeout(() => {
     //   this.emitDealCards();
     // }, 2000);
+    this.state.round = ERound.PREFLOP;
   }
 
   private resetGame() {
