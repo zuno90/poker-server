@@ -137,9 +137,9 @@ export class BotClient {
       // case go 1st -> true
       if (this.isGoFirst) {
         if (round === ERound.PREFLOP) return this.emit(RAISE, { chips: this.randomNumberRange() });
-        if (round === ERound.FLOP) return this.emit(CHECK);
-        if (round === ERound.TURN) return this.emit(ALLIN);
-        if (round === ERound.RIVER) return this.emit(FOLD);
+        if (round === ERound.FLOP) return this.emit(RAISE, { chips: this.randomNumberRange() });
+        if (round === ERound.TURN) return this.emit(RAISE, { chips: this.randomNumberRange() });
+        if (round === ERound.RIVER) return this.emit(RAISE, { chips: this.randomNumberRange() });
       }
       // case go 1st -> false
       if (this.currentBetInfo.action === RAISE) {

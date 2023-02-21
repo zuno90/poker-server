@@ -33,6 +33,7 @@ export interface TAllinPlayer {
 }
 
 export default class RoomGame extends Room<RoomState> {
+  readonly patchRate = 100;
   readonly maxClients: number = 5;
   private readonly MIN_CHIP = 1000;
   private readonly initBetChip: number = 100;
@@ -80,7 +81,7 @@ export default class RoomGame extends Room<RoomState> {
         };
 
       // IS NOT HOST AND PLAYER NUMBER > 2
-      if (this.state.players.size >= 2) {
+      if (this.state.players.size > 0) {
         let playerSeatArr: number[] = [];
         this.state.players.forEach((player: Player, _) => playerSeatArr.push(player.seat));
         // find out next seat for this player
@@ -124,12 +125,8 @@ export default class RoomGame extends Room<RoomState> {
   async onJoin(client: Client, options: TJwtAuth, player: Player) {
     // SET INITIAL PLAYER STATE
     try {
-      if (player.isHost) {
-        this.state.players.set(client.sessionId, new Player(player)); // set host and bot first
-        await this.addBot();
-        return;
-      }
-      return this.state.players.set(client.sessionId, new Player(player)); // set player every joining
+      this.state.players.set(client.sessionId, new Player(player)); // set player every joining
+      this.addBotByCondition();
     } catch (err) {
       console.error(err);
     }
@@ -138,41 +135,42 @@ export default class RoomGame extends Room<RoomState> {
   async onLeave(client: Client, consented: boolean) {
     try {
       const leavingPlayer = <Player>this.state.players.get(client.sessionId);
+      if (leavingPlayer.role === ERole.Bot) {
+        console.log('bot ' + client.sessionId + ' has just left');
+        this.state.players.delete(client.sessionId);
+        this.addBotByCondition();
+        return;
+      }
+
+      // handle change host to player
+      const playerInRoom: any[] = [];
+      if (leavingPlayer.isHost) {
+        this.state.players.forEach((player: Player, sessionId: string) => {
+          if (player.role === ERole.Player) playerInRoom.push({ sessionId, seat: player.seat });
+        });
+        if (playerInRoom.length === 0) throw Error('Không còn người trong room!');
+        if (playerInRoom.length === 1) {
+          const newHost = <Player>this.state.players.get(playerInRoom[0].sessionId);
+          newHost.isHost = true;
+          newHost.seat = 1;
+          newHost.turn = 0;
+        }
+        if (playerInRoom.length > 1) {
+          const newHost = <Player>this.state.players.get(playerInRoom[1].sessionId);
+          newHost.isHost = true;
+          newHost.seat = 1;
+          newHost.turn = 0;
+        }
+      }
       console.log('client ' + client.sessionId + ' has just left');
       await this.presence.publish(
         'poker:update:chip',
         JSON.stringify({ id: leavingPlayer.id, chips: leavingPlayer.chips }),
       );
       this.state.players.delete(client.sessionId);
-      if (leavingPlayer.role === ERole.Bot) {
-        console.log('bot ' + client.sessionId + ' has just left');
-        this.state.players.delete(client.sessionId);
-        if (this.state.players.size <= 2) await this.addBot();
-        return;
-      }
-      // handle change host to player
-      const seatArr: any[] = [];
-      if (leavingPlayer.isHost) {
-        this.state.players.forEach((player: Player, sessionId: string) => {
-          if (player.role === ERole.Player) seatArr.push({ sessionId, seat: player.seat });
-        });
-        if (seatArr.length === 0) throw Error('Không còn người trong room!');
-        if (seatArr.length === 1) {
-          const newHost = <Player>this.state.players.get(seatArr[0].sessionId);
-          newHost.isHost = true;
-          newHost.seat = 1;
-          newHost.turn = 0;
-        }
-        if (seatArr.length > 1) {
-          const newHost = <Player>this.state.players.get(seatArr[1].sessionId);
-          newHost.isHost = true;
-          newHost.seat = 1;
-          newHost.turn = 0;
-        }
-      }
     } catch (err) {
       console.error(err);
-      return await this.disconnect();
+      await this.disconnect();
     }
   }
 
@@ -199,6 +197,7 @@ export default class RoomGame extends Room<RoomState> {
     this.onMessage(RAISE, (client: Client, { chips }: { chips: number }) => {
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return; // không cho gửi 2 lần
+      if (player.isFold) return; // block folded player
       // if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
       //   const nextTurn = Math.min(...this.remainingPlayerArr);
       //   if (nextTurn !== player.turn) return;
@@ -213,6 +212,7 @@ export default class RoomGame extends Room<RoomState> {
     this.onMessage(CALL, (client: Client) => {
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return;
+      if (player.isFold) return; // block folded player
       if (this.state.currentTurn === -1) return;
       // if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
       //   const nextTurn = Math.min(...this.remainingPlayerArr);
@@ -229,13 +229,13 @@ export default class RoomGame extends Room<RoomState> {
 
       // nếu lệnh call này >= chip nó đang còn
       if (callValue >= player.chips) return this.allinAction(client.sessionId, player, callValue);
-
       return this.callAction(player, callValue);
     });
     // CHECK
     this.onMessage(CHECK, (client: Client) => {
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return;
+      if (player.isFold) return; // block folded player
       // if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
       //   const nextTurn = Math.min(...this.remainingPlayerArr);
       //   if (nextTurn !== player.turn) return;
@@ -247,6 +247,7 @@ export default class RoomGame extends Room<RoomState> {
     this.onMessage(ALLIN, (client: Client) => {
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return;
+      if (player.isFold) return; // block folded player
       // if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
       //   const nextTurn = Math.min(...this.remainingPlayerArr);
       //   if (nextTurn !== player.turn) return;
@@ -258,6 +259,7 @@ export default class RoomGame extends Room<RoomState> {
     this.onMessage(FOLD, (client: Client, _) => {
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return;
+      if (player.isFold) return; // block folded player
 
       this.foldAction(player);
     });
@@ -284,22 +286,21 @@ export default class RoomGame extends Room<RoomState> {
   private async changeNextRound(round: ERound) {
     // check winner first (river -> showdown)
     if (round === ERound.RIVER) {
+      this.state.round = ERound.SHOWDOWN;
+      this.state.bankerCards = this.banker5Cards;
       const { emitResultArr, finalCalculateResult } = this.pickWinner1();
       for (const c of finalCalculateResult) {
         const betPlayer = <Player>this.state.players.get(c.i);
         betPlayer.chips += c.v;
       }
-      this.state.round = ERound.SHOWDOWN;
-      this.state.bankerCards = this.banker5Cards;
-      this.emitResult(emitResultArr);
+      // this.emitResult(emitResultArr);
       return this.endGame(emitResultArr);
     }
     this.currentBet = 0;
     this.remainingTurn = this.state.remainingPlayer;
     this.allinArr = [];
-    for (const player of this.state.players.values()) {
+    for (const player of this.state.players.values())
       if (player.statement === 'Playing') player.betEachAction = 0;
-    }
     // preflop -> flop
     if (round === ERound.PREFLOP) {
       this.state.round = ERound.FLOP;
@@ -315,7 +316,7 @@ export default class RoomGame extends Room<RoomState> {
       this.state.round = ERound.RIVER;
       this.state.bankerCards = [...this.banker5Cards];
     }
-    return this.emitRank();
+    return this.clock.setTimeout(() => this.emitRank(), 2000);
   }
 
   private emitRank() {
@@ -335,6 +336,7 @@ export default class RoomGame extends Room<RoomState> {
 
   private startGame(client: Client) {
     if (this.state.onReady) return; // check game is ready or not
+    if (this.state.players.size < 2) return; // allow start game when > 2 players
     // check accept only host
     const host = <Player>this.state.players.get(client.sessionId);
     if (!host.isHost) return;
@@ -437,7 +439,6 @@ export default class RoomGame extends Room<RoomState> {
     if (chip === 0) return this.checkAction(player);
     player.action = CALL;
     player.betEachAction = chip;
-    console.log('call bet', player.accumulatedBet);
     player.accumulatedBet += chip;
     player.chips -= chip;
 
@@ -486,9 +487,8 @@ export default class RoomGame extends Room<RoomState> {
       let result: any[] = [];
       const betP: any[] = [];
       this.state.players.forEach((p: Player, sessionId: string) => {
-        if (p.statement === EStatement.Playing && !p.isFold) {
+        if (p.statement === EStatement.Playing && !p.isFold)
           betP.push({ i: sessionId, t: p.turn, v: p.accumulatedBet });
-        }
       });
 
       for (const bet of betP) {
@@ -511,7 +511,6 @@ export default class RoomGame extends Room<RoomState> {
     }
 
     if (this.state.remainingPlayer === 0) {
-      console.log('het nguoi roi, tat ca allin');
       const { emitResultArr, finalCalculateResult } = this.pickWinner1();
       for (const c of finalCalculateResult) {
         const betPlayer = <Player>this.state.players.get(c.i);
@@ -540,15 +539,14 @@ export default class RoomGame extends Room<RoomState> {
 
     let result: any[] = [];
     const betP: any[] = [];
-
+    this.state.players.forEach((p: Player, sessionId: string) => {
+      if (p.statement === EStatement.Playing && !p.isFold)
+        betP.push({ i: sessionId, t: p.turn, v: p.accumulatedBet });
+    });
     if (this.state.remainingPlayer === 1) {
-      // fold all
-      this.state.players.forEach((p: Player, sessionId: string) => {
-        if (p.statement === EStatement.Playing && !p.isFold) {
-          betP.push({ i: sessionId, t: p.turn, v: p.accumulatedBet });
-        }
-      });
       if (betP.length === 1) {
+        const winner = <Player>this.state.players.get(betP[0].i);
+        winner.chips += this.state.potSize;
         result = [{ t: betP[0].t, w: true }];
         return this.endGame(result);
       }
@@ -570,16 +568,10 @@ export default class RoomGame extends Room<RoomState> {
     }
 
     if (this.remainingTurn === 0) {
-      // bot di sau
-      if (this.state.remainingPlayer === 0) {
-        this.state.players.forEach((p: Player, sessionId: string) => {
-          if (p.statement === EStatement.Playing && !p.isFold) {
-            betP.push({ i: sessionId, t: p.turn, v: p.accumulatedBet });
-          }
-        });
-        result = [{ t: betP[0].t, w: true }];
-        return this.endGame(result);
-      }
+      // if (this.state.remainingPlayer === 0) {
+      //   result = [{ t: betP[0].t, w: true }];
+      //   return this.endGame(result);
+      // }
       return this.changeNextRound(this.state.round);
     }
   }
@@ -619,12 +611,12 @@ export default class RoomGame extends Room<RoomState> {
             d: rankInfo[0].name,
             i: rankInfo[0].sessionId,
           });
-          calculateResultArr.push({
-            i: sessionId,
-            t: player.turn,
-            v: player.accumulatedBet,
-          });
         }
+        calculateResultArr.push({
+          i: sessionId,
+          t: player.turn,
+          v: player.accumulatedBet,
+        });
       }
     });
 
@@ -656,5 +648,19 @@ export default class RoomGame extends Room<RoomState> {
     );
     await bot.joinRoom(this.roomId);
     return this.bot?.set(bot.sessionId, bot);
+  }
+
+  private addBotByCondition() {
+    return this.clock.setTimeout(async () => {
+      // check if had player joined first
+      if (this.clients.length > 0 && this.clients.length < this.maxClients) {
+        let countBot = 0;
+        for (const bot of this.state.players.values()) {
+          if (bot.role === ERole.Bot) countBot++;
+        }
+        if (countBot === 1) return;
+        await this.addBot();
+      }
+    }, 3000);
   }
 }

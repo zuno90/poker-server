@@ -8,7 +8,6 @@ import { WebSocketTransport } from '@colyseus/ws-transport';
 import { RedisDriver } from '@colyseus/redis-driver';
 import { createServer } from 'http';
 import GameRoom from './game/Room';
-import RoomGame from './game/RoomGame';
 
 dotenv.config();
 
@@ -43,11 +42,6 @@ async function bootstrap() {
     driver: new RedisDriver({
       url: process.env.NODE_ENV === 'production' ? process.env.REDIS_URL : 'redis://localhost:6379',
     }),
-    // driver: new MongooseDriver(
-    //   process.env.NODE_ENV === 'production'
-    //     ? process.env.MONGO_URI
-    //     : `mongodb://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@localhost:27017`,
-    // ),
   });
 
   // define each level of Room
@@ -60,9 +54,7 @@ async function bootstrap() {
   await gameServer.listen(+PORT);
 
   console.log(`🚀 Server is ready at https://${SERVER_URL} and wss://${SERVER_URL} 🚀`);
-  gameServer.onShutdown(() => {
-    console.log('Master process is being shut down!');
-  });
+  gameServer.onShutdown(() => console.log('Master process is being shut down!'));
 }
 
 bootstrap();
