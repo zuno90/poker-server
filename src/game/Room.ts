@@ -125,6 +125,7 @@ export default class RoomGame extends Room<RoomState> {
   async onJoin(client: Client, options: TJwtAuth, player: Player) {
     // SET INITIAL PLAYER STATE
     try {
+    try {
       this.state.players.set(client.sessionId, new Player(player)); // set player every joining
       this.addBotByCondition();
     } catch (err) {
@@ -340,9 +341,6 @@ export default class RoomGame extends Room<RoomState> {
     // check accept only host
     const host = <Player>this.state.players.get(client.sessionId);
     if (!host.isHost) return;
-
-    // send card
-    this.emitDealCards();
 
     const { onHandCards, banker5Cards } = deal(this.state.players.size);
     this.banker5Cards = banker5Cards; // cache 5 cards of banker first
