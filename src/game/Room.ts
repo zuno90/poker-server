@@ -341,6 +341,9 @@ export default class RoomGame extends Room<RoomState> {
     const host = <Player>this.state.players.get(client.sessionId);
     if (!host.isHost) return;
 
+    // send card
+    this.emitDealCards();
+
     const { onHandCards, banker5Cards } = deal(this.state.players.size);
     this.banker5Cards = banker5Cards; // cache 5 cards of banker first
     this.player2Cards = onHandCards; // chia bai
@@ -371,9 +374,9 @@ export default class RoomGame extends Room<RoomState> {
       this.remainingPlayerArr = sortedArr([...this.remainingPlayerArr, player.turn]);
     });
     // send to player 2 cards
-    this.clock.setTimeout(() => {
-      this.emitDealCards();
-    }, 2000);
+    // this.clock.setTimeout(() => {
+    //   this.emitDealCards();
+    // }, 2000);
   }
 
   private resetGame() {
