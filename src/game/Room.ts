@@ -119,6 +119,10 @@ export default class RoomGame extends Room<RoomState> {
 
       // HANDLE ALL ACTION FROM PLAYER
       this.handleAction();
+
+      this.onMessage('ALL', (client: Client, data: any) => {
+        console.log({ client, data });
+      });
     } catch (err) {
       console.error('error:::::', err);
       await this.disconnect();
