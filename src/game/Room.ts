@@ -191,7 +191,8 @@ export default class RoomGame extends Room<RoomState> {
   // handle chat
   private handleChat() {
     this.onMessage(ROOM_CHAT, (client: Client, data: TRoomChat) => {
-      this.broadcast(ROOM_CHAT, data);
+      // this.broadcast(ROOM_CHAT, data);
+      console.log('chat data', data);
     });
   }
 
