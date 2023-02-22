@@ -11,6 +11,7 @@ import { calculateAllinPlayer, checkPlayerRank } from './modules/handleRank';
 import { BotClient } from './BotGPT';
 import { botInfo } from './constants/bot.constant';
 import axios from 'axios';
+import { clearInterval } from 'timers';
 
 const Hand = require('pokersolver').Hand; // func handle winner
 
@@ -184,7 +185,10 @@ export default class RoomGame extends Room<RoomState> {
   // HANDLE ALL ACTIONS
   private async handleRoomState() {
     // START GAME
-    this.onMessage(START_GAME, (client: Client, _) => this.startGame(client));
+    this.onMessage(START_GAME, (client: Client, _) => {
+      this.startGame(client);
+      this.sendNewState();
+    });
   }
 
   // handle chat
@@ -222,6 +226,8 @@ export default class RoomGame extends Room<RoomState> {
       // if (player.chips <= chips) return this.allinAction(client.sessionId, player, chips); // trường hợp này chuyển sang allin
 
       this.raiseAction(player, chips);
+
+      this.sendNewState();
     });
     // CALL
     this.onMessage(CALL, (client: Client) => {
@@ -244,7 +250,9 @@ export default class RoomGame extends Room<RoomState> {
 
       // nếu lệnh call này >= chip nó đang còn
       if (callValue >= player.chips) return this.allinAction(client.sessionId, player, callValue);
-      return this.callAction(player, callValue);
+      this.callAction(player, callValue);
+
+      this.sendNewState();
     });
     // CHECK
     this.onMessage(CHECK, (client: Client) => {
@@ -258,6 +266,8 @@ export default class RoomGame extends Room<RoomState> {
       // }
 
       this.checkAction(player);
+
+      this.sendNewState();
     });
     // ALLIN
     this.onMessage(ALLIN, (client: Client) => {
@@ -270,6 +280,8 @@ export default class RoomGame extends Room<RoomState> {
       // }
 
       this.allinAction(client.sessionId, player, player.chips);
+
+      this.sendNewState();
     });
     // FOLD
     this.onMessage(FOLD, (client: Client, _) => {
@@ -278,6 +290,8 @@ export default class RoomGame extends Room<RoomState> {
       if (player.isFold) return; // block folded player
 
       this.foldAction(player);
+
+      this.sendNewState();
     });
   }
 
@@ -387,8 +401,6 @@ export default class RoomGame extends Room<RoomState> {
     });
     this.emitDealCards();
     this.state.round = ERound.PREFLOP;
-
-    this.sendNewState();
   }
 
   private resetGame() {
@@ -603,6 +615,7 @@ export default class RoomGame extends Room<RoomState> {
       this.delayedTimeOut.clear();
       this.resetGame();
       console.log('reset game');
+      this.sendNewState();
     }, 10000);
   }
 
