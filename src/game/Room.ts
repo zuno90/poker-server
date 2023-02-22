@@ -212,15 +212,15 @@ export default class RoomGame extends Room<RoomState> {
     // RAISE
     this.onMessage(RAISE, (client: Client, { chips }: { chips: number }) => {
       const player = <Player>this.state.players.get(client.sessionId);
-      if (player.turn === this.state.currentTurn) return; // không cho gửi 2 lần
+      // if (player.turn === this.state.currentTurn) return; // không cho gửi 2 lần
       if (player.isFold) return; // block folded player
       // if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
       //   const nextTurn = Math.min(...this.remainingPlayerArr);
       //   if (nextTurn !== player.turn) return;
       // }
 
-      if (this.currentBet > chips / 2) return; // chỉ cho phép raise lệnh hơn 2 lần current bet
-      if (player.chips <= chips) return this.allinAction(client.sessionId, player, chips); // trường hợp này chuyển sang allin
+      // if (this.currentBet > chips / 2) return; // chỉ cho phép raise lệnh hơn 2 lần current bet
+      // if (player.chips <= chips) return this.allinAction(client.sessionId, player, chips); // trường hợp này chuyển sang allin
 
       this.raiseAction(player, chips);
     });
@@ -252,6 +252,7 @@ export default class RoomGame extends Room<RoomState> {
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return;
       if (player.isFold) return; // block folded player
+
       // if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
       //   const nextTurn = Math.min(...this.remainingPlayerArr);
       //   if (nextTurn !== player.turn) return;
