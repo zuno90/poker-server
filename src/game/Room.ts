@@ -478,10 +478,7 @@ export default class RoomGame extends Room<RoomState> {
 
     this.remainingTurn--;
     console.log('CALL, turn con', this.remainingTurn);
-    if (this.remainingTurn === 0)
-      return this.clock.setTimeout(() => {
-        this.changeNextRound(this.state.round);
-      }, 3000);
+    if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
   }
 
   private checkAction(player: Player) {
@@ -491,10 +488,7 @@ export default class RoomGame extends Room<RoomState> {
 
     this.remainingTurn--;
     console.log('CHECK, turn con', this.remainingTurn);
-    if (this.remainingTurn === 0)
-      return this.clock.setTimeout(() => {
-        this.changeNextRound(this.state.round);
-      }, 3000);
+    if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
   }
 
   private allinAction(sessionId: string, player: Player, chip: number) {
@@ -555,10 +549,7 @@ export default class RoomGame extends Room<RoomState> {
       return this.endGame(emitResultArr);
     }
 
-    if (this.remainingTurn === 0)
-      return this.clock.setTimeout(() => {
-        this.changeNextRound(this.state.round);
-      }, 3000);
+    if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
   }
 
   private foldAction(player: Player) {
@@ -605,10 +596,7 @@ export default class RoomGame extends Room<RoomState> {
       }
     }
 
-    if (this.remainingTurn === 0)
-      return this.clock.setTimeout(() => {
-        this.changeNextRound(this.state.round);
-      }, 3000);
+    if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
   }
 
   private endGame(result: any[]) {

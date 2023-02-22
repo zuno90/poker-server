@@ -133,7 +133,7 @@ export class BotClient {
 
   // Bet Algorithm
   private async betAlgorithm(round: ERound, botState: Player) {
-    const timeOutAction = setTimeout(() => {
+    setTimeout(() => {
       // case go 1st -> true
       if (this.isGoFirst) {
         if (round === ERound.PREFLOP) return this.emit(RAISE, { chips: this.randomNumberRange() });
