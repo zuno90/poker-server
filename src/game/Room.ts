@@ -478,7 +478,10 @@ export default class RoomGame extends Room<RoomState> {
 
     this.remainingTurn--;
     console.log('CALL, turn con', this.remainingTurn);
-    if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
+    if (this.remainingTurn === 0)
+      return this.clock.setTimeout(() => {
+        this.changeNextRound(this.state.round);
+      }, 3000);
   }
 
   private checkAction(player: Player) {
@@ -488,7 +491,10 @@ export default class RoomGame extends Room<RoomState> {
 
     this.remainingTurn--;
     console.log('CHECK, turn con', this.remainingTurn);
-    if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
+    if (this.remainingTurn === 0)
+      return this.clock.setTimeout(() => {
+        this.changeNextRound(this.state.round);
+      }, 3000);
   }
 
   private allinAction(sessionId: string, player: Player, chip: number) {
@@ -549,7 +555,10 @@ export default class RoomGame extends Room<RoomState> {
       return this.endGame(emitResultArr);
     }
 
-    if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
+    if (this.remainingTurn === 0)
+      return this.clock.setTimeout(() => {
+        this.changeNextRound(this.state.round);
+      }, 3000);
   }
 
   private foldAction(player: Player) {
@@ -596,22 +605,19 @@ export default class RoomGame extends Room<RoomState> {
       }
     }
 
-    if (this.remainingTurn === 0) {
-      // if (this.state.remainingPlayer === 0) {
-      //   result = [{ t: betP[0].t, w: true }];
-      //   return this.endGame(result);
-      // }
-      return this.changeNextRound(this.state.round);
-    }
+    if (this.remainingTurn === 0)
+      return this.clock.setTimeout(() => {
+        this.changeNextRound(this.state.round);
+      }, 3000);
   }
 
   private endGame(result: any[]) {
     console.log('end game');
     this.clock.start();
+    this.emitResult(result);
     this.delayedTimeOut = this.clock.setTimeout(() => {
       this.state.round = ERound.SHOWDOWN;
-      this.emitResult(result);
-    }, 3000);
+    }, 1000);
 
     this.clock.setTimeout(() => {
       this.delayedTimeOut.clear();
