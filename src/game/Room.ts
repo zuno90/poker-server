@@ -119,10 +119,6 @@ export default class RoomGame extends Room<RoomState> {
 
       // HANDLE ALL ACTION FROM PLAYER
       this.handleAction();
-
-      this.onMessage('ALL', (client: Client, data: any) => {
-        console.log({ client, data });
-      });
     } catch (err) {
       console.error('error:::::', err);
       await this.disconnect();
@@ -228,7 +224,7 @@ export default class RoomGame extends Room<RoomState> {
       // }
 
       if (this.currentBet > chips / 2) return; // chỉ cho phép raise lệnh hơn 2 lần current bet
-      if (player.chips <= chips) return this.allinAction(client.sessionId, player, chips); // trường hợp này chuyển sang allin
+      if (player.chips <= chips) return this.allinAction(client.sessionId, player, player.chips); // trường hợp này chuyển sang allin
 
       this.raiseAction(player, chips);
 
@@ -240,21 +236,24 @@ export default class RoomGame extends Room<RoomState> {
       if (player.turn === this.state.currentTurn) return;
       if (player.isFold) return; // block folded player
       if (this.state.currentTurn === -1) return;
+
       // if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
       //   const nextTurn = Math.min(...this.remainingPlayerArr);
       //   if (nextTurn !== player.turn) return;
       // }
-      let callValue = 0;
-      if (player.betEachAction === 0) {
-        // tại round mới và nó chưa action gì
-        callValue = this.currentBet;
-      } else if (player.betEachAction > 0 && player.betEachAction < this.currentBet) {
-        // có đứa raise cao hơn
-        callValue = this.currentBet - player.betEachAction;
-      }
 
-      // nếu lệnh call này >= chip nó đang còn
-      if (callValue >= player.chips) return this.allinAction(client.sessionId, player, callValue);
+      let callValue = 0;
+      // tại round mới và nó chưa action gì
+      if (player.betEachAction === 0 && player.chips > this.currentBet) callValue = this.currentBet;
+      // buộc phải all in
+      if (player.betEachAction === 0 && player.chips < this.currentBet) {
+        callValue = player.chips + player.accumulatedBet;
+        return this.allinAction(client.sessionId, player, callValue);
+      }
+      // có đứa raise cao hơn
+      if (player.betEachAction > 0 && player.betEachAction < this.currentBet)
+        callValue = this.currentBet - player.betEachAction;
+      if (callValue === 0) return this.checkAction(player);
       this.callAction(player, callValue);
 
       this.sendNewState();
@@ -279,6 +278,7 @@ export default class RoomGame extends Room<RoomState> {
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return;
       if (player.isFold) return; // block folded player
+
       // if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
       //   const nextTurn = Math.min(...this.remainingPlayerArr);
       //   if (nextTurn !== player.turn) return;
@@ -468,7 +468,6 @@ export default class RoomGame extends Room<RoomState> {
   }
 
   private callAction(player: Player, chip: number) {
-    if (chip === 0) return this.checkAction(player);
     player.action = CALL;
     player.betEachAction = chip;
     player.accumulatedBet += chip;
@@ -494,8 +493,6 @@ export default class RoomGame extends Room<RoomState> {
 
   private allinAction(sessionId: string, player: Player, chip: number) {
     player.action = ALLIN;
-    player.betEachAction = chip;
-
     if (chip > this.currentBet) this.currentBet = chip;
 
     player.betEachAction = chip;
