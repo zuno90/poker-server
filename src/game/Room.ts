@@ -519,7 +519,6 @@ export default class RoomGame extends Room<RoomState> {
         if (p.statement === EStatement.Playing && !p.isFold)
           betP.push({ i: sessionId, t: p.turn, v: p.accumulatedBet });
       });
-
       for (const bet of betP) {
         if (bet.t === remainTurn[0]) {
           const remainP = <Player>this.state.players.get(bet.i);
@@ -548,8 +547,8 @@ export default class RoomGame extends Room<RoomState> {
       this.state.bankerCards = this.banker5Cards;
       return this.endGame(emitResultArr);
     }
-
-    if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
+    if (this.remainingTurn === 0 && this.state.remainingPlayer > 1)
+      return this.changeNextRound(this.state.round);
   }
 
   private foldAction(player: Player) {
@@ -595,7 +594,6 @@ export default class RoomGame extends Room<RoomState> {
         return this.endGame(result);
       }
     }
-
     if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
   }
 
