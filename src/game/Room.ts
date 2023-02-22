@@ -676,7 +676,8 @@ export default class RoomGame extends Room<RoomState> {
       process.env.NODE_ENV === 'production' ? `${process.env.WS_SERVER}` : 'ws://localhost:9000',
     );
     await bot.joinRoom(this.roomId);
-    return this.bot?.set(bot.sessionId, bot);
+    this.bot?.set(bot.sessionId, bot);
+    this.sendNewState();
   }
 
   private addBotByCondition() {
@@ -689,6 +690,7 @@ export default class RoomGame extends Room<RoomState> {
         }
         if (countBot === 1) return;
         await this.addBot();
+        this.sendNewState();
       }
     }, 3000);
   }
