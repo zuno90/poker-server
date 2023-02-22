@@ -6,7 +6,9 @@ const username = [
   'Sanji',
   'Franky',
   'Chopper',
+  'Brook',
   'Nami',
+  'Nico Robin',
   'HanCook',
   'Saitama',
   'King',
@@ -21,8 +23,9 @@ const username = [
   'Kisame',
   'Nagato',
   'Hidan',
-  'Kayuku',
+  'Kazuku',
   'Obito',
+  '',
 ];
 
 export const botInfo = () => {

@@ -187,6 +187,7 @@ export default class RoomGame extends Room<RoomState> {
     // START GAME
     this.onMessage(START_GAME, (client: Client, _) => {
       this.startGame(client);
+      console.log('current turn', this.currentBet);
       this.sendNewState();
     });
   }
@@ -223,9 +224,10 @@ export default class RoomGame extends Room<RoomState> {
       //   if (nextTurn !== player.turn) return;
       // }
 
-      if (this.currentBet > chips / 2) return; // chỉ cho phép raise lệnh hơn 2 lần current bet
-      if (player.chips <= chips) return this.allinAction(client.sessionId, player, player.chips); // trường hợp này chuyển sang allin
+      console.log(player.chips, chips, this.currentBet);
 
+      if (chips >= player.chips) return this.allinAction(client.sessionId, player, player.chips); // trường hợp này chuyển sang allin
+      if (this.currentBet > chips / 2) return; // chỉ cho phép raise lệnh hơn 2 lần current bet
       this.raiseAction(player, chips);
 
       this.sendNewState();
@@ -244,18 +246,19 @@ export default class RoomGame extends Room<RoomState> {
 
       let callValue = 0;
       // tại round mới và nó chưa action gì
-      if (player.betEachAction === 0 && player.chips > this.currentBet) callValue = this.currentBet;
+      if (player.chips > this.currentBet) callValue = player.betEachAction + this.currentBet;
       // buộc phải all in
-      if (player.betEachAction === 0 && player.chips < this.currentBet) {
+      if (player.chips < this.currentBet) {
         callValue = player.chips + player.accumulatedBet;
         return this.allinAction(client.sessionId, player, callValue);
       }
       // có đứa raise cao hơn
-      if (player.betEachAction > 0 && player.betEachAction < this.currentBet)
+      if (player.betEachAction < this.currentBet)
         callValue = this.currentBet - player.betEachAction;
+      console.log({ chip: player.chips, callValue, currentbet: this.currentBet });
+
       if (callValue === 0) return this.checkAction(player);
       this.callAction(player, callValue);
-
       this.sendNewState();
     });
     // CHECK
@@ -493,7 +496,9 @@ export default class RoomGame extends Room<RoomState> {
 
   private allinAction(sessionId: string, player: Player, chip: number) {
     player.action = ALLIN;
+    console.log(chip, this.currentBet);
     if (chip > this.currentBet) this.currentBet = chip;
+    console.log(this.currentBet, 'frr');
 
     player.betEachAction = chip;
     player.accumulatedBet += chip;
@@ -501,8 +506,8 @@ export default class RoomGame extends Room<RoomState> {
 
     this.state.currentTurn = player.turn;
     this.state.potSize += chip;
+    this.remainingTurn = this.state.remainingPlayer - 1;
     this.state.remainingPlayer--;
-    this.remainingTurn--;
 
     this.allinArr.push(player.turn);
     this.allinList.push({ i: sessionId, t: player.turn, v: player.accumulatedBet });
@@ -515,17 +520,6 @@ export default class RoomGame extends Room<RoomState> {
     if (this.state.remainingPlayer === 1) {
       let result: any[] = [];
       const betP: any[] = [];
-      console.log('vo day!!!!');
-      if (this.remainingTurn === 0) {
-        const { emitResultArr, finalCalculateResult } = this.pickWinner1();
-        result = emitResultArr;
-        for (const c of finalCalculateResult) {
-          const betPlayer = <Player>this.state.players.get(c.i);
-          betPlayer.chips += c.v;
-        }
-        this.state.bankerCards = this.banker5Cards;
-        return this.endGame(result);
-      }
       this.state.players.forEach((p: Player, sessionId: string) => {
         if (p.statement === EStatement.Playing && !p.isFold)
           betP.push({ i: sessionId, t: p.turn, v: p.accumulatedBet });
