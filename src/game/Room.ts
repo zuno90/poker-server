@@ -2,7 +2,7 @@ import { Client, Delayed, Room } from 'colyseus';
 import { Request } from 'express';
 import { ERound, RoomState } from './schemas/room.schema';
 import { ERole, EStatement, Player } from './schemas/player.schema';
-import { ROOM_CHAT, START_GAME } from './constants/room.constant';
+import { FRIEND_REQUEST, ROOM_CHAT, START_GAME } from './constants/room.constant';
 import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
 import { DEAL, RANK, RESULT } from './constants/server-emit.constant';
 import { deal } from './modules/handleCard';
@@ -114,6 +114,9 @@ export default class RoomGame extends Room<RoomState> {
       // HANDLE CHAT ROOM
       this.handleChat();
 
+      // HANDLE FRIEND REQUEST
+      this.handleFriendRequest();
+
       // HANDLE ALL ACTION FROM PLAYER
       this.handleAction();
     } catch (err) {
@@ -189,6 +192,19 @@ export default class RoomGame extends Room<RoomState> {
   private handleChat() {
     this.onMessage(ROOM_CHAT, (client: Client, data: TRoomChat) => {
       this.broadcast(ROOM_CHAT, data);
+    });
+  }
+
+  // handle friend request
+  private handleFriendRequest() {
+    this.onMessage(FRIEND_REQUEST, async (client: Client, toSessionId: string) => {
+      const reqUser = <Player>this.state.players.get(client.sessionId);
+      const acceptUser = <Player>this.state.players.get(toSessionId);
+      await this.presence.publish('poker:friend:request', { from: reqUser.id, to: acceptUser.id });
+      this.clients.forEach((client: Client, index: number) => {
+        if (client.sessionId === toSessionId)
+          client.send(FRIEND_REQUEST, `Thằng ${client.sessionId} add friend mày kìa!`);
+      });
     });
   }
 
@@ -335,11 +351,11 @@ export default class RoomGame extends Room<RoomState> {
   }
 
   private startGame(client: Client) {
-    if (this.state.onReady) return; // check game is ready or not
-    if (this.state.players.size < 2) return; // allow start game when > 2 players
+    // if (this.state.onReady) return; // check game is ready or not
+    // if (this.state.players.size < 2) return; // allow start game when > 2 players
     // check accept only host
     const host = <Player>this.state.players.get(client.sessionId);
-    if (!host.isHost) return;
+    // if (!host.isHost) return;
 
     const { onHandCards, banker5Cards } = deal(this.state.players.size);
     this.banker5Cards = banker5Cards; // cache 5 cards of banker first
