@@ -515,6 +515,17 @@ export default class RoomGame extends Room<RoomState> {
     if (this.state.remainingPlayer === 1) {
       let result: any[] = [];
       const betP: any[] = [];
+      console.log('vo day!!!!');
+      if (this.remainingTurn === 0) {
+        const { emitResultArr, finalCalculateResult } = this.pickWinner1();
+        result = emitResultArr;
+        for (const c of finalCalculateResult) {
+          const betPlayer = <Player>this.state.players.get(c.i);
+          betPlayer.chips += c.v;
+        }
+        this.state.bankerCards = this.banker5Cards;
+        return this.endGame(result);
+      }
       this.state.players.forEach((p: Player, sessionId: string) => {
         if (p.statement === EStatement.Playing && !p.isFold)
           betP.push({ i: sessionId, t: p.turn, v: p.accumulatedBet });
