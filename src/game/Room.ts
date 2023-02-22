@@ -33,7 +33,7 @@ export interface TAllinPlayer {
 }
 
 export default class RoomGame extends Room<RoomState> {
-  readonly patchRate = 1000;
+  readonly patchRate = 5000;
   readonly maxClients: number = 5;
   private readonly MIN_CHIP = 1000;
   private readonly initBetChip: number = 100;
