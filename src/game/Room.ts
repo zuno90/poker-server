@@ -33,7 +33,6 @@ export interface TAllinPlayer {
 }
 
 export default class RoomGame extends Room<RoomState> {
-  readonly patchRate = 5000;
   readonly maxClients: number = 5;
   private readonly MIN_CHIP = 1000;
   private readonly initBetChip: number = 100;
@@ -388,6 +387,8 @@ export default class RoomGame extends Room<RoomState> {
     });
     this.emitDealCards();
     this.state.round = ERound.PREFLOP;
+
+    this.sendNewState();
   }
 
   private resetGame() {
@@ -676,5 +677,9 @@ export default class RoomGame extends Room<RoomState> {
         await this.addBot();
       }
     }, 3000);
+  }
+
+  private sendNewState() {
+    this.broadcast('ALL', this.state);
   }
 }
