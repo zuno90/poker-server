@@ -215,15 +215,16 @@ export default class RoomGame extends Room<RoomState> {
     // RAISE
     this.onMessage(RAISE, (client: Client, { chips }: { chips: number }) => {
       const player = <Player>this.state.players.get(client.sessionId);
-      // if (player.turn === this.state.currentTurn) return; // không cho gửi 2 lần
+      if (player.turn === this.state.currentTurn) return; // không cho gửi 2 lần
       if (player.isFold) return; // block folded player
+
       // if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
       //   const nextTurn = Math.min(...this.remainingPlayerArr);
       //   if (nextTurn !== player.turn) return;
       // }
 
-      // if (this.currentBet > chips / 2) return; // chỉ cho phép raise lệnh hơn 2 lần current bet
-      // if (player.chips <= chips) return this.allinAction(client.sessionId, player, chips); // trường hợp này chuyển sang allin
+      if (this.currentBet > chips / 2) return; // chỉ cho phép raise lệnh hơn 2 lần current bet
+      if (player.chips <= chips) return this.allinAction(client.sessionId, player, chips); // trường hợp này chuyển sang allin
 
       this.raiseAction(player, chips);
 
@@ -365,11 +366,11 @@ export default class RoomGame extends Room<RoomState> {
   }
 
   private startGame(client: Client) {
-    // if (this.state.onReady) return; // check game is ready or not
-    // if (this.state.players.size < 2) return; // allow start game when > 2 players
+    if (this.state.onReady) return; // check game is ready or not
+    if (this.state.players.size < 2) return; // allow start game when > 2 players
     // check accept only host
     const host = <Player>this.state.players.get(client.sessionId);
-    // if (!host.isHost) return;
+    if (!host.isHost) return;
 
     const { onHandCards, banker5Cards } = deal(this.state.players.size);
     this.banker5Cards = banker5Cards; // cache 5 cards of banker first
