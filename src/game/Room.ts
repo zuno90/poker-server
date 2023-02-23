@@ -204,7 +204,7 @@ export default class RoomGame extends Room<RoomState> {
       const reqUser = <Player>this.state.players.get(client.sessionId);
       const acceptUser = <Player>this.state.players.get(toSessionId);
       await this.presence.publish('poker:friend:request', { from: reqUser.id, to: acceptUser.id });
-      this.clients.forEach((client: Client, index: number) => {
+      this.clients.forEach((client: Client, _: number) => {
         if (client.sessionId === toSessionId)
           client.send(FRIEND_REQUEST, `Thằng ${client.sessionId} add friend mày kìa!`);
       });

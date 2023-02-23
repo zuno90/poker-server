@@ -1,7 +1,7 @@
 import { Client, Room } from 'colyseus.js';
 import { ERound, RoomState } from './schemas/room.schema';
 import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
-import { DEAL, RANK, RESULT } from './constants/server-emit.constant';
+import { RANK, RESULT } from './constants/server-emit.constant';
 import { EStatement, Player } from './schemas/player.schema';
 import { removePlayer, sortedArr } from './modules/handlePlayer';
 
@@ -91,12 +91,9 @@ export class BotClient {
     });
 
     // HANDLE ALL BROADCAST DATA
-    this.room.onMessage(DEAL, data => {
-      console.log('chia bai from broadcast', data);
-      this.cards = data.c;
-    });
     this.room.onMessage(RANK, data => {
       console.log('rank sau moi round from broadcast', data);
+      if (data.c) this.cards = data.c; // send 2 cards when game has just been started
     });
     this.room.onMessage(RESULT, data => {
       console.log('ket qua from broadcast', data);
