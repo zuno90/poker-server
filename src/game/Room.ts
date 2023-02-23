@@ -483,9 +483,13 @@ export default class RoomGame extends Room<RoomState> {
 
   private allinAction(sessionId: string, player: Player, chip: number) {
     player.action = ALLIN;
-    console.log(chip, this.currentBet);
-    if (chip > this.currentBet) this.currentBet = chip;
-    console.log(this.currentBet, 'frr');
+    if (chip > this.currentBet) {
+      this.currentBet = chip;
+      this.remainingTurn = this.state.remainingPlayer - 1;
+    } else {
+      this.remainingTurn--;
+    }
+    this.state.remainingPlayer--;
 
     player.betEachAction = chip;
     player.accumulatedBet += chip;
@@ -493,8 +497,6 @@ export default class RoomGame extends Room<RoomState> {
 
     this.state.currentTurn = player.turn;
     this.state.potSize += chip;
-    this.remainingTurn = this.state.remainingPlayer - 1;
-    this.state.remainingPlayer--;
 
     this.allinArr.push(player.turn);
     this.allinList.push({ i: sessionId, t: player.turn, v: player.accumulatedBet });
