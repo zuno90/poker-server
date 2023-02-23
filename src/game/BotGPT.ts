@@ -4,6 +4,7 @@ import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
 import { RANK, RESULT } from './constants/server-emit.constant';
 import { EStatement, Player } from './schemas/player.schema';
 import { removePlayer, sortedArr } from './modules/handlePlayer';
+import { FRIEND_REQUEST } from './constants/room.constant';
 
 type TCurrentBetInfo = {
   turn: number;
@@ -97,6 +98,9 @@ export class BotClient {
     });
     this.room.onMessage(RESULT, data => {
       console.log('ket qua from broadcast', data);
+    });
+    this.room.onMessage(FRIEND_REQUEST, data => {
+      console.log('lời mời kết bạn', data);
     });
   }
 

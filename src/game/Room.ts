@@ -54,17 +54,9 @@ export default class RoomGame extends Room<RoomState> {
       // is BOT
       if (options.isBot && !options.jwt) return botInfo();
       // IS REAL PLAYER -> CHECK AUTH
-      const res = await axios.get(
-        `${
-          process.env.NODE_ENV === 'production' ? process.env.CMS_URL : 'http://localhost:9001'
-        }/user/info`,
-        {
-          headers: { Authorization: 'Bearer ' + options.jwt },
-        },
-      );
-
-      if (!res.data.success) return client.leave(1001);
-      const existedPlayer = res.data.data;
+      const auth = await this.checkAuth(options.jwt);
+      if (!auth.success) return client.leave(1001);
+      const existedPlayer = auth.data;
       if (existedPlayer.chips < this.MIN_CHIP)
         throw new Error('This room is required for ' + this.MIN_CHIP);
       if (!this.state.players.size)
@@ -150,14 +142,14 @@ export default class RoomGame extends Room<RoomState> {
         this.state.players.forEach((player: Player, sessionId: string) => {
           if (player.role === ERole.Player) playerInRoom.push({ sessionId, seat: player.seat });
         });
-        if (playerInRoom.length === 0) throw Error('Không còn người trong room!');
-        if (playerInRoom.length === 1) {
+        if (playerInRoom.length - 1 === 0) return await this.disconnect();
+        if (playerInRoom.length - 1 === 1) {
           const newHost = <Player>this.state.players.get(playerInRoom[0].sessionId);
           newHost.isHost = true;
           newHost.seat = 1;
           newHost.turn = 0;
         }
-        if (playerInRoom.length > 1) {
+        if (playerInRoom.length - 1 > 1) {
           const newHost = <Player>this.state.players.get(playerInRoom[1].sessionId);
           newHost.isHost = true;
           newHost.seat = 1;
@@ -165,10 +157,6 @@ export default class RoomGame extends Room<RoomState> {
         }
       }
       console.log('client ' + client.sessionId + ' has just left');
-      await this.presence.publish(
-        'poker:update:chip',
-        JSON.stringify({ id: leavingPlayer.id, chips: leavingPlayer.chips }),
-      );
       this.state.players.delete(client.sessionId);
     } catch (err) {
       console.error(err);
@@ -598,23 +586,31 @@ export default class RoomGame extends Room<RoomState> {
         return this.endGame(result);
       }
     }
+    if (this.remainingTurn === 0 && this.state.remainingPlayer === 0) {
+      const { emitResultArr, finalCalculateResult } = this.pickWinner1();
+      for (const c of finalCalculateResult) {
+        const betPlayer = <Player>this.state.players.get(c.i);
+        betPlayer.chips += c.v;
+      }
+      this.state.bankerCards = this.banker5Cards;
+      return this.endGame(emitResultArr);
+    }
     if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
   }
 
-  private endGame(result: any[]) {
-    console.log('end game');
-    this.clock.start();
-    this.emitResult(result);
-    this.delayedTimeOut = this.clock.setTimeout(() => {
-      this.state.round = ERound.SHOWDOWN;
-    }, 1000);
+  private async checkAuth(jwt: string) {
+    try {
+      const res = await axios.get(
+        `${
+          process.env.NODE_ENV === 'production' ? process.env.CMS_URL : 'http://localhost:9001'
+        }/user`,
+        {
+          headers: { Authorization: 'Bearer ' + jwt },
+        },
+      );
 
-    this.clock.setTimeout(() => {
-      this.delayedTimeOut.clear();
-      this.resetGame();
-      console.log('reset game');
-      this.sendNewState();
-    }, 10000);
+      return res.data;
+    } catch (err) {}
   }
 
   private pickWinner1() {
@@ -667,6 +663,30 @@ export default class RoomGame extends Room<RoomState> {
     this.broadcast(RESULT, result);
   }
 
+  private endGame(result: any[]) {
+    console.log('end game');
+    this.clock.start();
+    this.emitResult(result);
+    this.delayedTimeOut = this.clock.setTimeout(() => {
+      this.state.round = ERound.SHOWDOWN;
+    }, 1000);
+
+    this.clock.setTimeout(() => {
+      this.delayedTimeOut.clear();
+      this.state.players.forEach((player: Player, _: string) => {
+        if (player.role === ERole.Player) {
+          this.presence.publish(
+            'poker:update:chip',
+            JSON.stringify({ id: player.id, chips: player.chips }),
+          );
+        }
+      });
+      this.resetGame();
+      console.log('reset game');
+      this.sendNewState();
+    }, 10000);
+  }
+
   private async addBot() {
     if (this.clients.length === this.maxClients) return;
     const bot = new BotClient(
@@ -687,7 +707,6 @@ export default class RoomGame extends Room<RoomState> {
         }
         if (countBot === 1) return;
         await this.addBot();
-        this.sendNewState();
       }
     }, 3000);
   }
