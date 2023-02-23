@@ -4,14 +4,13 @@ import { ERound, RoomState } from './schemas/room.schema';
 import { ERole, EStatement, Player } from './schemas/player.schema';
 import { FRIEND_REQUEST, ROOM_CHAT, START_GAME } from './constants/room.constant';
 import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
-import { DEAL, RANK, RESULT } from './constants/server-emit.constant';
+import { RANK, RESULT } from './constants/server-emit.constant';
 import { deal } from './modules/handleCard';
 import { arrangeSeat, arrangeTurn, getNonDupItem, sortedArr } from './modules/handlePlayer';
 import { calculateAllinPlayer, checkPlayerRank } from './modules/handleRank';
 import { BotClient } from './BotGPT';
 import { botInfo } from './constants/bot.constant';
 import axios from 'axios';
-import { clearInterval } from 'timers';
 
 const Hand = require('pokersolver').Hand; // func handle winner
 
@@ -205,7 +204,7 @@ export default class RoomGame extends Room<RoomState> {
       const reqUser = <Player>this.state.players.get(client.sessionId);
       const acceptUser = <Player>this.state.players.get(toSessionId);
       await this.presence.publish('poker:friend:request', { from: reqUser.id, to: acceptUser.id });
-      this.clients.forEach((client: Client, index: number) => {
+      this.clients.forEach((client: Client, _: number) => {
         if (client.sessionId === toSessionId)
           client.send(FRIEND_REQUEST, `Thằng ${client.sessionId} add friend mày kìa!`);
       });
@@ -313,7 +312,7 @@ export default class RoomGame extends Room<RoomState> {
           combinedCards: [...this.state.bankerCards].concat([...this.player2Cards[player.turn]]),
         },
       ]);
-      client.send(DEAL, {
+      client.send(RANK, {
         r: rankInfo[0].rank,
         d: rankInfo[0].name,
         c: this.player2Cards[player.turn],
