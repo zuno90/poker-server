@@ -7,7 +7,9 @@ import { monitor } from '@colyseus/monitor';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 import { RedisDriver } from '@colyseus/redis-driver';
 import { createServer } from 'http';
-import GameRoom from './game/Room';
+import NoobRoom from './game/NoobRoom';
+import MidRoom from './game/MidRoom';
+import ProRoom from './game/ProRoom';
 
 dotenv.config();
 
@@ -45,9 +47,9 @@ async function bootstrap() {
   });
 
   // define each level of Room
-  gameServer.define('noob', GameRoom);
-  gameServer.define('normal', GameRoom);
-  gameServer.define('pro', GameRoom);
+  gameServer.define('noob', NoobRoom);
+  gameServer.define('normal', MidRoom);
+  gameServer.define('pro', ProRoom);
 
   const SERVER_URL = process.env.SERVER_URL || 'poker.dadsnetwork.net';
   const PORT = process.env.PORT || 9000;

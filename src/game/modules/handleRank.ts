@@ -1,4 +1,4 @@
-import { TAllinPlayer } from '../Room';
+import { TAllinPlayer } from '../NoobRoom';
 
 const Hand = require('pokersolver').Hand;
 

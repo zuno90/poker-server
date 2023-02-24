@@ -32,10 +32,10 @@ export interface TAllinPlayer {
   w?: boolean;
 }
 
-export default class RoomGame extends Room<RoomState> {
+export default class NoobRoom extends Room<RoomState> {
   readonly maxClients: number = 5;
   private readonly MIN_CHIP = 1000;
-  private readonly initBetChip: number = 100;
+  private readonly MAX_CHIP = 100000;
   private currentBet: number = 0;
   private banker5Cards: Array<string> = [];
   private player2Cards: Array<string[]> = [];
@@ -58,7 +58,7 @@ export default class RoomGame extends Room<RoomState> {
       if (!auth.success) return client.leave(1001);
       const existedPlayer = auth.data;
       if (existedPlayer.chips < this.MIN_CHIP)
-        throw new Error('This room is required for ' + this.MIN_CHIP);
+        throw new Error('This room is required min ' + this.MIN_CHIP);
       if (!this.state.players.size)
         // is HOST
         return {
@@ -192,6 +192,10 @@ export default class RoomGame extends Room<RoomState> {
       const reqUser = <Player>this.state.players.get(client.sessionId);
       const acceptUser = <Player>this.state.players.get(toSessionId);
       await this.presence.publish('poker:friend:request', { from: reqUser.id, to: acceptUser.id });
+      await this.presence.subscribe('cms:friend:accept', (data: any) => {
+        console.log(44553453453);
+        console.log(data);
+      });
       this.clients.forEach((client: Client, _: number) => {
         if (client.sessionId === toSessionId)
           client.send(FRIEND_REQUEST, `Thằng ${client.sessionId} add friend mày kìa!`);
@@ -214,7 +218,7 @@ export default class RoomGame extends Room<RoomState> {
       console.log(player.chips, chips, this.currentBet);
 
       if (chips >= player.chips) return this.allinAction(client.sessionId, player, player.chips); // trường hợp này chuyển sang allin
-      if (this.currentBet > chips / 2) return; // chỉ cho phép raise lệnh hơn 2 lần current bet
+      if (this.currentBet > chips + this.MIN_CHIP) return; // chỉ cho phép raise lệnh hơn 2 lần current bet
       this.raiseAction(player, chips);
 
       this.sendNewState();
@@ -374,7 +378,7 @@ export default class RoomGame extends Room<RoomState> {
     console.log({ banker: this.banker5Cards, player: this.player2Cards });
 
     this.state.onReady = true; // change room state -> TRUE
-    this.state.potSize = this.state.players.size * this.initBetChip;
+    this.state.potSize = this.state.players.size * this.MIN_CHIP;
     this.state.remainingPlayer = this.state.players.size;
     const randomTurn = Math.round((Math.random() * 10) % (this.state.players.size - 1));
     this.state.currentTurn = randomTurn - 1;
@@ -384,8 +388,8 @@ export default class RoomGame extends Room<RoomState> {
     const playerSeatArr: number[] = [];
     this.state.players.forEach((player: Player, _) => {
       player.statement = EStatement.Playing;
-      player.accumulatedBet += this.initBetChip;
-      player.chips -= this.initBetChip;
+      player.accumulatedBet += this.MIN_CHIP;
+      player.chips -= this.MIN_CHIP;
       playerSeatArr.push(player.seat);
     });
 
