@@ -34,7 +34,7 @@ export interface TAllinPlayer {
 
 export default class NoobRoom extends Room<RoomState> {
   readonly maxClients: number = 5;
-  private readonly MIN_CHIP = 1000;
+  private readonly MIN_CHIP = 100;
   private readonly MAX_CHIP = 100000;
   private currentBet: number = 0;
   private banker5Cards: Array<string> = [];
