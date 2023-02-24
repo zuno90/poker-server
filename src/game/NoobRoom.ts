@@ -34,7 +34,8 @@ export interface TAllinPlayer {
 
 export default class NoobRoom extends Room<RoomState> {
   readonly maxClients: number = 5;
-  private readonly MIN_CHIP = 100;
+  private readonly MIN_BET = 100;
+  private readonly MIN_CHIP = 1000;
   private readonly MAX_CHIP = 100000;
   private currentBet: number = 0;
   private banker5Cards: Array<string> = [];
@@ -218,7 +219,7 @@ export default class NoobRoom extends Room<RoomState> {
       console.log(player.chips, chips, this.currentBet);
 
       if (chips >= player.chips) return this.allinAction(client.sessionId, player, player.chips); // trường hợp này chuyển sang allin
-      if (this.currentBet > chips + this.MIN_CHIP) return; // chỉ cho phép raise lệnh cao hơn current bet + min bet
+      if (this.currentBet > chips + this.MIN_BET) return; // chỉ cho phép raise lệnh cao hơn current bet + min bet
       this.raiseAction(player, chips);
 
       this.sendNewState();
@@ -378,7 +379,7 @@ export default class NoobRoom extends Room<RoomState> {
     console.log({ banker: this.banker5Cards, player: this.player2Cards });
 
     this.state.onReady = true; // change room state -> TRUE
-    this.state.potSize = this.state.players.size * this.MIN_CHIP;
+    this.state.potSize = this.state.players.size * this.MIN_BET;
     this.state.remainingPlayer = this.state.players.size;
     const randomTurn = Math.round((Math.random() * 10) % (this.state.players.size - 1));
     this.state.currentTurn = randomTurn - 1;
@@ -388,8 +389,8 @@ export default class NoobRoom extends Room<RoomState> {
     const playerSeatArr: number[] = [];
     this.state.players.forEach((player: Player, _) => {
       player.statement = EStatement.Playing;
-      player.accumulatedBet += this.MIN_CHIP;
-      player.chips -= this.MIN_CHIP;
+      player.accumulatedBet += this.MIN_BET;
+      player.chips -= this.MIN_BET;
       playerSeatArr.push(player.seat);
     });
 
