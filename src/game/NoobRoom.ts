@@ -1,15 +1,15 @@
-import {Client, Delayed, Room} from 'colyseus';
-import {Request} from 'express';
-import {ERound, RoomState} from './schemas/room.schema';
-import {ERole, EStatement, Player} from './schemas/player.schema';
-import {FRIEND_REQUEST, ROOM_CHAT, START_GAME} from './constants/room.constant';
-import {ALLIN, CALL, CHECK, FOLD, RAISE} from './constants/action.constant';
-import {RANK, RESULT} from './constants/server-emit.constant';
-import {deal} from './modules/handleCard';
-import {arrangeSeat, arrangeTurn, getNonDupItem, sortedArr} from './modules/handlePlayer';
-import {calculateAllinPlayer, checkPlayerRank} from './modules/handleRank';
-import {BotClient} from './BotGPT';
-import {botInfo} from './constants/bot.constant';
+import { Client, Delayed, Room } from 'colyseus';
+import { Request } from 'express';
+import { ERound, RoomState } from './schemas/room.schema';
+import { ERole, EStatement, Player } from './schemas/player.schema';
+import { FRIEND_REQUEST, ROOM_CHAT, START_GAME } from './constants/room.constant';
+import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
+import { RANK, RESULT } from './constants/server-emit.constant';
+import { deal } from './modules/handleCard';
+import { arrangeSeat, arrangeTurn, getNonDupItem, sortedArr } from './modules/handlePlayer';
+import { calculateAllinPlayer, checkPlayerRank } from './modules/handleRank';
+import { BotClient } from './BotGPT';
+import { botInfo } from './constants/bot.constant';
 import axios from 'axios';
 
 const Hand = require('pokersolver').Hand; // func handle winner
@@ -141,8 +141,9 @@ export default class NoobRoom extends Room<RoomState> {
       const playerInRoom: any[] = [];
       if (leavingPlayer.isHost) {
         this.state.players.forEach((player: Player, sessionId: string) => {
-          if (player.role === ERole.Player) playerInRoom.push({sessionId, seat: player.seat});
+          if (player.role === ERole.Player) playerInRoom.push({ sessionId, seat: player.seat });
         });
+
         if (playerInRoom.length - 1 === 0) return await this.disconnect();
         if (playerInRoom.length - 1 === 1) {
           const newHost = <Player>this.state.players.get(playerInRoom[0].sessionId);
@@ -195,7 +196,7 @@ export default class NoobRoom extends Room<RoomState> {
 
       if (!reqUser || !acceptUser) return;
 
-      await this.presence.publish('poker:friend:request', {from: reqUser.id, to: acceptUser.id});
+      await this.presence.publish('poker:friend:request', { from: reqUser.id, to: acceptUser.id });
       this.clients.forEach((client: Client, _: number) => {
         if (client.sessionId === toSessionId)
           client.send('FRIEND_REQUEST_RESULT', `Thằng ${client.sessionId} add friend mày kìa!`);
@@ -208,7 +209,7 @@ export default class NoobRoom extends Room<RoomState> {
 
   private handleAction() {
     // RAISE
-    this.onMessage(RAISE, (client: Client, {chips}: { chips: number }) => {
+    this.onMessage(RAISE, (client: Client, { chips }: { chips: number }) => {
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return; // không cho gửi 2 lần
       if (player.isFold) return; // block folded player
@@ -243,13 +244,13 @@ export default class NoobRoom extends Room<RoomState> {
       if (player.chips > this.currentBet) callValue = player.betEachAction + this.currentBet;
       // buộc phải all in
       if (player.chips < this.currentBet) {
-        callValue = player.chips + player.accumulatedBet;
+        callValue = player.chips;
         return this.allinAction(client.sessionId, player, callValue);
       }
       // có đứa raise cao hơn
       if (player.betEachAction < this.currentBet)
         callValue = this.currentBet - player.betEachAction;
-      console.log({chip: player.chips, callValue, currentbet: this.currentBet});
+      console.log({ chip: player.chips, callValue, currentbet: this.currentBet });
 
       if (callValue === 0) return this.checkAction(player);
       this.callAction(player, callValue);
@@ -320,7 +321,7 @@ export default class NoobRoom extends Room<RoomState> {
     if (round === ERound.RIVER) {
       // this.state.round = ERound.SHOWDOWN;
       this.state.bankerCards = this.banker5Cards;
-      const {emitResultArr, finalCalculateResult} = this.pickWinner1();
+      const { emitResultArr, finalCalculateResult } = this.pickWinner1();
       for (const c of finalCalculateResult) {
         const betPlayer = <Player>this.state.players.get(c.i);
         betPlayer.chips += c.v;
@@ -360,7 +361,7 @@ export default class NoobRoom extends Room<RoomState> {
             combinedCards: [...this.state.bankerCards].concat([...this.player2Cards[player.turn]]),
           },
         ]);
-        return client.send(RANK, {r: rankInfo[0].rank, d: rankInfo[0].name});
+        return client.send(RANK, { r: rankInfo[0].rank, d: rankInfo[0].name });
       }
     });
   }
@@ -372,12 +373,12 @@ export default class NoobRoom extends Room<RoomState> {
     const host = <Player>this.state.players.get(client.sessionId);
     if (!host.isHost) return;
 
-    const {onHandCards, banker5Cards} = deal(this.state.players.size);
+    const { onHandCards, banker5Cards } = deal(this.state.players.size);
     this.banker5Cards = banker5Cards; // cache 5 cards of banker first
     this.player2Cards = onHandCards; // chia bai
     this.remainingTurn = this.state.players.size;
 
-    console.log({banker: this.banker5Cards, player: this.player2Cards});
+    console.log({ banker: this.banker5Cards, player: this.player2Cards });
 
     this.state.onReady = true; // change room state -> TRUE
     this.state.potSize = this.state.players.size * this.MIN_BET;
@@ -497,6 +498,9 @@ export default class NoobRoom extends Room<RoomState> {
     }
     this.state.remainingPlayer--;
 
+    console.log('current bet', this.currentBet);
+    console.log('chip bet', chip);
+
     player.betEachAction = chip;
     player.accumulatedBet += chip;
     player.chips -= chip;
@@ -505,7 +509,7 @@ export default class NoobRoom extends Room<RoomState> {
     this.state.potSize += chip;
 
     this.allinArr.push(player.turn);
-    this.allinList.push({i: sessionId, t: player.turn, v: player.accumulatedBet});
+    this.allinList.push({ i: sessionId, t: player.turn, v: player.accumulatedBet });
 
     console.log('ALLIN, turn con', this.remainingTurn);
 
@@ -517,13 +521,13 @@ export default class NoobRoom extends Room<RoomState> {
       const betP: any[] = [];
       this.state.players.forEach((p: Player, sessionId: string) => {
         if (p.statement === EStatement.Playing && !p.isFold)
-          betP.push({i: sessionId, t: p.turn, v: p.accumulatedBet});
+          betP.push({ i: sessionId, t: p.turn, v: p.accumulatedBet });
       });
       for (const bet of betP) {
         if (bet.t === remainTurn[0]) {
           const remainP = <Player>this.state.players.get(bet.i);
           if (remainP.accumulatedBet > this.currentBet) {
-            const {emitResultArr, finalCalculateResult} = this.pickWinner1();
+            const { emitResultArr, finalCalculateResult } = this.pickWinner1();
             result = emitResultArr;
             for (const c of finalCalculateResult) {
               const betPlayer = <Player>this.state.players.get(c.i);
@@ -539,7 +543,7 @@ export default class NoobRoom extends Room<RoomState> {
     }
 
     if (this.state.remainingPlayer === 0) {
-      const {emitResultArr, finalCalculateResult} = this.pickWinner1();
+      const { emitResultArr, finalCalculateResult } = this.pickWinner1();
       for (const c of finalCalculateResult) {
         const betPlayer = <Player>this.state.players.get(c.i);
         betPlayer.chips += c.v;
@@ -569,13 +573,13 @@ export default class NoobRoom extends Room<RoomState> {
     const betP: any[] = [];
     this.state.players.forEach((p: Player, sessionId: string) => {
       if (p.statement === EStatement.Playing && !p.isFold)
-        betP.push({i: sessionId, t: p.turn, v: p.accumulatedBet});
+        betP.push({ i: sessionId, t: p.turn, v: p.accumulatedBet });
     });
     if (this.state.remainingPlayer === 1) {
       if (betP.length === 1) {
         const winner = <Player>this.state.players.get(betP[0].i);
         winner.chips += this.state.potSize;
-        result = [{t: betP[0].t, w: true}];
+        result = [{ t: betP[0].t, w: true }];
         return this.endGame(result);
       }
       if (betP.length > 1) {
@@ -583,7 +587,7 @@ export default class NoobRoom extends Room<RoomState> {
         for (const b of betP) betVal.push(b.v);
         for (const bet of betP) {
           if (bet.t === remainTurn[0] && Math.max(...betVal) === bet.v) {
-            const {emitResultArr, finalCalculateResult} = this.pickWinner1();
+            const { emitResultArr, finalCalculateResult } = this.pickWinner1();
             result = emitResultArr;
             for (const c of finalCalculateResult) {
               const betPlayer = <Player>this.state.players.get(c.i);
@@ -595,7 +599,7 @@ export default class NoobRoom extends Room<RoomState> {
       }
     }
     if (this.remainingTurn === 0 && this.state.remainingPlayer === 0) {
-      const {emitResultArr, finalCalculateResult} = this.pickWinner1();
+      const { emitResultArr, finalCalculateResult } = this.pickWinner1();
       for (const c of finalCalculateResult) {
         const betPlayer = <Player>this.state.players.get(c.i);
         betPlayer.chips += c.v;
@@ -613,13 +617,12 @@ export default class NoobRoom extends Room<RoomState> {
           process.env.NODE_ENV === 'production' ? process.env.CMS_URL : 'http://localhost:9001'
         }/user`,
         {
-          headers: {Authorization: 'Bearer ' + jwt},
+          headers: { Authorization: 'Bearer ' + jwt },
         },
       );
 
       return res.data;
-    } catch (err) {
-    }
+    } catch (err) {}
   }
 
   private pickWinner1() {
@@ -665,7 +668,7 @@ export default class NoobRoom extends Room<RoomState> {
     }
     // tính toán tiền còn lại mỗi đứa
     const finalCalculateResult = calculateAllinPlayer(calculateResultArr);
-    return {winPlayer, emitResultArr, finalCalculateResult};
+    return { winPlayer, emitResultArr, finalCalculateResult };
   }
 
   private emitResult(result: any[]) {
@@ -687,7 +690,7 @@ export default class NoobRoom extends Room<RoomState> {
         if (player.role === ERole.Player) {
           this.presence.publish(
             'poker:update:chip',
-            JSON.stringify({id: player.id, chips: player.chips}),
+            JSON.stringify({ id: player.id, chips: player.chips }),
           );
         }
       });

@@ -1,10 +1,10 @@
-import { Client, Room } from 'colyseus.js';
-import { ERound, RoomState } from './schemas/room.schema';
-import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
-import { RANK, RESULT } from './constants/server-emit.constant';
-import { EStatement, Player } from './schemas/player.schema';
-import { removePlayer, sortedArr } from './modules/handlePlayer';
-import { FRIEND_REQUEST } from './constants/room.constant';
+import {Client, Room} from 'colyseus.js';
+import {ERound, RoomState} from './schemas/room.schema';
+import {ALLIN, CALL, CHECK, FOLD, RAISE} from './constants/action.constant';
+import {RANK, RESULT} from './constants/server-emit.constant';
+import {EStatement, Player} from './schemas/player.schema';
+import {removePlayer, sortedArr} from './modules/handlePlayer';
+import {FRIEND_REQUEST} from './constants/room.constant';
 
 type TCurrentBetInfo = {
   turn: number;
@@ -33,7 +33,7 @@ export class BotClient {
   }
 
   async joinRoom(roomId: string) {
-    this.room = await this.client.joinById<RoomState>(roomId, { isBot: true }, RoomState);
+    this.room = await this.client.joinById<RoomState>(roomId, {isBot: true}, RoomState);
     this.sessionId = this.room.sessionId;
     this.begin();
   }
@@ -102,6 +102,10 @@ export class BotClient {
     this.room.onMessage(FRIEND_REQUEST, data => {
       console.log('lời mời kết bạn', data);
     });
+
+    this.room.onMessage("ALL", data => {
+      return
+    });
   }
 
   // check bot goes first
@@ -137,10 +141,10 @@ export class BotClient {
     setTimeout(() => {
       // case go 1st -> true
       if (this.isGoFirst) {
-        if (round === ERound.PREFLOP) return this.emit(RAISE, { chips: this.randomNumberRange() });
-        if (round === ERound.FLOP) return this.emit(RAISE, { chips: this.randomNumberRange() });
-        if (round === ERound.TURN) return this.emit(RAISE, { chips: this.randomNumberRange() });
-        if (round === ERound.RIVER) return this.emit(RAISE, { chips: this.randomNumberRange() });
+        if (round === ERound.PREFLOP) return this.emit(RAISE, {chips: this.randomNumberRange()});
+        if (round === ERound.FLOP) return this.emit(RAISE, {chips: this.randomNumberRange()});
+        if (round === ERound.TURN) return this.emit(RAISE, {chips: this.randomNumberRange()});
+        if (round === ERound.RIVER) return this.emit(RAISE, {chips: this.randomNumberRange()});
       }
       // case go 1st -> false
       if (this.currentBetInfo.action === RAISE) {

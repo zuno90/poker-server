@@ -236,7 +236,7 @@ export default class NoobRoom extends Room<RoomState> {
       if (player.chips > this.currentBet) callValue = player.betEachAction + this.currentBet;
       // buộc phải all in
       if (player.chips < this.currentBet) {
-        callValue = player.chips + player.accumulatedBet;
+        callValue = player.chips;
         return this.allinAction(client.sessionId, player, callValue);
       }
       // có đứa raise cao hơn
