@@ -208,6 +208,7 @@ export default class NoobRoom extends Room<RoomState> {
   private handleAction() {
     // RAISE
     this.onMessage(RAISE, (client: Client, { chips }: { chips: number }) => {
+      if (!this.state.onReady) return; // ko the action if game is not ready
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return; // không cho gửi 2 lần
       if (player.isFold) return; // block folded player
@@ -227,6 +228,7 @@ export default class NoobRoom extends Room<RoomState> {
     });
     // CALL
     this.onMessage(CALL, (client: Client) => {
+      if (!this.state.onReady) return; // ko the action if game is not ready
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return;
       if (player.isFold) return; // block folded player
@@ -256,6 +258,7 @@ export default class NoobRoom extends Room<RoomState> {
     });
     // CHECK
     this.onMessage(CHECK, (client: Client) => {
+      if (!this.state.onReady) return; // ko the action if game is not ready
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return;
       if (player.isFold) return; // block folded player
@@ -271,6 +274,7 @@ export default class NoobRoom extends Room<RoomState> {
     });
     // ALLIN
     this.onMessage(ALLIN, (client: Client) => {
+      if (!this.state.onReady) return; // ko the action if game is not ready
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return;
       if (player.isFold) return; // block folded player
@@ -286,6 +290,7 @@ export default class NoobRoom extends Room<RoomState> {
     });
     // FOLD
     this.onMessage(FOLD, (client: Client, _) => {
+      if (!this.state.onReady) return; // ko the action if game is not ready
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return;
       if (player.isFold) return; // block folded player
