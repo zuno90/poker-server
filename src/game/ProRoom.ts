@@ -58,6 +58,8 @@ export default class ProRoom extends Room<RoomState> {
       if (!auth.success) return client.leave();
       const existedPlayer = auth.data;
 
+      console.log(existedPlayer.chips < this.MIN_CHIP);
+
       // check user to kick
       if (existedPlayer.chips < this.MIN_CHIP) return client.leave();
       for (const p of this.state.players.values()) {
@@ -571,7 +573,7 @@ export default class ProRoom extends Room<RoomState> {
 
     this.foldArr.push(player.turn);
 
-    console.log('FOLD, turn con', this.remainingTurn);
+    console.log('FOLD, turn con', { player: player.toJSON(), remainturn: this.remainingTurn });
 
     const mergeArr = [...this.remainingPlayerArr, ...this.allinArr, ...this.foldArr];
     const remainTurn = getNonDupItem(mergeArr);

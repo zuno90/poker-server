@@ -59,6 +59,9 @@ export default class NoobRoom extends Room<RoomState> {
       if (!auth.success) return client.leave();
       const existedPlayer = auth.data;
 
+      console.log(existedPlayer.chips < this.MIN_CHIP);
+      console.log(existedPlayer.chips > this.MAX_CHIP);
+
       // check user to kick
       if (existedPlayer.chips < this.MIN_CHIP || existedPlayer.chips > this.MAX_CHIP)
         return client.leave();
