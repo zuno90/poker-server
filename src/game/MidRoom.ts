@@ -59,9 +59,6 @@ export default class NoobRoom extends Room<RoomState> {
       if (!auth.success) return client.leave();
       const existedPlayer = auth.data;
 
-      console.log(existedPlayer.chips < this.MIN_CHIP);
-      console.log(existedPlayer.chips > this.MAX_CHIP);
-
       // check user to kick
       if (existedPlayer.chips < this.MIN_CHIP || existedPlayer.chips > this.MAX_CHIP)
         return client.leave();
@@ -191,21 +188,26 @@ export default class NoobRoom extends Room<RoomState> {
   // handle chat
   private handleChat() {
     this.onMessage(ROOM_CHAT, (client: Client, data: TRoomChat) => {
+      if (!data) return;
       this.broadcast(ROOM_CHAT, data);
     });
   }
 
   // handle friend request
   private handleFriendRequest() {
-    this.onMessage(FRIEND_REQUEST, async (client: Client, toSessionId: string) => {
-      const reqUser = <Player>this.state.players.get(client.sessionId);
-      const acceptUser = <Player>this.state.players.get(toSessionId);
+    this.onMessage(FRIEND_REQUEST, async (client: Client, toId: string) => {
+      // get sessionId of toPlayer
+      let acceptUser: any;
+      this.state.players.forEach((player: Player, sessionId: string) => {
+        if (player.id === toId) acceptUser = { sessionId, id: player.id };
+      });
 
+      const reqUser = <Player>this.state.players.get(client.sessionId);
       if (!reqUser || !acceptUser) return;
 
       await this.presence.publish('poker:friend:request', { from: reqUser.id, to: acceptUser.id });
       this.clients.forEach((client: Client, _: number) => {
-        if (client.sessionId === toSessionId)
+        if (client.sessionId === acceptUser.sessionId)
           client.send('FRIEND_REQUEST_RESULT', `Thằng ${client.sessionId} add friend mày kìa!`);
       });
       await this.presence.subscribe('cms:friend:accept', (data: any) => {
@@ -486,7 +488,7 @@ export default class NoobRoom extends Room<RoomState> {
     this.state.potSize += chip;
 
     this.remainingTurn--;
-    console.log('CALL, turn con', this.remainingTurn);
+    console.log('CALL, turn con', { id: player.id, remainturn: this.remainingTurn });
     if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
   }
 
@@ -632,7 +634,6 @@ export default class NoobRoom extends Room<RoomState> {
           headers: { Authorization: 'Bearer ' + jwt },
         },
       );
-
       return res.data;
     } catch (err) {}
   }

@@ -150,8 +150,6 @@ export default class ProRoom extends Room<RoomState> {
           }
         });
 
-        console.log('so player con lai without Bot', playerInRoom);
-
         if (playerInRoom.length === 1) return await this.disconnect();
         if (playerInRoom.length > 1) {
           const newHost = <Player>this.state.players.get(playerInRoom[1].sessionId);
@@ -193,16 +191,20 @@ export default class ProRoom extends Room<RoomState> {
 
   // handle friend request
   private handleFriendRequest() {
-    this.onMessage(FRIEND_REQUEST, async (client: Client, toSessionId: string) => {
-      const reqUser = <Player>this.state.players.get(client.sessionId);
-      const acceptUser = <Player>this.state.players.get(toSessionId);
+    this.onMessage(FRIEND_REQUEST, async (client: Client, toId: string) => {
+      // get sessionId of toPlayer
+      let acceptUser: any;
+      this.state.players.forEach((player: Player, sessionId: string) => {
+        if (player.id === toId) acceptUser = { sessionId, id: player.id };
+      });
 
+      const reqUser = <Player>this.state.players.get(client.sessionId);
       if (!reqUser || !acceptUser) return;
 
       await this.presence.publish('poker:friend:request', { from: reqUser.id, to: acceptUser.id });
-      this.clients.forEach((client: Client, _: number) => {
-        if (client.sessionId === toSessionId)
-          client.send('FRIEND_REQUEST_RESULT', `Thằng ${client.sessionId} add friend mày kìa!`);
+      this.clients.forEach((c: Client, _: number) => {
+        if (c.sessionId === acceptUser.sessionId)
+          c.send('FRIEND_REQUEST', `Thằng ${client.sessionId} add friend mày kìa!`);
       });
       await this.presence.subscribe('cms:friend:accept', (data: any) => {
         console.log(data);
@@ -628,7 +630,6 @@ export default class ProRoom extends Room<RoomState> {
           headers: { Authorization: 'Bearer ' + jwt },
         },
       );
-
       return res.data;
     } catch (err) {}
   }

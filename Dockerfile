@@ -1,8 +1,23 @@
 FROM node:alpine as build
 WORKDIR /usr/src/app/poker-server
-COPY ./package*.json .
+COPY ./package*.json ./
 RUN yarn
 COPY . .
 RUN yarn build
 
-CMD [ "node", "dist/index.js" ]
+FROM node:alpine as production
+
+ARG NODE_ENV=production
+ENV NODE_ENV=${NODE_ENV}
+
+WORKDIR /usr/src/app/poker-server
+
+COPY ./package*.json ./
+
+RUN yarn --only=production && yarn cache clean
+
+COPY . .
+
+COPY --from=build /usr/src/app/poker-server/dist ./dist
+
+CMD node dist/index.js

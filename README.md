@@ -31,3 +31,7 @@ raise allin allin
 - raise 
 
 
+ws: client
+{sessionId, roomId}
+room {roomName:"poker/blackjack"}
+

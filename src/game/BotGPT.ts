@@ -25,13 +25,12 @@ export class BotClient {
   private MAX_BET: number;
 
   // all variables of BOT
+  private isEndGame: boolean = false;
   private isActive: boolean = false;
   private isGoFirst: boolean = false;
   private botState: Player;
   private cards = [];
   private currentBetInfo: TCurrentBetInfo;
-
-  private isEndGame: boolean = false;
 
   constructor(server: string | Client) {
     this.client = server instanceof Client ? server : new Client(server);
