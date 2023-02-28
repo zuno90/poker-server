@@ -31,6 +31,8 @@ export class BotClient {
   private cards = [];
   private currentBetInfo: TCurrentBetInfo;
 
+  private isEndGame: boolean = false;
+
   constructor(server: string | Client) {
     this.client = server instanceof Client ? server : new Client(server);
   }
@@ -69,6 +71,7 @@ export class BotClient {
   private begin() {
     // HANDLE STATECHANGE
     this.room.onStateChange(async state => {
+      // console.log(state.toJSON(), 'state bot');
       if (!state.onReady) return;
       this.botState = <Player>state.players.get(this.sessionId);
       // xac dinh ai vua di va turn nao
@@ -88,12 +91,14 @@ export class BotClient {
       });
 
       // Check specific round
-      // if (state.round === ERound.WELCOME) this.isEndGame = false;
+      if (state.round === ERound.WELCOME) this.isEndGame = false;
       if (state.round === ERound.SHOWDOWN) {
+        this.isEndGame = true;
         this.isActive = false;
         this.isGoFirst = false;
         return;
       } // reset BOT
+
       this.botReadyToAction(this.botState, state.currentTurn, remainingPlayerTurn); // active/deactive bot
       if (!this.isActive) return;
       return this.betAlgorithm(state.round, this.botState); // run algorithm of bot
@@ -106,6 +111,7 @@ export class BotClient {
     });
     this.room.onMessage(RESULT, data => {
       console.log('ket qua from broadcast', data);
+      this.isEndGame = true;
     });
     this.room.onMessage(FRIEND_REQUEST, data => {
       console.log('lời mời kết bạn', data);
@@ -141,11 +147,14 @@ export class BotClient {
       this.currentBetInfo.betEachAction > bot.betEachAction
     )
       this.isGoFirst = false;
+
     this.isActive = true;
   }
 
   // Bet Algorithm
   private async betAlgorithm(round: ERound, botState: Player) {
+    console.log({ endgame: this.isEndGame, active: this.isActive, go1st: this.isGoFirst });
+    if (this.isEndGame) return;
     setTimeout(() => {
       // case go 1st -> true
       if (this.isGoFirst) {
