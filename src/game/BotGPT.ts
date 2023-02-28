@@ -1,4 +1,4 @@
-import { Client, Room } from 'colyseus.js';
+import * as Colyseus from 'colyseus.js';
 import { ERound, RoomState } from './schemas/room.schema';
 import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
 import { RANK, RESULT } from './constants/server-emit.constant';
@@ -17,9 +17,9 @@ type TCurrentBetInfo = {
 export class BotClient {
   private readonly config: Config = new Config();
 
-  private readonly client: Client;
+  private readonly client: Colyseus.Client;
   public sessionId: string;
-  private room: Room<RoomState>;
+  private room: Colyseus.Room<RoomState>;
 
   private MIN_BET: number;
   private MAX_BET: number;
@@ -32,8 +32,8 @@ export class BotClient {
   private cards = [];
   private currentBetInfo: TCurrentBetInfo;
 
-  constructor(server: string | Client) {
-    this.client = server instanceof Client ? server : new Client(server);
+  constructor(server: string | Colyseus.Client) {
+    this.client = server instanceof Colyseus.Client ? server : new Colyseus.Client(server);
   }
 
   async joinRoom(roomId: string, level: string) {
@@ -62,7 +62,7 @@ export class BotClient {
   }
 
   // DÙNG CHẠY LOAD TEST
-  attachToRoom(room: Room) {
+  attachToRoom(room: Colyseus.Room) {
     this.room = room;
     this.begin();
   }
