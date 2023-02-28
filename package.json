@@ -21,15 +21,16 @@
     "typescript": "^4.8.4"
   },
   "dependencies": {
-    "dotenv": "^16.0.3",
-    "express": "^4.18.2",
     "@colyseus/monitor": "^0.14.22",
     "@colyseus/proxy": "^0.12.9",
     "@colyseus/redis-driver": "^0.14.23",
     "@colyseus/social": "^0.11.7",
     "axios": "^1.3.3",
     "colyseus": "^0.14.24",
+    "colyseus.js": "^0.14.13",
     "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
     "express-rate-limit": "^6.7.0",
     "pokersolver": "^2.1.4"
   }
