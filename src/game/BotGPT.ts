@@ -1,10 +1,11 @@
-import {Client, Room} from 'colyseus.js';
-import {ERound, RoomState} from './schemas/room.schema';
-import {ALLIN, CALL, CHECK, FOLD, RAISE} from './constants/action.constant';
-import {RANK, RESULT} from './constants/server-emit.constant';
-import {EStatement, Player} from './schemas/player.schema';
-import {removePlayer, sortedArr} from './modules/handlePlayer';
-import {FRIEND_REQUEST} from './constants/room.constant';
+import { Client, Room } from 'colyseus.js';
+import { ERound, RoomState } from './schemas/room.schema';
+import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
+import { RANK, RESULT } from './constants/server-emit.constant';
+import { EStatement, Player } from './schemas/player.schema';
+import { removePlayer, sortedArr } from './modules/handlePlayer';
+import { FRIEND_REQUEST } from './constants/room.constant';
+import Config from './config';
 
 type TCurrentBetInfo = {
   turn: number;
@@ -14,12 +15,14 @@ type TCurrentBetInfo = {
 };
 
 export class BotClient {
+  private readonly config: Config = new Config();
+
   private readonly client: Client;
-  sessionId: string;
+  public sessionId: string;
   private room: Room<RoomState>;
 
-  private readonly MIN_RANGE = 200;
-  private readonly MAX_RANGE = 800;
+  private MIN_BET: number;
+  private MAX_BET: number;
 
   // all variables of BOT
   private isActive: boolean = false;
@@ -32,9 +35,14 @@ export class BotClient {
     this.client = server instanceof Client ? server : new Client(server);
   }
 
-  async joinRoom(roomId: string) {
-    this.room = await this.client.joinById<RoomState>(roomId, {isBot: true}, RoomState);
+  async joinRoom(roomId: string, level: string) {
+    this.room = await this.client.joinById<RoomState>(roomId, { isBot: true }, RoomState);
     this.sessionId = this.room.sessionId;
+
+    const botConfig = this.config.pickBot(level);
+    this.MIN_BET = botConfig!.minBet;
+    this.MAX_BET = botConfig!.maxBet;
+
     this.begin();
   }
 
@@ -103,8 +111,8 @@ export class BotClient {
       console.log('lời mời kết bạn', data);
     });
 
-    this.room.onMessage("ALL", data => {
-      return
+    this.room.onMessage('ALL', data => {
+      return;
     });
   }
 
@@ -141,10 +149,10 @@ export class BotClient {
     setTimeout(() => {
       // case go 1st -> true
       if (this.isGoFirst) {
-        if (round === ERound.PREFLOP) return this.emit(RAISE, {chips: this.randomNumberRange()});
-        if (round === ERound.FLOP) return this.emit(RAISE, {chips: this.randomNumberRange()});
-        if (round === ERound.TURN) return this.emit(RAISE, {chips: this.randomNumberRange()});
-        if (round === ERound.RIVER) return this.emit(RAISE, {chips: this.randomNumberRange()});
+        if (round === ERound.PREFLOP) return this.emit(RAISE, { chips: this.randomNumberRange() });
+        if (round === ERound.FLOP) return this.emit(RAISE, { chips: this.randomNumberRange() });
+        if (round === ERound.TURN) return this.emit(RAISE, { chips: this.randomNumberRange() });
+        if (round === ERound.RIVER) return this.emit(RAISE, { chips: this.randomNumberRange() });
       }
       // case go 1st -> false
       if (this.currentBetInfo.action === RAISE) {
@@ -175,9 +183,8 @@ export class BotClient {
   // random number
   private randomNumberRange() {
     return (
-      Math.floor(
-        Math.random() * (this.MAX_RANGE / 10 - this.MIN_RANGE / 10 + 1) + this.MIN_RANGE / 10,
-      ) * 10
+      Math.floor(Math.random() * (this.MAX_BET / 10 - this.MIN_BET / 10 + 1) + this.MIN_BET / 10) *
+      10
     );
   }
 }

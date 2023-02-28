@@ -33,10 +33,10 @@ export interface TAllinPlayer {
 }
 
 export default class NoobRoom extends Room<RoomState> {
-  readonly maxClients: number = 5;
-  private readonly MIN_BET = 100;
-  private readonly MIN_CHIP = 1000;
-  private readonly MAX_CHIP = 100000;
+  public readonly maxClients: number = 5;
+  private readonly MIN_BET = 1000;
+  private readonly MIN_CHIP = 100000;
+  private readonly MAX_CHIP = 200000;
   private currentBet: number = 0;
   private banker5Cards: Array<string> = [];
   private player2Cards: Array<string[]> = [];
@@ -53,13 +53,19 @@ export default class NoobRoom extends Room<RoomState> {
   async onAuth(client: Client, options: TJwtAuth, req: Request) {
     try {
       // is BOT
-      if (options.isBot && !options.jwt) return botInfo();
+      if (options.isBot && !options.jwt) return botInfo(this.roomName);
       // IS REAL PLAYER -> CHECK AUTH
       const auth = await this.checkAuth(options.jwt);
-      if (!auth.success) return client.leave(1001);
+      if (!auth.success) return client.leave();
       const existedPlayer = auth.data;
-      if (existedPlayer.chips < this.MIN_CHIP)
-        throw new Error('This room is required min ' + this.MIN_CHIP);
+
+      // check user to kick
+      if (existedPlayer.chips < this.MIN_CHIP || existedPlayer.chips > this.MAX_CHIP)
+        return client.leave();
+      for (const p of this.state.players.values()) {
+        if (existedPlayer._id === p.id) return client.leave();
+      }
+
       if (!this.state.players.size)
         // is HOST
         return {
@@ -708,7 +714,7 @@ export default class NoobRoom extends Room<RoomState> {
     const bot = new BotClient(
       process.env.NODE_ENV === 'production' ? `${process.env.WS_SERVER}` : 'ws://localhost:9000',
     );
-    await bot.joinRoom(this.roomId);
+    await bot.joinRoom(this.roomId, this.roomName);
     this.bot?.set(bot.sessionId, bot);
     this.sendNewState();
   }

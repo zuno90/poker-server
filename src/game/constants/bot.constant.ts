@@ -25,15 +25,19 @@ const username = [
   'Hidan',
   'Kazuku',
   'Obito',
-  '',
 ];
 
-export const botInfo = () => {
+export const botInfo = (level: string) => {
+  let chips;
+  if (level === 'noob') chips = 150000;
+  if (level === 'normal') chips = 250000;
+  if (level === 'pro') chips = 1000000;
+
   return {
-    id: 'BOTGPT-wibu',
+    id: `BOTGPT-wibu-${level}`,
     username: username[Math.floor(Math.random() * username.length)],
     email: null,
-    chips: 10000,
+    chips,
     isHost: false,
     seat: 5,
     role: ERole.Bot,

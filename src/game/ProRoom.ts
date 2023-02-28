@@ -33,9 +33,9 @@ export interface TAllinPlayer {
 }
 
 export default class ProRoom extends Room<RoomState> {
-  readonly maxClients: number = 5;
-  private readonly MIN_CHIP = 10000;
-  private readonly MAX_CHIP = 500000;
+  public readonly maxClients: number = 5;
+  private readonly MIN_BET = 10000;
+  private readonly MIN_CHIP = 500000;
   private currentBet: number = 0;
   private banker5Cards: Array<string> = [];
   private player2Cards: Array<string[]> = [];
@@ -52,13 +52,18 @@ export default class ProRoom extends Room<RoomState> {
   async onAuth(client: Client, options: TJwtAuth, req: Request) {
     try {
       // is BOT
-      if (options.isBot && !options.jwt) return botInfo();
+      if (options.isBot && !options.jwt) return botInfo(this.roomName);
       // IS REAL PLAYER -> CHECK AUTH
       const auth = await this.checkAuth(options.jwt);
-      if (!auth.success) return client.leave(1001);
+      if (!auth.success) return client.leave();
       const existedPlayer = auth.data;
-      if (existedPlayer.chips < this.MIN_CHIP)
-        throw new Error('This room is required min ' + this.MIN_CHIP);
+
+      // check user to kick
+      if (existedPlayer.chips < this.MIN_CHIP) return client.leave();
+      for (const p of this.state.players.values()) {
+        if (existedPlayer._id === p.id) return client.leave();
+      }
+
       if (!this.state.players.size)
         // is HOST
         return {
@@ -140,16 +145,15 @@ export default class ProRoom extends Room<RoomState> {
       const playerInRoom: any[] = [];
       if (leavingPlayer.isHost) {
         this.state.players.forEach((player: Player, sessionId: string) => {
-          if (player.role === ERole.Player) playerInRoom.push({ sessionId, seat: player.seat });
+          if (player.role === ERole.Player) {
+            playerInRoom.push({ sessionId, seat: player.seat });
+          }
         });
-        if (playerInRoom.length - 1 === 0) return await this.disconnect();
-        if (playerInRoom.length - 1 === 1) {
-          const newHost = <Player>this.state.players.get(playerInRoom[0].sessionId);
-          newHost.isHost = true;
-          newHost.seat = 1;
-          newHost.turn = 0;
-        }
-        if (playerInRoom.length - 1 > 1) {
+
+        console.log('so player con lai without Bot', playerInRoom);
+
+        if (playerInRoom.length === 1) return await this.disconnect();
+        if (playerInRoom.length > 1) {
           const newHost = <Player>this.state.players.get(playerInRoom[1].sessionId);
           newHost.isHost = true;
           newHost.seat = 1;
@@ -191,10 +195,16 @@ export default class ProRoom extends Room<RoomState> {
     this.onMessage(FRIEND_REQUEST, async (client: Client, toSessionId: string) => {
       const reqUser = <Player>this.state.players.get(client.sessionId);
       const acceptUser = <Player>this.state.players.get(toSessionId);
+
+      if (!reqUser || !acceptUser) return;
+
       await this.presence.publish('poker:friend:request', { from: reqUser.id, to: acceptUser.id });
       this.clients.forEach((client: Client, _: number) => {
         if (client.sessionId === toSessionId)
-          client.send(FRIEND_REQUEST, `Thằng ${client.sessionId} add friend mày kìa!`);
+          client.send('FRIEND_REQUEST_RESULT', `Thằng ${client.sessionId} add friend mày kìa!`);
+      });
+      await this.presence.subscribe('cms:friend:accept', (data: any) => {
+        console.log(data);
       });
     });
   }
@@ -202,6 +212,7 @@ export default class ProRoom extends Room<RoomState> {
   private handleAction() {
     // RAISE
     this.onMessage(RAISE, (client: Client, { chips }: { chips: number }) => {
+      if (!this.state.onReady) return; // ko the action if game is not ready
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return; // không cho gửi 2 lần
       if (player.isFold) return; // block folded player
@@ -214,13 +225,14 @@ export default class ProRoom extends Room<RoomState> {
       console.log(player.chips, chips, this.currentBet);
 
       if (chips >= player.chips) return this.allinAction(client.sessionId, player, player.chips); // trường hợp này chuyển sang allin
-      if (this.currentBet > chips + this.MIN_CHIP) return; // chỉ cho phép raise lệnh cao hơn current bet + min bet
+      if (this.currentBet > chips + this.MIN_BET) return; // chỉ cho phép raise lệnh cao hơn current bet + min bet
       this.raiseAction(player, chips);
 
       this.sendNewState();
     });
     // CALL
     this.onMessage(CALL, (client: Client) => {
+      if (!this.state.onReady) return; // ko the action if game is not ready
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return;
       if (player.isFold) return; // block folded player
@@ -250,6 +262,7 @@ export default class ProRoom extends Room<RoomState> {
     });
     // CHECK
     this.onMessage(CHECK, (client: Client) => {
+      if (!this.state.onReady) return; // ko the action if game is not ready
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return;
       if (player.isFold) return; // block folded player
@@ -265,6 +278,7 @@ export default class ProRoom extends Room<RoomState> {
     });
     // ALLIN
     this.onMessage(ALLIN, (client: Client) => {
+      if (!this.state.onReady) return; // ko the action if game is not ready
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return;
       if (player.isFold) return; // block folded player
@@ -280,6 +294,7 @@ export default class ProRoom extends Room<RoomState> {
     });
     // FOLD
     this.onMessage(FOLD, (client: Client, _) => {
+      if (!this.state.onReady) return; // ko the action if game is not ready
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return;
       if (player.isFold) return; // block folded player
@@ -311,14 +326,13 @@ export default class ProRoom extends Room<RoomState> {
   private async changeNextRound(round: ERound) {
     // check winner first (river -> showdown)
     if (round === ERound.RIVER) {
-      this.state.round = ERound.SHOWDOWN;
+      // this.state.round = ERound.SHOWDOWN;
       this.state.bankerCards = this.banker5Cards;
       const { emitResultArr, finalCalculateResult } = this.pickWinner1();
       for (const c of finalCalculateResult) {
         const betPlayer = <Player>this.state.players.get(c.i);
         betPlayer.chips += c.v;
       }
-      // this.emitResult(emitResultArr);
       return this.endGame(emitResultArr);
     }
     this.currentBet = 0;
@@ -374,7 +388,7 @@ export default class ProRoom extends Room<RoomState> {
     console.log({ banker: this.banker5Cards, player: this.player2Cards });
 
     this.state.onReady = true; // change room state -> TRUE
-    this.state.potSize = this.state.players.size * this.MIN_CHIP;
+    this.state.potSize = this.state.players.size * this.MIN_BET;
     this.state.remainingPlayer = this.state.players.size;
     const randomTurn = Math.round((Math.random() * 10) % (this.state.players.size - 1));
     this.state.currentTurn = randomTurn - 1;
@@ -384,8 +398,8 @@ export default class ProRoom extends Room<RoomState> {
     const playerSeatArr: number[] = [];
     this.state.players.forEach((player: Player, _) => {
       player.statement = EStatement.Playing;
-      player.accumulatedBet += this.MIN_CHIP;
-      player.chips -= this.MIN_CHIP;
+      player.accumulatedBet += this.MIN_BET;
+      player.chips -= this.MIN_BET;
       playerSeatArr.push(player.seat);
     });
 
@@ -490,6 +504,9 @@ export default class ProRoom extends Room<RoomState> {
       this.remainingTurn--;
     }
     this.state.remainingPlayer--;
+
+    console.log('current bet', this.currentBet);
+    console.log('chip bet', chip);
 
     player.betEachAction = chip;
     player.accumulatedBet += chip;
@@ -671,6 +688,7 @@ export default class ProRoom extends Room<RoomState> {
     this.emitResult(result);
     this.delayedTimeOut = this.clock.setTimeout(() => {
       this.state.round = ERound.SHOWDOWN;
+      this.sendNewState();
     }, 1000);
 
     this.clock.setTimeout(() => {
@@ -694,7 +712,7 @@ export default class ProRoom extends Room<RoomState> {
     const bot = new BotClient(
       process.env.NODE_ENV === 'production' ? `${process.env.WS_SERVER}` : 'ws://localhost:9000',
     );
-    await bot.joinRoom(this.roomId);
+    await bot.joinRoom(this.roomId, this.roomName);
     this.bot?.set(bot.sessionId, bot);
     this.sendNewState();
   }
