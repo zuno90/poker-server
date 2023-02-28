@@ -91,7 +91,12 @@ export class BotClient {
       });
 
       // Check specific round
-      if (state.round === ERound.WELCOME) this.isEndGame = false;
+      if (state.round === ERound.WELCOME) {
+        this.isEndGame = false;
+        this.isActive = false;
+        this.isGoFirst = false;
+        return;
+      }
       if (state.round === ERound.SHOWDOWN) {
         this.isEndGame = true;
         this.isActive = false;

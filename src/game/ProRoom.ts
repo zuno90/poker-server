@@ -186,6 +186,7 @@ export default class ProRoom extends Room<RoomState> {
   // handle chat
   private handleChat() {
     this.onMessage(ROOM_CHAT, (client: Client, data: TRoomChat) => {
+      if (!data) return;
       this.broadcast(ROOM_CHAT, data);
     });
   }
