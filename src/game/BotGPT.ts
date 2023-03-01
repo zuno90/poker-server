@@ -2,9 +2,9 @@ import * as Colyseus from 'colyseus.js';
 import { ERound, RoomState } from './schemas/room.schema';
 import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
 import { RANK, RESULT } from './constants/server-emit.constant';
-import { EStatement, Player } from './schemas/player.schema';
+import { ERole, EStatement, Player } from './schemas/player.schema';
 import { removePlayer, sortedArr } from './modules/handlePlayer';
-import { FRIEND_REQUEST } from './constants/room.constant';
+import { ALL, FRIEND_REQUEST, ROOM_CHAT } from './constants/room.constant';
 import Config from './config';
 
 type TCurrentBetInfo = {
@@ -44,7 +44,8 @@ export class BotClient {
     this.MIN_BET = botConfig!.minBet;
     this.MAX_BET = botConfig!.maxBet;
 
-    this.begin();
+    this.listenEvents();
+    // this.begin();
   }
 
   // emit action to server
@@ -64,50 +65,11 @@ export class BotClient {
   // DÙNG CHẠY LOAD TEST
   attachToRoom(room: Colyseus.Room) {
     this.room = room;
-    this.begin();
+    this.listenEvents();
+    // this.begin();
   }
 
-  private begin() {
-    // HANDLE STATECHANGE
-    this.room.onStateChange(async state => {
-      // console.log(state.toJSON(), 'state bot');
-      if (!state.onReady) return;
-      this.botState = <Player>state.players.get(this.sessionId);
-      // xac dinh ai vua di va turn nao
-      let remainingPlayerTurn: number[] = [];
-      state.players.forEach((player: Player, _: string) => {
-        if (player.statement === EStatement.Playing) {
-          if (!player.isFold && player.chips > 0)
-            remainingPlayerTurn = sortedArr([...remainingPlayerTurn, player.turn]);
-          if (state.currentTurn === player.turn)
-            this.currentBetInfo = {
-              turn: player.turn,
-              action: player.action,
-              chips: player.chips,
-              betEachAction: player.betEachAction,
-            };
-        }
-      });
-
-      // Check specific round
-      if (state.round === ERound.WELCOME) {
-        this.isEndGame = false;
-        this.isActive = false;
-        this.isGoFirst = false;
-        return;
-      }
-      if (state.round === ERound.SHOWDOWN) {
-        this.isEndGame = true;
-        this.isActive = false;
-        this.isGoFirst = false;
-        return;
-      } // reset BOT
-
-      this.botReadyToAction(this.botState, state.currentTurn, remainingPlayerTurn); // active/deactive bot
-      if (!this.isActive) return;
-      return this.betAlgorithm(state.round, this.botState); // run algorithm of bot
-    });
-
+  private listenEvents() {
     // HANDLE ALL BROADCAST DATA
     this.room.onMessage(RANK, data => {
       console.log('rank sau moi round from broadcast', data);
@@ -121,7 +83,49 @@ export class BotClient {
       console.log('lời mời kết bạn', data);
     });
 
-    this.room.onMessage('ALL', data => {
+    this.room.onMessage(ALL, state => {
+      if (!state.onReady) return;
+      const playerArr: Player[] = Object.values(state.players);
+      for (const player of playerArr) {
+        if (player.role === ERole.Bot) this.botState = player;
+      }
+
+      // xac dinh ai vua di va turn nao
+      let remainingPlayerTurn: number[] = [];
+      for (const player of playerArr) {
+        if (player.statement === EStatement.Playing) {
+          if (!player.isFold && player.chips > 0)
+            remainingPlayerTurn = sortedArr([...remainingPlayerTurn, player.turn]);
+          if (state.currentTurn === player.turn)
+            this.currentBetInfo = {
+              turn: player.turn,
+              action: player.action,
+              chips: player.chips,
+              betEachAction: player.betEachAction,
+            };
+        }
+      }
+
+      if (state.round === ERound.WELCOME) {
+        this.isEndGame = true;
+        this.isActive = false;
+        this.isGoFirst = false;
+        return;
+      } // before starting game - after reset game
+      if (state.round === ERound.PREFLOP) this.isEndGame = false;
+      if (state.round === ERound.SHOWDOWN) {
+        this.isEndGame = true;
+        this.isActive = false;
+        this.isGoFirst = false;
+        return;
+      } // reset BOT
+
+      this.botReadyToAction(this.botState, state.currentTurn, remainingPlayerTurn); // active/deactive bot
+      if (!this.isActive) return;
+      this.betAlgorithm(state.round, this.botState); // run algorithm of bot
+    });
+
+    this.room.onMessage(ROOM_CHAT, data => {
       return;
     });
   }
@@ -157,7 +161,6 @@ export class BotClient {
 
   // Bet Algorithm
   private async betAlgorithm(round: ERound, botState: Player) {
-    console.log({ endgame: this.isEndGame, active: this.isActive, go1st: this.isGoFirst });
     if (this.isEndGame) return;
     setTimeout(() => {
       // case go 1st -> true

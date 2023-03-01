@@ -2,7 +2,7 @@ import { Client, Delayed, Room } from 'colyseus';
 import { Request } from 'express';
 import { ERound, RoomState } from './schemas/room.schema';
 import { ERole, EStatement, Player } from './schemas/player.schema';
-import { FRIEND_REQUEST, ROOM_CHAT, START_GAME } from './constants/room.constant';
+import { ALL, FRIEND_REQUEST, ROOM_CHAT, START_GAME } from './constants/room.constant';
 import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
 import { RANK, RESULT } from './constants/server-emit.constant';
 import { deal } from './modules/handleCard';
@@ -209,7 +209,7 @@ export default class NoobRoom extends Room<RoomState> {
       await this.presence.publish('poker:friend:request', { from: reqUser.id, to: acceptUser.id });
       this.clients.forEach((c: Client, _: number) => {
         if (c.sessionId === acceptUser.sessionId)
-          c.send('FRIEND_REQUEST', `Thằng ${client.sessionId} add friend mày kìa!`);
+          c.send(FRIEND_REQUEST, `Thằng ${client.sessionId} add friend mày kìa!`);
       });
       await this.presence.subscribe('cms:friend:accept', (data: any) => {
         console.log(data);
@@ -229,8 +229,6 @@ export default class NoobRoom extends Room<RoomState> {
       //   const nextTurn = Math.min(...this.remainingPlayerArr);
       //   if (nextTurn !== player.turn) return;
       // }
-
-      console.log(player.chips, chips, this.currentBet);
 
       if (chips >= player.chips) return this.allinAction(client.sessionId, player, player.chips); // trường hợp này chuyển sang allin
       if (this.currentBet > chips + this.MIN_BET) return; // chỉ cho phép raise lệnh cao hơn current bet + min bet
@@ -383,6 +381,7 @@ export default class NoobRoom extends Room<RoomState> {
 
   private startGame(client: Client) {
     if (this.state.onReady) return; // check game is ready or not
+    if (this.state.round !== ERound.WELCOME) return; // phai doi toi round welcome
     if (this.state.players.size < 2) return; // allow start game when > 2 players
     // check accept only host
     const host = <Player>this.state.players.get(client.sessionId);
@@ -739,6 +738,6 @@ export default class NoobRoom extends Room<RoomState> {
   }
 
   private sendNewState() {
-    this.broadcast('ALL', this.state);
+    this.broadcast(ALL, this.state);
   }
 }
