@@ -158,6 +158,7 @@ export default class ProRoom extends Room<RoomState> {
           newHost.isHost = true;
           newHost.seat = 1;
           newHost.turn = 0;
+          this.sendNewState();
         }
       }
       console.log('client ' + client.sessionId + ' has just left');
