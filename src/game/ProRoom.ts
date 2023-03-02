@@ -69,8 +69,6 @@ export default class ProRoom extends Room<RoomState> {
         if (existedPlayer._id === p.id) return client.leave();
       }
 
-      console.log(this.clients.length, 333);
-
       if (this.clients.length === 1 && !options.isBot) {
         // is HOST
         return {
@@ -132,7 +130,7 @@ export default class ProRoom extends Room<RoomState> {
     // SET INITIAL PLAYER STATE
     try {
       this.state.players.set(client.sessionId, new Player(player)); // set player every joining
-      if (player.isHost) await this.addBotByCondition();
+      if (player.isHost) await this.addBot();
     } catch (err) {
       console.error(err);
     }
@@ -144,8 +142,7 @@ export default class ProRoom extends Room<RoomState> {
       if (leavingPlayer.role === ERole.Bot) {
         console.log('bot ' + client.sessionId + ' has just left');
         this.state.players.delete(client.sessionId);
-        this.addBotByCondition();
-        return;
+        return this.clock.setTimeout(() => this.addBot(), 3000);
       }
 
       // handle change host to player
@@ -169,7 +166,7 @@ export default class ProRoom extends Room<RoomState> {
         }
       }
       console.log('client ' + client.sessionId + ' has just left');
-      this.state.players.delete(client.sessionId);
+      if (consented) this.state.players.delete(client.sessionId);
     } catch (err) {
       console.error(err);
       await this.disconnect();
@@ -738,16 +735,6 @@ export default class ProRoom extends Room<RoomState> {
     await bot.joinRoom(this.roomId, this.roomName);
     this.bot?.set(bot.sessionId, bot);
     this.sendNewState();
-  }
-
-  private async addBotByCondition() {
-    let botNumber = 0;
-    this.state.players.forEach((player: Player, _: string) => {
-      if (player.role === ERole.Bot) botNumber++;
-    });
-    if (this.clients.length > 0 && !botNumber) {
-      return await this.addBot();
-    }
   }
 
   private sendNewState() {
