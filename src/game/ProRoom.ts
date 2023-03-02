@@ -139,6 +139,7 @@ export default class ProRoom extends Room<RoomState> {
   async onLeave(client: Client, consented: boolean) {
     try {
       const leavingPlayer = <Player>this.state.players.get(client.sessionId);
+      leavingPlayer.connected = false;
       if (leavingPlayer.role === ERole.Bot) {
         console.log('bot ' + client.sessionId + ' has just left');
         this.state.players.delete(client.sessionId);
@@ -154,8 +155,6 @@ export default class ProRoom extends Room<RoomState> {
           }
         });
 
-        console.log('so player con lai without Bot', playerInRoom);
-
         if (playerInRoom.length === 1) return await this.disconnect();
         if (playerInRoom.length > 1) {
           const newHost = <Player>this.state.players.get(playerInRoom[1].sessionId);
@@ -165,11 +164,12 @@ export default class ProRoom extends Room<RoomState> {
           this.sendNewState();
         }
       }
-      console.log('client ' + client.sessionId + ' has just left');
-      if (consented) this.state.players.delete(client.sessionId);
+
+      if (consented) throw new Error('consented leave!');
     } catch (err) {
       console.error(err);
-      await this.disconnect();
+      console.log('client ' + client.sessionId + ' has just left');
+      this.state.players.delete(client.sessionId);
     }
   }
 
