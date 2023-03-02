@@ -70,7 +70,7 @@ export default class ProRoom extends Room<RoomState> {
         if (existedPlayer._id === p.id) return client.leave();
       }
 
-      if (!this.clients.length)
+      if (this.clients.length === 1) {
         // is HOST
         return {
           id: existedPlayer._id,
@@ -81,9 +81,10 @@ export default class ProRoom extends Room<RoomState> {
           turn: 0,
           role: ERole.Player,
         };
+      }
 
       // IS NOT HOST AND PLAYER NUMBER > 2
-      if (this.clients.length > 0) {
+      if (this.clients.length > 1) {
         let playerSeatArr: number[] = [];
         this.state.players.forEach((player: Player, _) => playerSeatArr.push(player.seat));
         // find out next seat for this player
