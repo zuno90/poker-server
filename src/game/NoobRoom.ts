@@ -262,7 +262,7 @@ export default class NoobRoom extends Room<RoomState> {
       if (player.chips + player.accumulatedBet > this.currentBet)
         callValue = this.currentBet - player.accumulatedBet;
       // buộc phải all in
-      if (player.chips + player.accumulatedBet < this.currentBet) {
+      if (player.chips < this.currentBet - player.accumulatedBet) {
         callValue = player.chips;
         return this.allinAction(client.sessionId, player, callValue);
       }
