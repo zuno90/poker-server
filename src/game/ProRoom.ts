@@ -65,6 +65,11 @@ export default class ProRoom extends Room<RoomState> {
 
       // check user to kick
       if (existedPlayer.chips < this.MIN_CHIP) return client.leave();
+      for (const p of this.state.players.values()) {
+        if (existedPlayer._id === p.id) return client.leave();
+      }
+
+      console.log(this.clients.length, 333);
 
       if (this.clients.length === 1 && !options.isBot) {
         // is HOST
@@ -127,7 +132,7 @@ export default class ProRoom extends Room<RoomState> {
     // SET INITIAL PLAYER STATE
     try {
       this.state.players.set(client.sessionId, new Player(player)); // set player every joining
-      this.addBotByCondition();
+      if (player.isHost) await this.addBotByCondition();
     } catch (err) {
       console.error(err);
     }
@@ -259,20 +264,25 @@ export default class ProRoom extends Room<RoomState> {
       if (player.turn === this.state.currentTurn) return;
       if (player.isFold) return; // block folded player
 
-      // if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
-      //   const nextTurn = Math.min(...this.remainingPlayerArr);
-      //   if (nextTurn !== player.turn) return;
-      // }
-
       let callValue = 0;
-
-      if (player.chips >= this.currentBet) {
-        callValue = this.currentBet; // tại round mới và nó chưa action gì
-      } else {
-        // buộc phải all in
+      if (player.betEachAction === 0) {
+        callValue = this.currentBet;
+      } else if (player.betEachAction > 0) {
+        callValue = this.currentBet - player.accumulatedBet;
+      }
+      // buộc phải all in
+      else if (player.chips < this.currentBet - player.accumulatedBet) {
         callValue = player.chips;
         return this.allinAction(client.sessionId, player, callValue);
       }
+
+      // if (player.chips >= this.currentBet) {
+      //   callValue = this.currentBet - player.accumulatedBet; // tại round mới và nó chưa action gì
+      // } else {
+      //   // buộc phải all in
+      //   callValue = player.chips;
+      //   return this.allinAction(client.sessionId, player, callValue);
+      // }
 
       console.log({ chip: player.chips, callValue, currentbet: this.currentBet });
 
@@ -288,11 +298,6 @@ export default class ProRoom extends Room<RoomState> {
       if (player.turn === this.state.currentTurn) return;
       if (player.isFold) return; // block folded player
 
-      // if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
-      //   const nextTurn = Math.min(...this.remainingPlayerArr);
-      //   if (nextTurn !== player.turn) return;
-      // }
-
       this.checkAction(player);
 
       this.sendNewState();
@@ -303,11 +308,6 @@ export default class ProRoom extends Room<RoomState> {
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return;
       if (player.isFold) return; // block folded player
-
-      // if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
-      //   const nextTurn = Math.min(...this.remainingPlayerArr);
-      //   if (nextTurn !== player.turn) return;
-      // }
 
       this.allinAction(client.sessionId, player, player.chips);
 
@@ -740,16 +740,14 @@ export default class ProRoom extends Room<RoomState> {
     this.sendNewState();
   }
 
-  private addBotByCondition() {
+  private async addBotByCondition() {
     let botNumber = 0;
-    return this.clock.setTimeout(async () => {
-      this.state.players.forEach((player: Player, _: string) => {
-        if (player.role === ERole.Bot) botNumber++;
-        if (botNumber === 1) return;
-      });
-
-      await this.addBot();
-    }, 3000);
+    this.state.players.forEach((player: Player, _: string) => {
+      if (player.role === ERole.Bot) botNumber++;
+    });
+    if (this.clients.length > 0 && !botNumber) {
+      return await this.addBot();
+    }
   }
 
   private sendNewState() {

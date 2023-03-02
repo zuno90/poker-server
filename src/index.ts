@@ -47,8 +47,6 @@ async function bootstrap() {
     }),
   });
 
-  const Hand = require('pokersolver').Hand;
-
   // define each level of Room
   gameServer.define('noob', NoobRoom);
   gameServer.define('normal', MidRoom);
