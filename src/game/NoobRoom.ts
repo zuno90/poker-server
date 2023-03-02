@@ -481,7 +481,10 @@ export default class NoobRoom extends Room<RoomState> {
     this.state.currentTurn = player.turn;
     this.state.potSize += chip;
 
-    if (this.currentBet < player.accumulatedBet) this.currentBet = player.accumulatedBet;
+    if (this.currentBet < player.accumulatedBet + chip) {
+      this.currentBet = player.accumulatedBet + chip;
+      // console.log('RAISE, turn con', this.remainingTurn)
+    }
 
     this.remainingTurn = this.state.remainingPlayer - 1;
     console.log('RAISE, turn con', this.remainingTurn);
