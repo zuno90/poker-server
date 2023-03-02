@@ -270,16 +270,14 @@ export default class ProRoom extends Room<RoomState> {
       // }
 
       let callValue = 0;
-      // tại round mới và nó chưa action gì
-      if (player.chips > this.currentBet) callValue = player.betEachAction + this.currentBet;
-      // buộc phải all in
-      if (player.chips < this.currentBet) {
+
+      if (player.chips >= this.currentBet) {
+        callValue = this.currentBet; // tại round mới và nó chưa action gì
+      } else {
+        // buộc phải all in
         callValue = player.chips;
         return this.allinAction(client.sessionId, player, callValue);
       }
-      // có đứa raise cao hơn
-      if (player.betEachAction < this.currentBet)
-        callValue = this.currentBet - player.betEachAction;
 
       console.log({ chip: player.chips, callValue, currentbet: this.currentBet });
 
