@@ -106,6 +106,8 @@ export class BotClient {
         }
       }
 
+      console.log({ endgame: this.isEndGame, active: this.isActive, gofirst: this.isGoFirst });
+
       if (state.round === ERound.WELCOME) {
         this.isEndGame = true;
         this.isActive = false;
@@ -133,6 +135,7 @@ export class BotClient {
   // check bot goes first
   private botReadyToAction(bot: Player, currentTurn: number, sortedRemainingPlayerTurn: number[]) {
     if (currentTurn === -1) return;
+    if (bot.statement !== EStatement.Playing) return;
 
     let rIFPlayer = [];
     if (this.currentBetInfo.action === ALLIN || this.currentBetInfo.action === FOLD) {
