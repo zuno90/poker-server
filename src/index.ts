@@ -10,6 +10,7 @@ import { createServer } from 'http';
 import NoobRoom from './game/NoobRoom';
 import MidRoom from './game/MidRoom';
 import ProRoom from './game/ProRoom';
+import { checkPlayerRank } from './game/modules/handleRank';
 
 dotenv.config();
 
@@ -45,6 +46,8 @@ async function bootstrap() {
       url: process.env.NODE_ENV === 'production' ? process.env.REDIS_URL : 'redis://localhost:6379',
     }),
   });
+
+  const Hand = require('pokersolver').Hand;
 
   // define each level of Room
   gameServer.define('noob', NoobRoom);

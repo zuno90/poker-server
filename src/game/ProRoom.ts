@@ -231,13 +231,16 @@ export default class ProRoom extends Room<RoomState> {
       //   if (nextTurn !== player.turn) return;
       // }
 
-      // 3000
-      // 2000 + 1000
+      // 2000 -> this.currentBet = 0 + 2000 = 2000
+      // 1000 -> this.currentBet += chips = 3000
+      // 4000 -> this.currentBet += chips = 7000
+      // call = this.currentBet - player.accuBet
 
       console.log('chip raise', chips);
 
       if (chips >= player.chips) return this.allinAction(client.sessionId, player, player.chips); // trường hợp này chuyển sang allin
-      if (this.currentBet > chips + player.accumulatedBet + this.MIN_BET) return; // chỉ cho phép raise lệnh cao hơn current bet + min bet
+      // if (this.currentBet > chips + player.accumulatedBet + this.MIN_BET) return; // chỉ cho phép raise lệnh cao hơn current bet + min bet
+      if (chips < this.MIN_CHIP) return;
       this.raiseAction(player, chips);
 
       this.sendNewState();
@@ -266,6 +269,7 @@ export default class ProRoom extends Room<RoomState> {
       // có đứa raise cao hơn
       if (player.betEachAction < this.currentBet)
         callValue = this.currentBet - player.betEachAction;
+
       console.log({ chip: player.chips, callValue, currentbet: this.currentBet });
 
       if (callValue === 0) return this.checkAction(player);
@@ -479,7 +483,9 @@ export default class ProRoom extends Room<RoomState> {
     this.state.currentTurn = player.turn;
     this.state.potSize += chip;
 
-    if (this.currentBet < player.accumulatedBet) this.currentBet = player.accumulatedBet;
+    this.currentBet += chip;
+
+    // if (this.currentBet < player.accumulatedBet) this.currentBet = player.accumulatedBet;
 
     this.remainingTurn = this.state.remainingPlayer - 1;
     console.log('RAISE, turn con', this.remainingTurn);
