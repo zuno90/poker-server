@@ -240,7 +240,7 @@ export default class ProRoom extends Room<RoomState> {
 
       if (chips >= player.chips) return this.allinAction(client.sessionId, player, player.chips); // trường hợp này chuyển sang allin
       // if (this.currentBet > chips + player.accumulatedBet + this.MIN_BET) return; // chỉ cho phép raise lệnh cao hơn current bet + min bet
-      if (chips < this.MIN_CHIP) return;
+      if (chips < this.MIN_BET) return;
       this.raiseAction(player, chips);
 
       this.sendNewState();
