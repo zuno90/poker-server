@@ -57,7 +57,6 @@ export default class ProRoom extends Room<RoomState> {
 
   async onAuth(client: Client, options: TJwtAuth, req: Request) {
     try {
-      // is BOT
       if (options.isBot && !options.jwt) return botInfo(this.roomName);
       // IS REAL PLAYER -> CHECK AUTH
       const auth = await this.checkAuth(options.jwt);
@@ -66,11 +65,10 @@ export default class ProRoom extends Room<RoomState> {
 
       // check user to kick
       if (existedPlayer.chips < this.MIN_CHIP) return client.leave();
-      for (const p of this.state.players.values()) {
-        if (existedPlayer._id === p.id) return client.leave();
-      }
 
-      if (this.clients.length === 1) {
+      // is BOT
+
+      if (this.clients.length === 1 && !options.isBot) {
         // is HOST
         return {
           id: existedPlayer._id,
@@ -81,10 +79,8 @@ export default class ProRoom extends Room<RoomState> {
           turn: 0,
           role: ERole.Player,
         };
-      }
-
-      // IS NOT HOST AND PLAYER NUMBER > 2
-      if (this.clients.length > 1) {
+      } else if (this.clients.length > 1 && !options.isBot) {
+        // IS NOT HOST AND PLAYER NUMBER > 1
         let playerSeatArr: number[] = [];
         this.state.players.forEach((player: Player, _) => playerSeatArr.push(player.seat));
         // find out next seat for this player
@@ -99,7 +95,8 @@ export default class ProRoom extends Room<RoomState> {
           role: ERole.Player,
         };
       }
-      throw Error('Bot is on room -> dispose room!');
+
+      throw Error('-> dispose room!');
     } catch (err) {
       console.error(err);
       await this.disconnect();
@@ -440,10 +437,10 @@ export default class ProRoom extends Room<RoomState> {
   }
 
   private resetGame() {
-    // ông nào còn dưới 1000 chíp thì chim cút
+    // ông nào còn dưới MIN_CHIP thì chim cút
     this.clients.forEach(async (client: Client, index: number) => {
       const player = <Player>this.state.players.get(client.sessionId);
-      if (player.chips < this.MIN_CHIP) await client.leave(1001);
+      if (player.chips < this.MIN_CHIP) await client.leave();
     });
     // global variables
     this.currentBet = 0;
@@ -751,7 +748,8 @@ export default class ProRoom extends Room<RoomState> {
       this.state.players.forEach((player: Player, _: string) => {
         if (player.role === ERole.Bot) botNumber++;
       });
-      if (botNumber >= 1) return;
+      console.log(botNumber, 'number bot');
+      if (botNumber === 1) return;
       await this.addBot();
     }, 3000);
   }
