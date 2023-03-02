@@ -261,25 +261,24 @@ export default class ProRoom extends Room<RoomState> {
       if (player.turn === this.state.currentTurn) return;
       if (player.isFold) return; // block folded player
 
+      // let callValue = 0;
+      // if (player.betEachAction === 0) {
+      //   callValue = this.currentBet;
+      // } else if (player.betEachAction > 0) {
+      //   callValue = this.currentBet - player.accumulatedBet + this.MIN_BET;
+      // }
       let callValue = 0;
-      if (player.betEachAction === 0) {
-        callValue = this.currentBet;
-      } else if (player.betEachAction > 0) {
-        callValue = this.currentBet - player.accumulatedBet;
-      }
       // buộc phải all in
-      else if (player.chips < this.currentBet - player.accumulatedBet) {
+      if (player.chips < this.currentBet) {
         callValue = player.chips;
         return this.allinAction(client.sessionId, player, callValue);
+      } else {
+        if (player.betEachAction === 0) {
+          callValue = this.currentBet;
+        } else {
+          callValue = this.currentBet - player.accumulatedBet;
+        }
       }
-
-      // if (player.chips >= this.currentBet) {
-      //   callValue = this.currentBet - player.accumulatedBet; // tại round mới và nó chưa action gì
-      // } else {
-      //   // buộc phải all in
-      //   callValue = player.chips;
-      //   return this.allinAction(client.sessionId, player, callValue);
-      // }
 
       console.log({ chip: player.chips, callValue, currentbet: this.currentBet });
 
