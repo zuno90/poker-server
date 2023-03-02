@@ -514,8 +514,8 @@ export default class NoobRoom extends Room<RoomState> {
 
   private allinAction(sessionId: string, player: Player, chip: number) {
     player.action = ALLIN;
-    if (chip > this.currentBet) {
-      this.currentBet = chip;
+    if (player.accumulatedBet > this.currentBet) {
+      this.currentBet = player.accumulatedBet;
       this.remainingTurn = this.state.remainingPlayer - 1;
     } else {
       this.remainingTurn--;
