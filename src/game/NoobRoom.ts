@@ -259,15 +259,16 @@ export default class NoobRoom extends Room<RoomState> {
 
       let callValue = 0;
       // tại round mới và nó chưa action gì
-      if (player.chips > this.currentBet) callValue = this.currentBet - player.accumulatedBet;
+      if (player.chips + player.accumulatedBet > this.currentBet)
+        callValue = this.currentBet - player.accumulatedBet;
       // buộc phải all in
-      if (player.chips < this.currentBet) {
+      if (player.chips + player.accumulatedBet < this.currentBet) {
         callValue = player.chips;
         return this.allinAction(client.sessionId, player, callValue);
       }
       // có đứa raise cao hơn
       if (player.betEachAction < this.currentBet)
-        callValue = this.currentBet - player.betEachAction;
+        callValue = this.currentBet - player.accumulatedBet;
       console.log({ chip: player.chips, callValue, currentbet: this.currentBet });
 
       if (callValue === 0) return this.checkAction(player);
@@ -481,10 +482,7 @@ export default class NoobRoom extends Room<RoomState> {
     this.state.currentTurn = player.turn;
     this.state.potSize += chip;
 
-    if (this.currentBet < player.accumulatedBet + chip) {
-      this.currentBet = player.accumulatedBet + chip;
-      // console.log('RAISE, turn con', this.remainingTurn)
-    }
+    if (this.currentBet < player.accumulatedBet) this.currentBet = player.accumulatedBet;
 
     this.remainingTurn = this.state.remainingPlayer - 1;
     console.log('RAISE, turn con', this.remainingTurn);
