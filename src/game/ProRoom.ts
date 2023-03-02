@@ -483,7 +483,7 @@ export default class ProRoom extends Room<RoomState> {
     this.state.currentTurn = player.turn;
     this.state.potSize += chip;
 
-    this.currentBet += chip;
+    this.currentBet = chip;
 
     // if (this.currentBet < player.accumulatedBet) this.currentBet = player.accumulatedBet;
 
@@ -745,6 +745,7 @@ export default class ProRoom extends Room<RoomState> {
         for (const bot of this.state.players.values()) {
           if (bot.role === ERole.Bot) countBot++;
         }
+        console.log(countBot, 'so bot trong room');
         if (countBot === 1) return;
         await this.addBot();
       }
