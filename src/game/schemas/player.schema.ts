@@ -49,4 +49,7 @@ export class Player extends Schema {
 
   @type('boolean')
   isFold: boolean = false;
+
+  @type('boolean')
+  bookingLeave: boolean = false;
 }

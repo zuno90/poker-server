@@ -2,7 +2,13 @@ import { Client, Delayed, Room } from 'colyseus';
 import { Request } from 'express';
 import { ERound, RoomState } from './schemas/room.schema';
 import { ERole, EStatement, Player } from './schemas/player.schema';
-import { ALL, FRIEND_REQUEST, ROOM_CHAT, START_GAME } from './constants/room.constant';
+import {
+  ALL,
+  BOOKING_LEAVE,
+  FRIEND_REQUEST,
+  ROOM_CHAT,
+  START_GAME,
+} from './constants/room.constant';
 import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
 import { RANK, RESULT } from './constants/server-emit.constant';
 import { deal } from './modules/handleCard';
@@ -64,7 +70,7 @@ export default class ProRoom extends Room<RoomState> {
         if (existedPlayer._id === p.id) return client.leave();
       }
 
-      if (!this.state.players.size)
+      if (!this.clients.length)
         // is HOST
         return {
           id: existedPlayer._id,
@@ -77,7 +83,7 @@ export default class ProRoom extends Room<RoomState> {
         };
 
       // IS NOT HOST AND PLAYER NUMBER > 2
-      if (this.state.players.size > 0) {
+      if (this.clients.length > 0) {
         let playerSeatArr: number[] = [];
         this.state.players.forEach((player: Player, _) => playerSeatArr.push(player.seat));
         // find out next seat for this player
@@ -194,6 +200,15 @@ export default class ProRoom extends Room<RoomState> {
     });
   }
 
+  // handle booking leave
+  private handleBookingLeave() {
+    this.onMessage(BOOKING_LEAVE, (client: Client, isLeave: boolean) => {
+      if (!isLeave) return;
+      const bookingLeavePlayer = <Player>this.state.players.get(client.sessionId);
+      bookingLeavePlayer.bookingLeave = isLeave;
+    });
+  }
+
   // handle friend request
 
   private handleFriendRequest() {
@@ -231,11 +246,6 @@ export default class ProRoom extends Room<RoomState> {
       //   if (nextTurn !== player.turn) return;
       // }
 
-      // 2000 -> this.currentBet = 0 + 2000 = 2000
-      // 1000 -> this.currentBet += chips = 3000
-      // 4000 -> this.currentBet += chips = 7000
-      // call = this.currentBet - player.accuBet
-
       console.log('chip raise', chips);
 
       if (chips >= player.chips) return this.allinAction(client.sessionId, player, player.chips); // trường hợp này chuyển sang allin
@@ -248,10 +258,10 @@ export default class ProRoom extends Room<RoomState> {
     // CALL
     this.onMessage(CALL, (client: Client) => {
       if (!this.state.onReady) return; // ko the action if game is not ready
+      if (this.state.currentTurn === -1) return; // vòng đầu ko cho call
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return;
       if (player.isFold) return; // block folded player
-      if (this.state.currentTurn === -1) return;
 
       // if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
       //   const nextTurn = Math.min(...this.remainingPlayerArr);
@@ -272,7 +282,7 @@ export default class ProRoom extends Room<RoomState> {
 
       console.log({ chip: player.chips, callValue, currentbet: this.currentBet });
 
-      if (callValue === 0) return this.checkAction(player);
+      if (callValue === 0) return this.checkAction(player); // cố chấp call -> check
       this.callAction(player, callValue);
 
       this.sendNewState();
@@ -391,9 +401,9 @@ export default class ProRoom extends Room<RoomState> {
   }
 
   private startGame(client: Client) {
+    if (this.clients.length < 2) return; // allow start game when > 2 players
     if (this.state.onReady) return; // check game is ready or not
     if (this.state.round !== ERound.WELCOME) return; // phai doi toi round welcome
-    if (this.state.players.size < 2) return; // allow start game when > 2 players
     // check accept only host
     const host = <Player>this.state.players.get(client.sessionId);
     if (!host.isHost) return;
