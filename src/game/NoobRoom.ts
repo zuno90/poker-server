@@ -239,7 +239,7 @@ export default class NoobRoom extends Room<RoomState> {
       console.log('chip raise', chips);
 
       if (chips >= player.chips) return this.allinAction(client.sessionId, player, player.chips); // trường hợp này chuyển sang allin
-      if (this.currentBet > chips + player.accumulatedBet + this.MIN_BET) return; // chỉ cho phép raise lệnh cao hơn current bet + min bet
+      // if (this.currentBet > chips + player.accumulatedBet + this.MIN_BET) return; // chỉ cho phép raise lệnh cao hơn current bet + min bet
       this.raiseAction(player, chips);
 
       this.sendNewState();
@@ -482,10 +482,8 @@ export default class NoobRoom extends Room<RoomState> {
     this.state.currentTurn = player.turn;
     this.state.potSize += chip;
 
-    if (this.currentBet < player.accumulatedBet + chip) {
-      this.currentBet = player.accumulatedBet + chip;
-      // console.log('RAISE, turn con', this.remainingTurn)
-    }
+    if (this.currentBet < player.accumulatedBet) this.currentBet = player.accumulatedBet;
+
     this.remainingTurn = this.state.remainingPlayer - 1;
     console.log('RAISE, turn con', this.remainingTurn);
   }
