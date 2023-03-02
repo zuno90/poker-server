@@ -514,6 +514,10 @@ export default class NoobRoom extends Room<RoomState> {
 
   private allinAction(sessionId: string, player: Player, chip: number) {
     player.action = ALLIN;
+    player.betEachAction = chip;
+    player.accumulatedBet += chip;
+    player.chips -= chip;
+
     if (player.accumulatedBet > this.currentBet) {
       this.currentBet = player.accumulatedBet;
       this.remainingTurn = this.state.remainingPlayer - 1;
@@ -524,10 +528,6 @@ export default class NoobRoom extends Room<RoomState> {
 
     console.log('current bet', this.currentBet);
     console.log('chip bet', chip);
-
-    player.betEachAction = chip;
-    player.accumulatedBet += chip;
-    player.chips -= chip;
 
     this.state.currentTurn = player.turn;
     this.state.potSize += chip;
