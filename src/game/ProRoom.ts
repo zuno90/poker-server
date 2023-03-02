@@ -66,8 +66,6 @@ export default class ProRoom extends Room<RoomState> {
       // check user to kick
       if (existedPlayer.chips < this.MIN_CHIP) return client.leave();
 
-      // is BOT
-
       if (this.clients.length === 1 && !options.isBot) {
         // is HOST
         return {
@@ -747,9 +745,9 @@ export default class ProRoom extends Room<RoomState> {
     return this.clock.setTimeout(async () => {
       this.state.players.forEach((player: Player, _: string) => {
         if (player.role === ERole.Bot) botNumber++;
+        if (botNumber === 1) return;
       });
-      console.log(botNumber, 'number bot');
-      if (botNumber === 1) return;
+
       await this.addBot();
     }, 3000);
   }

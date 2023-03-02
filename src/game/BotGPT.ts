@@ -146,10 +146,12 @@ export class BotClient {
 
     // check bot is fold or allin
     const isHasBotTurn = rIFPlayer.find(turn => turn > this.currentBetInfo.turn);
+    console.log('turn bot', isHasBotTurn);
     if (isHasBotTurn !== bot.turn) {
       this.isActive = false;
       return;
     }
+    this.isActive = true;
 
     if (!this.currentBetInfo.action) this.isGoFirst = true; // at turn preflop
     if (
@@ -158,8 +160,6 @@ export class BotClient {
       this.currentBetInfo.betEachAction > bot.betEachAction
     )
       this.isGoFirst = false;
-
-    this.isActive = true;
   }
 
   // Bet Algorithm
