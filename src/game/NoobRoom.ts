@@ -259,7 +259,7 @@ export default class NoobRoom extends Room<RoomState> {
 
       let callValue = 0;
       // tại round mới và nó chưa action gì
-      if (player.chips > this.currentBet) callValue = player.betEachAction + this.currentBet;
+      if (player.chips > this.currentBet) callValue = this.currentBet - player.accumulatedBet;
       // buộc phải all in
       if (player.chips < this.currentBet) {
         callValue = player.chips;
