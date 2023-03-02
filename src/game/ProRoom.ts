@@ -737,18 +737,13 @@ export default class ProRoom extends Room<RoomState> {
   }
 
   private addBotByCondition() {
-    console.log(this.clients.length, this.state.players.size);
+    let botNumber = 0;
     return this.clock.setTimeout(async () => {
-      // check if had player joined first
-      if (this.clients.length > 0 && this.clients.length < this.maxClients) {
-        let countBot = 0;
-        for (const bot of this.state.players.values()) {
-          if (bot.role === ERole.Bot) countBot++;
-        }
-        console.log(countBot, 'so bot trong room');
-        if (countBot === 1) return;
-        await this.addBot();
-      }
+      this.state.players.forEach((player: Player, _: string) => {
+        if (player.role === ERole.Bot) botNumber++;
+      });
+      if (botNumber >= 1) return;
+      await this.addBot();
     }, 3000);
   }
 
