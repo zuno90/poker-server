@@ -48,13 +48,13 @@
                   arr1.textContent = '';
                   arr.add(d.textContent);
                   arr1.append(Array.from(arr));
-                  console.log(Array.from(arr));
+                  // console.log(Array.from(arr));
                 } else {
                   const arr2 = document.getElementById('arr2');
                   arr2.textContent = '';
                   arr.add(d.textContent);
                   arr2.append(Array.from(arr));
-                  console.log(Array.from(arr));
+                  // console.log(Array.from(arr));
                 }
               } else {
                 alert('Chỉ được phép bốc tối đa 7 lá');
@@ -87,8 +87,9 @@
         });
 
         async function callResult() {
+          const url = 'https://poker.dadsnetwork.net';
           try {
-            const res = await fetch('http://localhost:9000', {
+            const res = await fetch(url, {
               method: 'POST',
               body: JSON.stringify([cards_1, cards_2]),
               headers: {
@@ -96,8 +97,8 @@
               },
             });
             const result = await res.json();
-            console.log(result);
             if (!result.success) throw Error('loi server');
+            document.getElementById('result').textContent = '';
             document.getElementById('result').append(result.data.result);
             document
               .getElementById('result')

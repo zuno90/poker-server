@@ -260,24 +260,29 @@ export default class NoobRoom extends Room<RoomState> {
       if (player.turn === this.state.currentTurn) return;
       if (player.isFold) return; // block folded player
 
-      // let callValue = 0;
-      // if (player.betEachAction === 0) {
-      //   callValue = this.currentBet;
-      // } else if (player.betEachAction > 0) {
-      //   callValue = this.currentBet - player.accumulatedBet + this.MIN_BET;
-      // }
       let callValue = 0;
-      // buộc phải all in
-      if (player.chips < this.currentBet) {
+
+      if (this.currentBet < player.chips + player.accumulatedBet) {
+        callValue = this.currentBet - player.accumulatedBet;
+      }
+      if (player.chips < this.currentBet - player.accumulatedBet) {
+        // buộc phải all in
         callValue = player.chips;
         return this.allinAction(client.sessionId, player, callValue);
-      } else {
-        if (player.betEachAction === 0) {
-          callValue = this.currentBet;
-        } else {
-          callValue = this.currentBet - player.accumulatedBet + this.MIN_BET;
-        }
       }
+
+      // let callValue = 0;
+      // // buộc phải all in
+      // if (player.chips < this.currentBet) {
+      //   callValue = player.chips;
+      //   return this.allinAction(client.sessionId, player, callValue);
+      // } else {
+      //   if (player.betEachAction === 0) {
+      //     callValue = this.currentBet;
+      //   } else {
+      //     callValue = this.currentBet - player.accumulatedBet + this.MIN_BET;
+      //   }
+      // }
 
       console.log({ chip: player.chips, callValue, currentbet: this.currentBet });
 
