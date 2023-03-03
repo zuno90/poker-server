@@ -228,14 +228,6 @@ export default class NoobRoom extends Room<RoomState> {
       if (player.turn === this.state.currentTurn) return; // không cho gửi 2 lần
       if (player.isFold) return; // block folded player
 
-      // if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
-      //   const nextTurn = Math.min(...this.remainingPlayerArr);
-      //   if (nextTurn !== player.turn) return;
-      // }
-
-      // 3000
-      // 2000 + 1000
-
       console.log('chip raise', chips);
 
       if (chips >= player.chips) return this.allinAction(client.sessionId, player, player.chips); // trường hợp này chuyển sang allin
@@ -252,17 +244,13 @@ export default class NoobRoom extends Room<RoomState> {
       if (player.isFold) return; // block folded player
       if (this.state.currentTurn === -1) return;
 
-      // if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
-      //   const nextTurn = Math.min(...this.remainingPlayerArr);
-      //   if (nextTurn !== player.turn) return;
-      // }
-
       let callValue = 0;
 
-      if (this.currentBet < player.chips + player.accumulatedBet)
+      if (this.currentBet < player.chips + player.accumulatedBet) {
         callValue = this.currentBet - player.accumulatedBet;
-      // buộc phải all in
+      }
       if (player.chips < this.currentBet - player.accumulatedBet) {
+        // buộc phải all in
         callValue = player.chips;
         return this.allinAction(client.sessionId, player, callValue);
       }
@@ -281,11 +269,6 @@ export default class NoobRoom extends Room<RoomState> {
       if (player.turn === this.state.currentTurn) return;
       if (player.isFold) return; // block folded player
 
-      // if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
-      //   const nextTurn = Math.min(...this.remainingPlayerArr);
-      //   if (nextTurn !== player.turn) return;
-      // }
-
       this.checkAction(player);
 
       this.sendNewState();
@@ -296,11 +279,6 @@ export default class NoobRoom extends Room<RoomState> {
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return;
       if (player.isFold) return; // block folded player
-
-      // if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
-      //   const nextTurn = Math.min(...this.remainingPlayerArr);
-      //   if (nextTurn !== player.turn) return;
-      // }
 
       this.allinAction(client.sessionId, player, player.chips);
 

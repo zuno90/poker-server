@@ -276,7 +276,7 @@ export default class ProRoom extends Room<RoomState> {
         if (player.betEachAction === 0) {
           callValue = this.currentBet;
         } else {
-          callValue = this.currentBet - player.accumulatedBet;
+          callValue = this.currentBet - player.accumulatedBet + this.MIN_BET;
         }
       }
 
