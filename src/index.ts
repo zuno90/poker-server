@@ -34,52 +34,61 @@ async function bootstrap() {
 
   // welcome
   app.use('/', async (req: Request, res: Response) => {
-    const data = req.body;
-    const [h1, h2] = JSON.parse(data);
+    try {
+      const [h1, h2] = req.body;
 
-    let listCardsGame = [];
-    const hand1 = Hand.solve(h1);
-    const hand2 = Hand.solve(h2);
+      let listCardsGame = [];
+      const hand1 = Hand.solve(h1);
+      const hand2 = Hand.solve(h2);
 
-    const winner = Hand.winners([hand1, hand2]); // hand2
+      const winner = Hand.winners([hand1, hand2]); // hand2
 
-    listCardsGame.push(hand1.cards, hand2.cards);
+      listCardsGame.push(hand1.cards, hand2.cards);
 
-    const winnerCards = winner[0].cards;
+      const winnerCards = winner[0].cards;
 
-    const winnArr: any[] = [];
+      const winnArr: any[] = [];
 
-    for (let c of winnerCards) {
-      winnArr.push(c.value);
-    }
-
-    // console.log("WWIN: ", winnArr);
-
-    y(listCardsGame);
-
-    function y(cards: any[]) {
-      let a = [];
-      for (let i = 0; i < cards.length; i++) {
-        a.push([]);
+      for (let c of winnerCards) {
+        winnArr.push(c.value);
       }
-      let count = 0;
-      for (let j = 0; j < cards.length; j++) {
-        a[j] = cards[j].map((card: any) => card.value);
-        // console.log(a[j], " : ", winnArr);
-        console.log('COMBO CARD WIN: ', winnArr);
-        if (a[j].toString() === winnArr.toString()) {
-          console.log('USER HAVE COMBO CARD WIN: ', a[j]);
-          a = a[j];
-          count++;
+
+      // console.log("WWIN: ", winnArr);
+      let player: any;
+      y(listCardsGame);
+
+      function y(cards: any[]) {
+        let a = [];
+        for (let i = 0; i < cards.length; i++) {
+          a.push([]);
         }
-      }
-      if (count === 1) {
-        console.log('CÓ 1 NGƯỜI THẮNG. THẮNG');
-      } else if (count > 1) {
-        console.log(`CÓ ${count} NGƯỜI THẮNG. HÒA`);
+        let count = 0;
+        console.log('COMBO CARD WIN: ', winnArr);
+        for (let j = 0; j < cards.length; j++) {
+          a[j] = cards[j].map((card: any) => card.value);
+          // console.log(a[j], " : ", winnArr);
+
+          if (a[j].toString() === winnArr.toString()) {
+            console.log('USER HAVE COMBO CARD WIN: ', a[j]);
+            a = a[j];
+            count++;
+          }
+        }
+        player = count;
       }
 
-      // console.log("WIN: ", a);
+      const result = player === 1 ? `có 1 người thắng` : `kết quả hoà`;
+
+      res.status(200).json({
+        success: true,
+        data: {
+          winnArr,
+          result,
+        },
+      });
+    } catch (e) {
+      console.error(e);
+      res.status(404).json({ err: 404, msg: 'bad request!' });
     }
 
     // return res.send(`Hello from ZUNO from Websocket ${process.env.websocket}`);

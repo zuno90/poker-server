@@ -42,18 +42,22 @@
           document.getElementById('s').append(d);
           document.getElementById('s' + s[i]).addEventListener('click', e => {
             if (!arr.has(d.textContent)) {
-              if (turn === 1) {
-                const arr1 = document.getElementById('arr1');
-                arr1.textContent = '';
-                arr.add(d.textContent);
-                arr1.append(Array.from(arr));
-                console.log(Array.from(arr));
+              if (Array.from(arr).length < 7) {
+                if (turn === 1) {
+                  const arr1 = document.getElementById('arr1');
+                  arr1.textContent = '';
+                  arr.add(d.textContent);
+                  arr1.append(Array.from(arr));
+                  console.log(Array.from(arr));
+                } else {
+                  const arr2 = document.getElementById('arr2');
+                  arr2.textContent = '';
+                  arr.add(d.textContent);
+                  arr2.append(Array.from(arr));
+                  console.log(Array.from(arr));
+                }
               } else {
-                const arr2 = document.getElementById('arr2');
-                arr2.textContent = '';
-                arr.add(d.textContent);
-                arr2.append(Array.from(arr));
-                console.log(Array.from(arr));
+                alert('Chỉ được phép bốc tối đa 7 lá');
               }
             } else {
               alert('Có rồi không add OK');
@@ -62,10 +66,13 @@
         }
 
         document.getElementById('btn-done').addEventListener('click', () => {
-          turn === 1 ? (cards_1 = Array.from(arr)) : (cards_2 = Array.from(arr));
-
-          turn = 2;
-          arr.clear();
+          if (Array.from(arr).length > 5) {
+            turn === 1 ? (cards_1 = Array.from(arr)) : (cards_2 = Array.from(arr));
+            turn = 2;
+            arr.clear();
+          } else {
+            alert('Mỗi bộ bài ít nhất có 5 lá bài');
+          }
         });
 
         document.getElementById('btn-rm-last-c').addEventListener('click', () => {
@@ -76,6 +83,38 @@
           } else {
             const arr2 = document.getElementById('arr2');
             arr2.innerHTML = Array.from(arr);
+          }
+        });
+
+        async function callResult() {
+          try {
+            const res = await fetch('http://localhost:9000', {
+              method: 'POST',
+              body: JSON.stringify([cards_1, cards_2]),
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            });
+            const result = await res.json();
+            console.log(result);
+            if (!result.success) throw Error('loi server');
+            document.getElementById('result').append(result.data.result);
+            document
+              .getElementById('result')
+              .append(' .Bộ 5 lá mạnh nhất : ' + result.data.winnArr.toString());
+          } catch (e) {
+            console.error;
+          }
+        }
+
+        document.getElementById('btn-send').addEventListener('click', async () => {
+          if (
+            (cards_1.length >= 5 && cards_1.length <= 7) ||
+            (cards_2.length >= 5 && cards_2.length <= 7)
+          ) {
+            await callResult();
+          } else {
+            alert('Mỗi bộ bài ít nhất có 5 lá bài và tối đa 7 lá bài');
           }
         });
       };
@@ -103,6 +142,7 @@
         <button class="button is-warning" id="btn-done">DONE</button>
         <button class="button is-danger" id="btn-send">SEND</button>
       </div>
+      <div id="result" style="text-align: center"></div>
     </div>
   </body>
 </html>
