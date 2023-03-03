@@ -2,7 +2,13 @@ import { Client, Delayed, Room } from 'colyseus';
 import { Request } from 'express';
 import { ERound, RoomState } from './schemas/room.schema';
 import { ERole, EStatement, Player } from './schemas/player.schema';
-import { ALL, FRIEND_REQUEST, ROOM_CHAT, START_GAME } from './constants/room.constant';
+import {
+  ALL,
+  BOOKING_LEAVE,
+  FRIEND_REQUEST,
+  ROOM_CHAT,
+  START_GAME,
+} from './constants/room.constant';
 import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
 import { RANK, RESULT } from './constants/server-emit.constant';
 import { deal } from './modules/handleCard';
@@ -127,7 +133,7 @@ export default class NoobRoom extends Room<RoomState> {
     // SET INITIAL PLAYER STATE
     try {
       this.state.players.set(client.sessionId, new Player(player)); // set player every joining
-      this.addBotByCondition();
+      if (player.isHost) await this.addBot();
     } catch (err) {
       console.error(err);
     }
@@ -136,11 +142,11 @@ export default class NoobRoom extends Room<RoomState> {
   async onLeave(client: Client, consented: boolean) {
     try {
       const leavingPlayer = <Player>this.state.players.get(client.sessionId);
+      leavingPlayer.connected = false;
       if (leavingPlayer.role === ERole.Bot) {
         console.log('bot ' + client.sessionId + ' has just left');
         this.state.players.delete(client.sessionId);
-        this.addBotByCondition();
-        return;
+        return this.clock.setTimeout(() => this.addBot(), 3000);
       }
 
       // handle change host to player
@@ -152,8 +158,6 @@ export default class NoobRoom extends Room<RoomState> {
           }
         });
 
-        console.log('so player con lai without Bot', playerInRoom);
-
         if (playerInRoom.length === 1) return await this.disconnect();
         if (playerInRoom.length > 1) {
           const newHost = <Player>this.state.players.get(playerInRoom[1].sessionId);
@@ -163,11 +167,12 @@ export default class NoobRoom extends Room<RoomState> {
           this.sendNewState();
         }
       }
-      console.log('client ' + client.sessionId + ' has just left');
-      this.state.players.delete(client.sessionId);
+
+      if (consented) throw new Error('consented leave!');
     } catch (err) {
       console.error(err);
-      await this.disconnect();
+      console.log('client ' + client.sessionId + ' has just left');
+      this.state.players.delete(client.sessionId);
     }
   }
 
@@ -193,6 +198,15 @@ export default class NoobRoom extends Room<RoomState> {
       this.clients.forEach((client: Client, index: number) => {
         client.send(ROOM_CHAT, data);
       });
+    });
+  }
+
+  // handle booking leave
+  private handleBookingLeave() {
+    this.onMessage(BOOKING_LEAVE, (client: Client, isLeave: boolean) => {
+      if (!isLeave) return;
+      const bookingLeavePlayer = <Player>this.state.players.get(client.sessionId);
+      bookingLeavePlayer.bookingLeave = isLeave;
     });
   }
 
@@ -228,10 +242,16 @@ export default class NoobRoom extends Room<RoomState> {
       if (player.turn === this.state.currentTurn) return; // không cho gửi 2 lần
       if (player.isFold) return; // block folded player
 
+      // if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
+      //   const nextTurn = Math.min(...this.remainingPlayerArr);
+      //   if (nextTurn !== player.turn) return;
+      // }
+
       console.log('chip raise', chips);
 
       if (chips >= player.chips) return this.allinAction(client.sessionId, player, player.chips); // trường hợp này chuyển sang allin
       // if (this.currentBet > chips + player.accumulatedBet + this.MIN_BET) return; // chỉ cho phép raise lệnh cao hơn current bet + min bet
+      if (chips < this.MIN_BET) return;
       this.raiseAction(player, chips);
 
       this.sendNewState();
@@ -239,25 +259,33 @@ export default class NoobRoom extends Room<RoomState> {
     // CALL
     this.onMessage(CALL, (client: Client) => {
       if (!this.state.onReady) return; // ko the action if game is not ready
+      if (this.state.currentTurn === -1) return; // vòng đầu ko cho call
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return;
       if (player.isFold) return; // block folded player
-      if (this.state.currentTurn === -1) return;
 
+      // let callValue = 0;
+      // if (player.betEachAction === 0) {
+      //   callValue = this.currentBet;
+      // } else if (player.betEachAction > 0) {
+      //   callValue = this.currentBet - player.accumulatedBet + this.MIN_BET;
+      // }
       let callValue = 0;
-
-      if (this.currentBet < player.chips + player.accumulatedBet) {
-        callValue = this.currentBet - player.accumulatedBet;
-      }
-      if (player.chips < this.currentBet - player.accumulatedBet) {
-        // buộc phải all in
+      // buộc phải all in
+      if (player.chips < this.currentBet) {
         callValue = player.chips;
         return this.allinAction(client.sessionId, player, callValue);
+      } else {
+        if (player.betEachAction === 0) {
+          callValue = this.currentBet;
+        } else {
+          callValue = this.currentBet - player.accumulatedBet + this.MIN_BET;
+        }
       }
 
       console.log({ chip: player.chips, callValue, currentbet: this.currentBet });
 
-      if (callValue === 0) return this.checkAction(player);
+      if (callValue === 0) return this.checkAction(player); // cố chấp call -> check
       this.callAction(player, callValue);
 
       this.sendNewState();
@@ -366,9 +394,9 @@ export default class NoobRoom extends Room<RoomState> {
   }
 
   private startGame(client: Client) {
+    if (this.clients.length < 2) return; // allow start game when > 2 players
     if (this.state.onReady) return; // check game is ready or not
     if (this.state.round !== ERound.WELCOME) return; // phai doi toi round welcome
-    if (this.state.players.size < 2) return; // allow start game when > 2 players
     // check accept only host
     const host = <Player>this.state.players.get(client.sessionId);
     if (!host.isHost) return;
@@ -406,10 +434,10 @@ export default class NoobRoom extends Room<RoomState> {
   }
 
   private resetGame() {
-    // ông nào còn dưới 1000 chíp thì chim cút
+    // ông nào còn dưới MIN_CHIP thì chim cút
     this.clients.forEach(async (client: Client, index: number) => {
       const player = <Player>this.state.players.get(client.sessionId);
-      if (player.chips < this.MIN_CHIP) await client.leave(1001);
+      if (player.chips < this.MIN_CHIP) await client.leave();
     });
     // global variables
     this.currentBet = 0;
@@ -458,7 +486,9 @@ export default class NoobRoom extends Room<RoomState> {
     this.state.currentTurn = player.turn;
     this.state.potSize += chip;
 
-    if (this.currentBet < player.accumulatedBet) this.currentBet = player.accumulatedBet;
+    this.currentBet = chip;
+
+    // if (this.currentBet < player.accumulatedBet) this.currentBet = player.accumulatedBet;
 
     this.remainingTurn = this.state.remainingPlayer - 1;
     console.log('RAISE, turn con', this.remainingTurn);
@@ -490,12 +520,8 @@ export default class NoobRoom extends Room<RoomState> {
 
   private allinAction(sessionId: string, player: Player, chip: number) {
     player.action = ALLIN;
-    player.betEachAction = chip;
-    player.accumulatedBet += chip;
-    player.chips -= chip;
-
-    if (player.accumulatedBet > this.currentBet) {
-      this.currentBet = player.accumulatedBet;
+    if (chip > this.currentBet) {
+      this.currentBet = chip;
       this.remainingTurn = this.state.remainingPlayer - 1;
     } else {
       this.remainingTurn--;
@@ -504,6 +530,10 @@ export default class NoobRoom extends Room<RoomState> {
 
     console.log('current bet', this.currentBet);
     console.log('chip bet', chip);
+
+    player.betEachAction = chip;
+    player.accumulatedBet += chip;
+    player.chips -= chip;
 
     this.state.currentTurn = player.turn;
     this.state.potSize += chip;
@@ -707,21 +737,6 @@ export default class NoobRoom extends Room<RoomState> {
     await bot.joinRoom(this.roomId, this.roomName);
     this.bot?.set(bot.sessionId, bot);
     this.sendNewState();
-  }
-
-  private addBotByCondition() {
-    console.log(this.clients.length, this.state.players.size);
-    return this.clock.setTimeout(async () => {
-      // check if had player joined first
-      if (this.clients.length > 0 && this.clients.length < this.maxClients) {
-        let countBot = 0;
-        for (const bot of this.state.players.values()) {
-          if (bot.role === ERole.Bot) countBot++;
-        }
-        if (countBot === 1) return;
-        await this.addBot();
-      }
-    }, 3000);
   }
 
   private sendNewState() {

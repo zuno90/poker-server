@@ -710,7 +710,6 @@ export default class NoobRoom extends Room<RoomState> {
   }
 
   private addBotByCondition() {
-    console.log(this.clients.length, this.state.players.size);
     return this.clock.setTimeout(async () => {
       // check if had player joined first
       if (this.clients.length > 0 && this.clients.length < this.maxClients) {

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>POKER TEST RESULT</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css" />
+    <script>
+      window.onload = () => {
+        class A {
+          suits = ['s', 'c', 'd', 'h'];
+          ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'];
+
+          createADeck = (ranks, suits) => {
+            let fullDeck = [];
+            for (let suitCounter = 0; suitCounter < 4; suitCounter++) {
+              for (let rankCounter = 0; rankCounter < 13; rankCounter++) {
+                fullDeck.push(ranks[rankCounter] + suits[suitCounter]);
+              }
+            }
+            return fullDeck;
+          };
+        }
+        const p = new A();
+
+        const deck = p.createADeck(p.ranks, p.suits);
+
+        // document.getElementById('52cards').innerHTML = deck;
+        // const div = document.createElement('div');
+        // div.setAttribute('class', 'columns');
+        // const divChild = document.createElement('div');
+        // for (let i = 0; i < p.suits.length; i++) {
+        //   divChild.textContent = p.suits[i];
+        //   div.append(divChild);
+        // }
+        const s = deck.filter(c => c.includes('s'));
+        const c = deck.filter(c => c.includes('c'));
+        const d = deck.filter(c => c.includes('d'));
+        const h = deck.filter(c => c.includes('h'));
+        console.log(s);
+        for (let i = 0; i < s.length; i++) {
+          const d = document.createElement('div');
+          d.setAttribute('class', 'column');
+          d.textContent = s[i];
+          document.getElementById('s').append(d);
+        }
+        for (let i = 0; i < c.length; i++) {
+          const d = document.createElement('div');
+          d.setAttribute('class', 'column');
+          d.textContent = c[i];
+          document.getElementById('c').append(d);
+        }
+        for (let i = 0; i < d.length; i++) {
+          const di = document.createElement('div');
+          di.setAttribute('class', 'column');
+          di.textContent = d[i];
+          document.getElementById('d').append(di);
+        }
+        for (let i = 0; i < h.length; i++) {
+          const d = document.createElement('div');
+          d.setAttribute('class', 'column');
+          d.textContent = h[i];
+          document.getElementById('h').append(d);
+        }
+
+        function pushCard() {
+          document.addEventListener('click', e => {
+            console.log('rthrthtrh');
+          });
+        }
+
+        pushCard();
+      };
+    </script>
+  </head>
+  <body>
+    <div class="columns" id="s"></div>
+    <div class="columns" id="c"></div>
+    <div class="columns" id="d"></div>
+    <div class="columns" id="h"></div>
+  </body>
+</html>

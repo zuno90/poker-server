@@ -33,7 +33,7 @@ async function bootstrap() {
 
   // welcome
   app.use('/', async (req: Request, res: Response) => {
-    return res.send(`Hello from ZUNO from Websocket ${process.env.websocket}`);
+    // return res.send(`Hello from ZUNO from Websocket ${process.env.websocket}`);
   });
 
   // init game server
