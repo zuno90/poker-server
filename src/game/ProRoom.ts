@@ -130,7 +130,9 @@ export default class ProRoom extends Room<RoomState> {
     // SET INITIAL PLAYER STATE
     try {
       this.state.players.set(client.sessionId, new Player(player)); // set player every joining
+      this.state.players.set(client.sessionId, new Player(player)); // set player every joining
       if (player.isHost) await this.addBot();
+      else this.sendNewState();
     } catch (err) {
       console.error(err);
     }
@@ -143,7 +145,9 @@ export default class ProRoom extends Room<RoomState> {
       if (leavingPlayer.role === ERole.Bot) {
         console.log('bot ' + client.sessionId + ' has just left');
         this.state.players.delete(client.sessionId);
-        return this.clock.setTimeout(() => this.addBot(), 3000);
+        return this.clock.setTimeout(() => {
+          this.addBot();
+        }, 3000);
       }
 
       // handle change host to player
@@ -166,6 +170,11 @@ export default class ProRoom extends Room<RoomState> {
       }
 
       if (consented) throw new Error('consented leave!');
+      // allow disconnected client to reconnect into this room until 20 seconds
+      await this.allowReconnection(client, 10);
+
+      // client returned! let's re-activate it.
+      leavingPlayer.connected = true;
     } catch (err) {
       console.error(err);
       console.log('client ' + client.sessionId + ' has just left');

@@ -134,6 +134,7 @@ export default class NoobRoom extends Room<RoomState> {
     try {
       this.state.players.set(client.sessionId, new Player(player)); // set player every joining
       if (player.isHost) await this.addBot();
+      else this.sendNewState();
     } catch (err) {
       console.error(err);
     }
@@ -241,11 +242,6 @@ export default class NoobRoom extends Room<RoomState> {
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return; // không cho gửi 2 lần
       if (player.isFold) return; // block folded player
-
-      // if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
-      //   const nextTurn = Math.min(...this.remainingPlayerArr);
-      //   if (nextTurn !== player.turn) return;
-      // }
 
       console.log('chip raise', chips);
 
