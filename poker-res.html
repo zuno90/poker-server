@@ -24,58 +24,85 @@
 
         const deck = p.createADeck(p.ranks, p.suits);
 
-        // document.getElementById('52cards').innerHTML = deck;
-        // const div = document.createElement('div');
-        // div.setAttribute('class', 'columns');
-        // const divChild = document.createElement('div');
-        // for (let i = 0; i < p.suits.length; i++) {
-        //   divChild.textContent = p.suits[i];
-        //   div.append(divChild);
-        // }
         const s = deck.filter(c => c.includes('s'));
-        const c = deck.filter(c => c.includes('c'));
-        const d = deck.filter(c => c.includes('d'));
-        const h = deck.filter(c => c.includes('h'));
-        console.log(s);
+
+        let arr = new Set();
+
+        let cards_1 = [];
+        let cards_2 = [];
+
+        let turn = 1;
+
         for (let i = 0; i < s.length; i++) {
           const d = document.createElement('div');
           d.setAttribute('class', 'column');
+          d.setAttribute('class', 'button');
+          d.setAttribute('id', 's' + s[i]);
           d.textContent = s[i];
           document.getElementById('s').append(d);
-        }
-        for (let i = 0; i < c.length; i++) {
-          const d = document.createElement('div');
-          d.setAttribute('class', 'column');
-          d.textContent = c[i];
-          document.getElementById('c').append(d);
-        }
-        for (let i = 0; i < d.length; i++) {
-          const di = document.createElement('div');
-          di.setAttribute('class', 'column');
-          di.textContent = d[i];
-          document.getElementById('d').append(di);
-        }
-        for (let i = 0; i < h.length; i++) {
-          const d = document.createElement('div');
-          d.setAttribute('class', 'column');
-          d.textContent = h[i];
-          document.getElementById('h').append(d);
-        }
-
-        function pushCard() {
-          document.addEventListener('click', e => {
-            console.log('rthrthtrh');
+          document.getElementById('s' + s[i]).addEventListener('click', e => {
+            if (!arr.has(d.textContent)) {
+              if (turn === 1) {
+                const arr1 = document.getElementById('arr1');
+                arr1.textContent = '';
+                arr.add(d.textContent);
+                arr1.append(Array.from(arr));
+                console.log(Array.from(arr));
+              } else {
+                const arr2 = document.getElementById('arr2');
+                arr2.textContent = '';
+                arr.add(d.textContent);
+                arr2.append(Array.from(arr));
+                console.log(Array.from(arr));
+              }
+            } else {
+              alert('Có rồi không add OK');
+            }
           });
         }
 
-        pushCard();
+        document.getElementById('btn-done').addEventListener('click', () => {
+          turn === 1 ? (cards_1 = Array.from(arr)) : (cards_2 = Array.from(arr));
+
+          turn = 2;
+          arr.clear();
+        });
+
+        document.getElementById('btn-rm-last-c').addEventListener('click', () => {
+          arr.delete(Array.from(arr).pop());
+          if (turn == 1) {
+            const arr1 = document.getElementById('arr1');
+            arr1.innerHTML = Array.from(arr);
+          } else {
+            const arr2 = document.getElementById('arr2');
+            arr2.innerHTML = Array.from(arr);
+          }
+        });
       };
     </script>
   </head>
-  <body>
-    <div class="columns" id="s"></div>
-    <div class="columns" id="c"></div>
-    <div class="columns" id="d"></div>
-    <div class="columns" id="h"></div>
+
+  <body
+    class="container"
+    style="height: 100vh; display: flex; align-items: center; justify-content: center"
+  >
+    <div>
+      <div class="columns" id="s"></div>
+
+      <div style="text-align: center; margin: 20px">
+        Bộ 1:
+        <span id="arr1" style="text-align: center"></span>
+      </div>
+      <div style="text-align: center; margin: 20px">
+        Bộ 2:
+        <span id="arr2" style="text-align: center"></span>
+      </div>
+      <div style="text-align: center">
+        <button class="button is-primary" id="btn-rm-last-c">Remove Last Card</button>
+        <button class="button is-primary" onclick="window.location.reload()">Remove All</button>
+        <button class="button is-warning" id="btn-done">DONE</button>
+        <button class="button is-danger" id="btn-send">SEND</button>
+      </div>
+    </div>
   </body>
 </html>

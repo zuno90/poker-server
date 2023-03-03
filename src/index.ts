@@ -47,7 +47,7 @@ async function bootstrap() {
 
     const winnerCards = winner[0].cards;
 
-    const winnArr = [];
+    const winnArr: any[] = [];
 
     for (let c of winnerCards) {
       winnArr.push(c.value);
@@ -57,14 +57,14 @@ async function bootstrap() {
 
     y(listCardsGame);
 
-    function y(cards) {
+    function y(cards: any[]) {
       let a = [];
       for (let i = 0; i < cards.length; i++) {
         a.push([]);
       }
-      count = 0;
+      let count = 0;
       for (let j = 0; j < cards.length; j++) {
-        a[j] = cards[j].map(card => card.value);
+        a[j] = cards[j].map((card: any) => card.value);
         // console.log(a[j], " : ", winnArr);
         console.log('COMBO CARD WIN: ', winnArr);
         if (a[j].toString() === winnArr.toString()) {
