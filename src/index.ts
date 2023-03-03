@@ -10,7 +10,8 @@ import { createServer } from 'http';
 import NoobRoom from './game/NoobRoom';
 import MidRoom from './game/MidRoom';
 import ProRoom from './game/ProRoom';
-import { checkPlayerRank } from './game/modules/handleRank';
+
+const Hand = require('pokersolver').Hand;
 
 dotenv.config();
 
@@ -33,6 +34,54 @@ async function bootstrap() {
 
   // welcome
   app.use('/', async (req: Request, res: Response) => {
+    const data = req.body;
+    const [h1, h2] = JSON.parse(data);
+
+    let listCardsGame = [];
+    const hand1 = Hand.solve(h1);
+    const hand2 = Hand.solve(h2);
+
+    const winner = Hand.winners([hand1, hand2]); // hand2
+
+    listCardsGame.push(hand1.cards, hand2.cards);
+
+    const winnerCards = winner[0].cards;
+
+    const winnArr = [];
+
+    for (let c of winnerCards) {
+      winnArr.push(c.value);
+    }
+
+    // console.log("WWIN: ", winnArr);
+
+    y(listCardsGame);
+
+    function y(cards) {
+      let a = [];
+      for (let i = 0; i < cards.length; i++) {
+        a.push([]);
+      }
+      count = 0;
+      for (let j = 0; j < cards.length; j++) {
+        a[j] = cards[j].map(card => card.value);
+        // console.log(a[j], " : ", winnArr);
+        console.log('COMBO CARD WIN: ', winnArr);
+        if (a[j].toString() === winnArr.toString()) {
+          console.log('USER HAVE COMBO CARD WIN: ', a[j]);
+          a = a[j];
+          count++;
+        }
+      }
+      if (count === 1) {
+        console.log('CÓ 1 NGƯỜI THẮNG. THẮNG');
+      } else if (count > 1) {
+        console.log(`CÓ ${count} NGƯỜI THẮNG. HÒA`);
+      }
+
+      // console.log("WIN: ", a);
+    }
+
     // return res.send(`Hello from ZUNO from Websocket ${process.env.websocket}`);
   });
 
