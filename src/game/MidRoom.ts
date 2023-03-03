@@ -228,18 +228,10 @@ export default class NoobRoom extends Room<RoomState> {
       if (player.turn === this.state.currentTurn) return; // không cho gửi 2 lần
       if (player.isFold) return; // block folded player
 
-      // if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
-      //   const nextTurn = Math.min(...this.remainingPlayerArr);
-      //   if (nextTurn !== player.turn) return;
-      // }
-
-      // 3000
-      // 2000 + 1000
-
       console.log('chip raise', chips);
 
       if (chips >= player.chips) return this.allinAction(client.sessionId, player, player.chips); // trường hợp này chuyển sang allin
-      if (this.currentBet > chips + player.accumulatedBet + this.MIN_BET) return; // chỉ cho phép raise lệnh cao hơn current bet + min bet
+      // if (this.currentBet > chips + player.accumulatedBet + this.MIN_BET) return; // chỉ cho phép raise lệnh cao hơn current bet + min bet
       this.raiseAction(player, chips);
 
       this.sendNewState();
@@ -252,22 +244,17 @@ export default class NoobRoom extends Room<RoomState> {
       if (player.isFold) return; // block folded player
       if (this.state.currentTurn === -1) return;
 
-      // if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
-      //   const nextTurn = Math.min(...this.remainingPlayerArr);
-      //   if (nextTurn !== player.turn) return;
-      // }
-
       let callValue = 0;
-      // tại round mới và nó chưa action gì
-      if (player.chips > this.currentBet) callValue = player.betEachAction + this.currentBet;
-      // buộc phải all in
-      if (player.chips < this.currentBet) {
+
+      if (this.currentBet < player.chips + player.accumulatedBet) {
+        callValue = this.currentBet - player.accumulatedBet;
+      }
+      if (player.chips < this.currentBet - player.accumulatedBet) {
+        // buộc phải all in
         callValue = player.chips;
         return this.allinAction(client.sessionId, player, callValue);
       }
-      // có đứa raise cao hơn
-      if (player.betEachAction < this.currentBet)
-        callValue = this.currentBet - player.betEachAction;
+
       console.log({ chip: player.chips, callValue, currentbet: this.currentBet });
 
       if (callValue === 0) return this.checkAction(player);
@@ -282,11 +269,6 @@ export default class NoobRoom extends Room<RoomState> {
       if (player.turn === this.state.currentTurn) return;
       if (player.isFold) return; // block folded player
 
-      // if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
-      //   const nextTurn = Math.min(...this.remainingPlayerArr);
-      //   if (nextTurn !== player.turn) return;
-      // }
-
       this.checkAction(player);
 
       this.sendNewState();
@@ -297,11 +279,6 @@ export default class NoobRoom extends Room<RoomState> {
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return;
       if (player.isFold) return; // block folded player
-
-      // if (this.state.currentTurn === Math.max(...this.remainingPlayerArr)) {
-      //   const nextTurn = Math.min(...this.remainingPlayerArr);
-      //   if (nextTurn !== player.turn) return;
-      // }
 
       this.allinAction(client.sessionId, player, player.chips);
 
@@ -513,8 +490,12 @@ export default class NoobRoom extends Room<RoomState> {
 
   private allinAction(sessionId: string, player: Player, chip: number) {
     player.action = ALLIN;
-    if (chip > this.currentBet) {
-      this.currentBet = chip;
+    player.betEachAction = chip;
+    player.accumulatedBet += chip;
+    player.chips -= chip;
+
+    if (player.accumulatedBet > this.currentBet) {
+      this.currentBet = player.accumulatedBet;
       this.remainingTurn = this.state.remainingPlayer - 1;
     } else {
       this.remainingTurn--;
@@ -523,10 +504,6 @@ export default class NoobRoom extends Room<RoomState> {
 
     console.log('current bet', this.currentBet);
     console.log('chip bet', chip);
-
-    player.betEachAction = chip;
-    player.accumulatedBet += chip;
-    player.chips -= chip;
 
     this.state.currentTurn = player.turn;
     this.state.potSize += chip;
