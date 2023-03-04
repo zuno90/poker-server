@@ -697,8 +697,8 @@ export default class NoobRoom extends Room<RoomState> {
     console.log('end game');
     this.clock.start();
     this.emitResult(result);
+    this.state.round = ERound.SHOWDOWN;
     this.delayedTimeOut = this.clock.setTimeout(() => {
-      this.state.round = ERound.SHOWDOWN;
       this.sendNewState();
     }, 5000);
 
