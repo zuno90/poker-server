@@ -138,6 +138,7 @@ export default class NoobRoom extends Room<RoomState> {
     try {
       const leavingPlayer = <Player>this.state.players.get(client.sessionId);
       leavingPlayer.connected = false;
+      if (consented) throw new Error('consented leave!');
       if (leavingPlayer.role === ERole.Bot) {
         console.log('bot ' + client.sessionId + ' has just left');
         this.state.players.delete(client.sessionId);
@@ -166,7 +167,7 @@ export default class NoobRoom extends Room<RoomState> {
           this.sendNewState();
         }
       }
-      if (consented) throw new Error('consented leave!');
+
       // allow disconnected client to reconnect into this room until 20 seconds
       await this.allowReconnection(client, 10);
 
@@ -602,34 +603,11 @@ export default class NoobRoom extends Room<RoomState> {
       if (p.statement === EStatement.Playing && !p.isFold)
         betP.push({ i: sessionId, t: p.turn, v: p.accumulatedBet });
     });
-    if (this.state.remainingPlayer === 1) {
-      if (this.remainingTurn === 0) {
-        const winner = <Player>this.state.players.get(betP[0].i);
-        winner.chips += this.state.potSize;
-        result = [{ t: betP[0].t, w: true }];
-        return this.endGame(result);
-      }
-      // if (betP.length === 1) {
-      //   const winner = <Player>this.state.players.get(betP[0].i);
-      //   winner.chips += this.state.potSize;
-      //   result = [{ t: betP[0].t, w: true }];
-      //   return this.endGame(result);
-      // }
-      if (betP.length > 1) {
-        const betVal: number[] = [];
-        for (const b of betP) betVal.push(b.v);
-        for (const bet of betP) {
-          if (bet.t === remainTurn[0] && Math.max(...betVal) === bet.v) {
-            const { emitResultArr, finalCalculateResult } = this.pickWinner1();
-            result = emitResultArr;
-            for (const c of finalCalculateResult) {
-              const betPlayer = <Player>this.state.players.get(c.i);
-              betPlayer.chips += c.v;
-            }
-          }
-        }
-        return this.endGame(result);
-      }
+    if (this.remainingTurn === 0 && this.state.remainingPlayer === 1) {
+      const winner = <Player>this.state.players.get(betP[0].i);
+      winner.chips += this.state.potSize;
+      result = [{ t: betP[0].t, w: true }];
+      return this.endGame(result);
     }
     if (this.remainingTurn === 0 && this.state.remainingPlayer === 0) {
       const { emitResultArr, finalCalculateResult } = this.pickWinner1();
@@ -641,6 +619,22 @@ export default class NoobRoom extends Room<RoomState> {
       return this.endGame(emitResultArr);
     }
     if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
+
+    // if (betP.length > 1) {
+    //   const betVal: number[] = [];
+    //   for (const b of betP) betVal.push(b.v);
+    //   for (const bet of betP) {
+    //     if (bet.t === remainTurn[0] && Math.max(...betVal) === bet.v) {
+    //       const { emitResultArr, finalCalculateResult } = this.pickWinner1();
+    //       result = emitResultArr;
+    //       for (const c of finalCalculateResult) {
+    //         const betPlayer = <Player>this.state.players.get(c.i);
+    //         betPlayer.chips += c.v;
+    //       }
+    //     }
+    //   }
+    //   return this.endGame(result);
+    // }
   }
 
   private async checkAuth(jwt: string) {

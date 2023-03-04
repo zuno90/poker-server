@@ -33,6 +33,8 @@ export const botInfo = (level: string) => {
   if (level === 'normal') chips = 250000;
   if (level === 'pro') chips = 1000000;
 
+  if (level === 'test') chips = 250000;
+
   return {
     id: `BOTGPT-wibu-${level}`,
     username: username[Math.floor(Math.random() * username.length)],

@@ -147,44 +147,41 @@ export default class TestRoom extends Room<RoomState> {
   }
 
   async onLeave(client: Client, consented: boolean) {
-    try {
-      const leavingPlayer = <Player>this.state.players.get(client.sessionId);
-      leavingPlayer.connected = false;
-      if (leavingPlayer.role === ERole.Bot) {
-        console.log('bot ' + client.sessionId + ' has just left');
-        this.state.players.delete(client.sessionId);
-        return this.clock.setTimeout(() => {
-          this.addBot();
-        }, 2000);
-      }
+    const leavingPlayer = <Player>this.state.players.get(client.sessionId);
+    leavingPlayer.connected = false;
+    if (leavingPlayer.role === ERole.Bot) {
+      console.log('bot ' + client.sessionId + ' has just left');
+      this.state.players.delete(client.sessionId);
+      return this.clock.setTimeout(() => {
+        this.addBot();
+      }, 2000);
+    }
 
-      // handle change host to player
-      const playerInRoom: any[] = [];
-      if (leavingPlayer.isHost) {
-        this.state.players.forEach((player: Player, sessionId: string) => {
-          if (player.role === ERole.Player) {
-            playerInRoom.push({ sessionId, seat: player.seat });
-          }
-        });
-
-        if (playerInRoom.length === 1) return await this.disconnect();
-        if (playerInRoom.length > 1) {
-          const newHost = <Player>this.state.players.get(playerInRoom[1].sessionId);
-          newHost.isHost = true;
-          newHost.seat = 1;
-          newHost.turn = 0;
-          this.sendNewState();
+    // handle change host to player
+    const playerInRoom: any[] = [];
+    if (leavingPlayer.isHost) {
+      this.state.players.forEach((player: Player, sessionId: string) => {
+        if (player.role === ERole.Player) {
+          playerInRoom.push({ sessionId, seat: player.seat });
         }
-      }
+      });
 
+      if (playerInRoom.length === 1) return await this.disconnect();
+      if (playerInRoom.length > 1) {
+        const newHost = <Player>this.state.players.get(playerInRoom[1].sessionId);
+        newHost.isHost = true;
+        newHost.seat = 1;
+        newHost.turn = 0;
+        this.sendNewState();
+      }
+    }
+    try {
       if (consented) throw new Error('consented leave!');
-      // allow disconnected client to reconnect into this room until 20 seconds
       await this.allowReconnection(client, 10);
 
       // client returned! let's re-activate it.
       leavingPlayer.connected = true;
     } catch (err) {
-      console.error(err);
       console.log('client ' + client.sessionId + ' has just left');
       this.state.players.delete(client.sessionId);
     }
@@ -607,7 +604,7 @@ export default class TestRoom extends Room<RoomState> {
         betP.push({ i: sessionId, t: p.turn, v: p.accumulatedBet });
     });
     if (this.state.remainingPlayer === 1) {
-      if (betP.length === 1) {
+      if (this.remainingTurn === 0) {
         const winner = <Player>this.state.players.get(betP[0].i);
         winner.chips += this.state.potSize;
         result = [{ t: betP[0].t, w: true }];
