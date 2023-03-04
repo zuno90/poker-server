@@ -137,17 +137,16 @@ export default class NoobRoom extends Room<RoomState> {
   async onLeave(client: Client, consented: boolean) {
     const leavingPlayer = <Player>this.state.players.get(client.sessionId);
     leavingPlayer.connected = false;
-    try {
-      if (consented) throw new Error('consented leave!');
-      // allow disconnected client to reconnect into this room until 20 seconds
-      await this.allowReconnection(client, 10);
-
-      // client returned! let's re-activate it.
-      leavingPlayer.connected = true;
-    } catch (err) {
-      console.log('client ' + client.sessionId + ' has just left');
-      this.state.players.delete(client.sessionId);
-    }
+    // try {
+    //   if (consented) throw new Error('consented leave!');
+    //   // allow disconnected client to reconnect into this room until 10 seconds
+    //   await this.allowReconnection(client, 10);
+    //   // client returned! let's re-activate it.
+    //   leavingPlayer.connected = true;
+    // } catch (err) {
+    //   console.log('client ' + client.sessionId + ' has just left');
+    //   this.state.players.delete(client.sessionId);
+    // }
 
     if (leavingPlayer.role === ERole.Bot) {
       console.log('bot ' + client.sessionId + ' has just left');
@@ -156,7 +155,6 @@ export default class NoobRoom extends Room<RoomState> {
         this.addBot();
       }, 2000);
     }
-
     // handle change host to player
     const playerInRoom: any[] = [];
     if (leavingPlayer.isHost) {
@@ -166,10 +164,10 @@ export default class NoobRoom extends Room<RoomState> {
         }
       });
 
-      console.log('so player con lai without Bot', playerInRoom);
+      console.log('so player  without Bot', playerInRoom);
 
-      if (playerInRoom.length === 0) return await this.disconnect();
-      if (playerInRoom.length > 0) {
+      if (playerInRoom.length === 1) return await this.disconnect();
+      if (playerInRoom.length > 1) {
         const newHost = <Player>this.state.players.get(playerInRoom[1].sessionId);
         newHost.isHost = true;
         newHost.seat = 1;
@@ -177,6 +175,8 @@ export default class NoobRoom extends Room<RoomState> {
         this.sendNewState();
       }
     }
+    console.log('client ' + client.sessionId + ' has just left');
+    this.state.players.delete(client.sessionId);
   }
 
   async onDispose() {
