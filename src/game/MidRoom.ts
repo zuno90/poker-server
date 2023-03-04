@@ -336,10 +336,12 @@ export default class NoobRoom extends Room<RoomState> {
       // this.state.round = ERound.SHOWDOWN;
       this.state.bankerCards = this.banker5Cards;
       const { emitResultArr, finalCalculateResult } = this.pickWinner1();
-      for (const c of finalCalculateResult) {
-        const betPlayer = <Player>this.state.players.get(c.i);
-        betPlayer.chips += c.v;
-      }
+      this.clock.setTimeout(() => {
+        for (const c of finalCalculateResult) {
+          const betPlayer = <Player>this.state.players.get(c.i);
+          betPlayer.chips += c.v;
+        }
+      }, 5000);
       return this.endGame(emitResultArr);
     }
     this.currentBet = 0;
@@ -480,10 +482,12 @@ export default class NoobRoom extends Room<RoomState> {
 
     if (this.state.remainingPlayer === 1) {
       const { emitResultArr, finalCalculateResult } = this.pickWinner1();
-      for (const c of finalCalculateResult) {
-        const betPlayer = <Player>this.state.players.get(c.i);
-        betPlayer.chips += c.v;
-      }
+      this.clock.setTimeout(() => {
+        for (const c of finalCalculateResult) {
+          const betPlayer = <Player>this.state.players.get(c.i);
+          betPlayer.chips += c.v;
+        }
+      }, 5000);
       this.state.bankerCards = this.banker5Cards;
       return this.endGame(emitResultArr);
     }
@@ -555,10 +559,12 @@ export default class NoobRoom extends Room<RoomState> {
           if (remainP.accumulatedBet > this.currentBet) {
             const { emitResultArr, finalCalculateResult } = this.pickWinner1();
             result = emitResultArr;
-            for (const c of finalCalculateResult) {
-              const betPlayer = <Player>this.state.players.get(c.i);
-              betPlayer.chips += c.v;
-            }
+            this.clock.setTimeout(() => {
+              for (const c of finalCalculateResult) {
+                const betPlayer = <Player>this.state.players.get(c.i);
+                betPlayer.chips += c.v;
+              }
+            }, 5000);
           }
         }
       }
@@ -571,20 +577,24 @@ export default class NoobRoom extends Room<RoomState> {
     // hết player
     if (this.state.remainingPlayer === 0) {
       const { emitResultArr, finalCalculateResult } = this.pickWinner1();
-      for (const c of finalCalculateResult) {
-        const betPlayer = <Player>this.state.players.get(c.i);
-        betPlayer.chips += c.v;
-      }
+      this.clock.setTimeout(() => {
+        for (const c of finalCalculateResult) {
+          const betPlayer = <Player>this.state.players.get(c.i);
+          betPlayer.chips += c.v;
+        }
+      }, 5000);
       this.state.bankerCards = this.banker5Cards;
       return this.endGame(emitResultArr);
     }
     // allin turn cuối và còn có 1 ng chơi
     if (this.remainingTurn === 0 && this.state.remainingPlayer === 1) {
       const { emitResultArr, finalCalculateResult } = this.pickWinner1();
-      for (const c of finalCalculateResult) {
-        const betPlayer = <Player>this.state.players.get(c.i);
-        betPlayer.chips += c.v;
-      }
+      this.clock.setTimeout(() => {
+        for (const c of finalCalculateResult) {
+          const betPlayer = <Player>this.state.players.get(c.i);
+          betPlayer.chips += c.v;
+        }
+      }, 5000);
       this.state.bankerCards = this.banker5Cards;
       return this.endGame(emitResultArr);
     }
@@ -615,8 +625,10 @@ export default class NoobRoom extends Room<RoomState> {
     });
     if (this.state.remainingPlayer === 1) {
       if (betP.length === 1) {
-        const winner = <Player>this.state.players.get(betP[0].i);
-        winner.chips += this.state.potSize;
+        this.clock.setTimeout(() => {
+          const winner = <Player>this.state.players.get(betP[0].i);
+          winner.chips += this.state.potSize;
+        }, 5000);
         result = [{ t: betP[0].t, w: true }];
         return this.endGame(result);
       }
@@ -627,10 +639,12 @@ export default class NoobRoom extends Room<RoomState> {
           if (bet.t === remainTurn[0] && Math.max(...betVal) === bet.v) {
             const { emitResultArr, finalCalculateResult }: any = this.pickWinner1();
             result = emitResultArr;
-            for (const c of finalCalculateResult) {
-              const betPlayer = <Player>this.state.players.get(c.i);
-              betPlayer.chips += c.v;
-            }
+            this.clock.setTimeout(() => {
+              for (const c of finalCalculateResult) {
+                const betPlayer = <Player>this.state.players.get(c.i);
+                betPlayer.chips += c.v;
+              }
+            }, 5000);
           }
         }
         return this.endGame(result);
@@ -638,10 +652,12 @@ export default class NoobRoom extends Room<RoomState> {
     }
     if (this.remainingTurn === 0 && this.state.remainingPlayer === 0) {
       const { emitResultArr, finalCalculateResult }: any = this.pickWinner1();
-      for (const c of finalCalculateResult) {
-        const betPlayer = <Player>this.state.players.get(c.i);
-        betPlayer.chips += c.v;
-      }
+      this.clock.setTimeout(() => {
+        for (const c of finalCalculateResult) {
+          const betPlayer = <Player>this.state.players.get(c.i);
+          betPlayer.chips += c.v;
+        }
+      }, 5000);
       this.state.bankerCards = this.banker5Cards;
       return this.endGame(emitResultArr);
     }
