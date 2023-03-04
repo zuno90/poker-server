@@ -146,7 +146,6 @@ export default class NoobRoom extends Room<RoomState> {
       if (leavingPlayer.role === ERole.Bot) {
         console.log('bot ' + client.sessionId + ' has just left');
         this.state.players.delete(client.sessionId);
-
         return this.clock.setTimeout(() => this.addBot(), 2000);
       }
 
@@ -170,11 +169,16 @@ export default class NoobRoom extends Room<RoomState> {
           this.sendNewState();
         }
       }
-      console.log('client ' + client.sessionId + ' has just left');
-      this.state.players.delete(client.sessionId);
+      if (consented) throw new Error('consented leave!');
+      // allow disconnected client to reconnect into this room until 20 seconds
+      await this.allowReconnection(client, 10);
+
+      // client returned! let's re-activate it.
+      leavingPlayer.connected = true;
     } catch (err) {
       console.error(err);
-      await this.disconnect();
+      console.log('client ' + client.sessionId + ' has just left');
+      this.state.players.delete(client.sessionId);
     }
   }
 
@@ -308,7 +312,7 @@ export default class NoobRoom extends Room<RoomState> {
   private emitDealCards() {
     this.clients.forEach((client: Client, _) => {
       const player = <Player>this.state.players.get(client.sessionId);
-      const { rankInfo }: any = checkPlayerRank([
+      const rankInfo = checkPlayerRank([
         {
           sessionId: client.sessionId,
           combinedCards: [...this.state.bankerCards].concat([...this.player2Cards[player.turn]]),
@@ -361,7 +365,7 @@ export default class NoobRoom extends Room<RoomState> {
     this.clients.forEach((client: Client, _) => {
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.statement === EStatement.Playing && !player.isFold) {
-        const { rankInfo }: any = checkPlayerRank([
+        const rankInfo = checkPlayerRank([
           {
             sessionId: client.sessionId,
             combinedCards: [...this.state.bankerCards].concat([...this.player2Cards[player.turn]]),
@@ -638,7 +642,7 @@ export default class NoobRoom extends Room<RoomState> {
     this.state.players.forEach((player: Player, sessionId: string) => {
       if (player.statement === EStatement.Playing) {
         if (!player.isFold) {
-          const { rankInfo }: any = checkPlayerRank([
+          const rankInfo = checkPlayerRank([
             {
               sessionId,
               combinedCards: [...this.banker5Cards].concat([...this.player2Cards[player.turn]]),

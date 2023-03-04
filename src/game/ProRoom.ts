@@ -153,7 +153,7 @@ export default class ProRoom extends Room<RoomState> {
         this.state.players.delete(client.sessionId);
         return this.clock.setTimeout(() => {
           this.addBot();
-        }, 3000);
+        }, 2000);
       }
 
       // handle change host to player
