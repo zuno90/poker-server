@@ -526,6 +526,7 @@ export default class NoobRoom extends Room<RoomState> {
     const mergeArr = [...this.remainingPlayerArr, ...this.allinArr, ...this.foldArr];
     const remainTurn = getNonDupItem(mergeArr);
 
+    // allin đầu
     if (this.state.remainingPlayer === 1) {
       let result: any[] = [];
       const betP: any[] = [];
@@ -552,6 +553,7 @@ export default class NoobRoom extends Room<RoomState> {
       }
     }
 
+    // hết player
     if (this.state.remainingPlayer === 0) {
       const { emitResultArr, finalCalculateResult } = this.pickWinner1();
       for (const c of finalCalculateResult) {
@@ -561,6 +563,7 @@ export default class NoobRoom extends Room<RoomState> {
       this.state.bankerCards = this.banker5Cards;
       return this.endGame(emitResultArr);
     }
+    // allin turn cuối và còn có 1 ng chơi
     if (this.remainingTurn === 0 && this.state.remainingPlayer === 1) {
       const { emitResultArr, finalCalculateResult } = this.pickWinner1();
       for (const c of finalCalculateResult) {
@@ -570,6 +573,7 @@ export default class NoobRoom extends Room<RoomState> {
       this.state.bankerCards = this.banker5Cards;
       return this.endGame(emitResultArr);
     }
+    // allin cuối xong và còn nhiều người chơi
     if (this.remainingTurn === 0 && this.state.remainingPlayer > 1)
       return this.changeNextRound(this.state.round);
   }
