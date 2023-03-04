@@ -604,13 +604,30 @@ export default class NoobRoom extends Room<RoomState> {
         betP.push({ i: sessionId, t: p.turn, v: p.accumulatedBet });
     });
     if (this.remainingTurn === 0 && this.state.remainingPlayer === 1) {
-      const winner = <Player>this.state.players.get(betP[0].i);
-      winner.chips += this.state.potSize;
-      result = [{ t: betP[0].t, w: true }];
-      return this.endGame(result);
+      if (betP.length === 1) {
+        const winner = <Player>this.state.players.get(betP[0].i);
+        winner.chips += this.state.potSize;
+        result = [{ t: betP[0].t, w: true }];
+        return this.endGame(result);
+      }
+      if (betP.length > 1) {
+        const betVal: number[] = [];
+        for (const b of betP) betVal.push(b.v);
+        for (const bet of betP) {
+          if (bet.t === remainTurn[0] && Math.max(...betVal) === bet.v) {
+            const { emitResultArr, finalCalculateResult }: any = this.pickWinner1();
+            result = emitResultArr;
+            for (const c of finalCalculateResult) {
+              const betPlayer = <Player>this.state.players.get(c.i);
+              betPlayer.chips += c.v;
+            }
+          }
+        }
+        return this.endGame(result);
+      }
     }
     if (this.remainingTurn === 0 && this.state.remainingPlayer === 0) {
-      const { emitResultArr, finalCalculateResult } = this.pickWinner1();
+      const { emitResultArr, finalCalculateResult }: any = this.pickWinner1();
       for (const c of finalCalculateResult) {
         const betPlayer = <Player>this.state.players.get(c.i);
         betPlayer.chips += c.v;
@@ -619,22 +636,6 @@ export default class NoobRoom extends Room<RoomState> {
       return this.endGame(emitResultArr);
     }
     if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
-
-    // if (betP.length > 1) {
-    //   const betVal: number[] = [];
-    //   for (const b of betP) betVal.push(b.v);
-    //   for (const bet of betP) {
-    //     if (bet.t === remainTurn[0] && Math.max(...betVal) === bet.v) {
-    //       const { emitResultArr, finalCalculateResult } = this.pickWinner1();
-    //       result = emitResultArr;
-    //       for (const c of finalCalculateResult) {
-    //         const betPlayer = <Player>this.state.players.get(c.i);
-    //         betPlayer.chips += c.v;
-    //       }
-    //     }
-    //   }
-    //   return this.endGame(result);
-    // }
   }
 
   private async checkAuth(jwt: string) {
