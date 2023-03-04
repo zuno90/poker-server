@@ -168,8 +168,8 @@ export default class NoobRoom extends Room<RoomState> {
 
       console.log('so player con lai without Bot', playerInRoom);
 
-      if (playerInRoom.length === 1) return await this.disconnect();
-      if (playerInRoom.length > 1) {
+      if (playerInRoom.length === 0) return await this.disconnect();
+      if (playerInRoom.length > 0) {
         const newHost = <Player>this.state.players.get(playerInRoom[1].sessionId);
         newHost.isHost = true;
         newHost.seat = 1;
