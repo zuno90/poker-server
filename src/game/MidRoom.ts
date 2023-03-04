@@ -477,6 +477,16 @@ export default class NoobRoom extends Room<RoomState> {
 
     this.remainingTurn = this.state.remainingPlayer - 1;
     console.log('RAISE, turn con', this.remainingTurn);
+
+    if (this.state.remainingPlayer === 1) {
+      const { emitResultArr, finalCalculateResult } = this.pickWinner1();
+      for (const c of finalCalculateResult) {
+        const betPlayer = <Player>this.state.players.get(c.i);
+        betPlayer.chips += c.v;
+      }
+      this.state.bankerCards = this.banker5Cards;
+      return this.endGame(emitResultArr);
+    }
   }
 
   private callAction(player: Player, chip: number) {
