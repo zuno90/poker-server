@@ -176,7 +176,6 @@ export default class NoobRoom extends Room<RoomState> {
       // client returned! let's re-activate it.
       leavingPlayer.connected = true;
     } catch (err) {
-      console.error(err);
       console.log('client ' + client.sessionId + ' has just left');
       this.state.players.delete(client.sessionId);
     }
@@ -420,7 +419,7 @@ export default class NoobRoom extends Room<RoomState> {
     // ông nào còn dưới 1000 chíp thì chim cút
     this.clients.forEach(async (client: Client, index: number) => {
       const player = <Player>this.state.players.get(client.sessionId);
-      if (player.chips < this.MIN_CHIP) await client.leave(1001);
+      if (player.chips < this.MIN_CHIP) await client.leave();
     });
     // global variables
     this.currentBet = 0;
