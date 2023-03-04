@@ -15,6 +15,7 @@ import { deal } from './modules/handleCard';
 import { arrangeSeat, arrangeTurn, getNonDupItem, sortedArr } from './modules/handlePlayer';
 import {
   calculateAllinPlayer,
+  calculateDraw,
   checkDraw,
   checkPlayerRank,
   pokerSolverHand,
@@ -736,27 +737,13 @@ export default class ProRoom extends Room<RoomState> {
       }
       // số ng hoà < số ng đang bet -> có kẻ thua
       const emitDrawResult: any[] = [];
-      const numberOfDrawer: any[] = [];
       for (const drawer of drawArr) {
         // emit
         const e = _.find(emitResultArr, { i: drawer });
         e.w = true;
         emitDrawResult.push(e);
-
-        // tinh tien
-        const c = _.find(calculateResultArr, { i: drawer });
-        numberOfDrawer.push(c);
       }
-      const losePlayers = _.difference(calculateResultArr, numberOfDrawer);
-      if (losePlayers.length === 1) {
-        numberOfDrawer.forEach((value, index) => {
-          value.v += losePlayers[0].v / numberOfDrawer.length;
-        });
-        losePlayers[0].v = 0;
-        finalCalculateResult = [...numberOfDrawer, ...losePlayers];
-      } else {
-        //
-      }
+      finalCalculateResult = calculateDraw(calculateResultArr);
 
       return { emitDrawResult, finalCalculateResult };
     }

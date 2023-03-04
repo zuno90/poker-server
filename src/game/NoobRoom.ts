@@ -137,10 +137,13 @@ export default class NoobRoom extends Room<RoomState> {
   async onLeave(client: Client, consented: boolean) {
     try {
       const leavingPlayer = <Player>this.state.players.get(client.sessionId);
+      leavingPlayer.connected = false;
       if (leavingPlayer.role === ERole.Bot) {
         console.log('bot ' + client.sessionId + ' has just left');
         this.state.players.delete(client.sessionId);
-        return this.clock.setTimeout(() => this.addBot(), 2000);
+        return this.clock.setTimeout(() => {
+          this.addBot();
+        }, 2000);
       }
 
       // handle change host to player

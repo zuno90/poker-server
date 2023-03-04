@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import { TAllinPlayer } from '../NoobRoom';
 
 const Hand = require('pokersolver').Hand;
@@ -84,4 +85,26 @@ export const calculateAllinPlayer = (arrPlayers: TAllinPlayer[]) => {
   }
   arrPlayers[idWinner - 1].v = total;
   return [...arrPlayers];
+};
+
+export const calculateDraw = (arr: TAllinPlayer[]) => {
+  const drawArr = _.filter(arr, 'w');
+  const loseArr = _.differenceWith(arr, drawArr, _.isEqual);
+
+  const maxValue = _.maxBy(drawArr, 'v');
+  const l = _.filter(loseArr, ({ v }) => v < maxValue!.v);
+  let loseValue = 0;
+  for (const ml of l) loseValue += ml.v;
+  loseValue += Math.abs(maxValue!.v * (loseArr.length - l.length));
+
+  const doneDraw = _.map(drawArr, item => ({
+    ...item,
+    v: item.v + loseValue / drawArr.length,
+  }));
+  const doneLost = _.map(loseArr, item => ({
+    ...item,
+    v: item.v >= maxValue!.v ? item.v - maxValue!.v : 0,
+  }));
+  console.log([...doneDraw, ...doneLost]);
+  return [...doneDraw, ...doneLost];
 };
