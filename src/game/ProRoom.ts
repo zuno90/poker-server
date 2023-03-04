@@ -789,7 +789,7 @@ export default class ProRoom extends Room<RoomState> {
     this.delayedTimeOut = this.clock.setTimeout(() => {
       this.state.round = ERound.SHOWDOWN;
       this.sendNewState();
-    }, 1000);
+    }, 5000);
 
     this.clock.setTimeout(() => {
       this.delayedTimeOut.clear();
