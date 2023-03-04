@@ -602,13 +602,19 @@ export default class NoobRoom extends Room<RoomState> {
       if (p.statement === EStatement.Playing && !p.isFold)
         betP.push({ i: sessionId, t: p.turn, v: p.accumulatedBet });
     });
-    if (this.remainingTurn === 0 && this.state.remainingPlayer === 1) {
-      if (betP.length === 1) {
+    if (this.state.remainingPlayer === 1) {
+      if (this.remainingTurn === 0) {
         const winner = <Player>this.state.players.get(betP[0].i);
         winner.chips += this.state.potSize;
         result = [{ t: betP[0].t, w: true }];
         return this.endGame(result);
       }
+      // if (betP.length === 1) {
+      //   const winner = <Player>this.state.players.get(betP[0].i);
+      //   winner.chips += this.state.potSize;
+      //   result = [{ t: betP[0].t, w: true }];
+      //   return this.endGame(result);
+      // }
       if (betP.length > 1) {
         const betVal: number[] = [];
         for (const b of betP) betVal.push(b.v);

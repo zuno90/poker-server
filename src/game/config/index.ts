@@ -7,5 +7,8 @@ export default class Config {
     if (level === 'noob') return this.noobBot;
     if (level === 'normal') return this.normalBot;
     if (level === 'pro') return this.proBot;
+
+    // test
+    if (level === 'test') return this.normalBot;
   }
 }
