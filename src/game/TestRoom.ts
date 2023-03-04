@@ -45,7 +45,7 @@ export interface TAllinPlayer {
   w?: boolean;
 }
 
-export default class ProRoom extends Room<RoomState> {
+export default class TestRoom extends Room<RoomState> {
   public readonly maxClients: number = 5;
   private readonly MIN_BET = 10000;
   private readonly MIN_CHIP = 500000;

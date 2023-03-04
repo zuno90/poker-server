@@ -2,13 +2,7 @@ import { Client, Delayed, Room } from 'colyseus';
 import { Request } from 'express';
 import { ERound, RoomState } from './schemas/room.schema';
 import { ERole, EStatement, Player } from './schemas/player.schema';
-import {
-  ALL,
-  BOOKING_LEAVE,
-  FRIEND_REQUEST,
-  ROOM_CHAT,
-  START_GAME,
-} from './constants/room.constant';
+import { ALL, FRIEND_REQUEST, ROOM_CHAT, START_GAME } from './constants/room.constant';
 import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
 import { RANK, RESULT } from './constants/server-emit.constant';
 import { deal } from './modules/handleCard';
@@ -239,6 +233,7 @@ export default class NoobRoom extends Room<RoomState> {
       if (!this.state.onReady) return; // ko the action if game is not ready
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return; // không cho gửi 2 lần
+      if (player.statement !== EStatement.Playing) return;
       if (player.isFold) return; // block folded player
 
       console.log('chip raise', chips);
@@ -256,6 +251,7 @@ export default class NoobRoom extends Room<RoomState> {
       if (!this.state.onReady) return; // ko the action if game is not ready
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return;
+      if (player.statement !== EStatement.Playing) return;
       if (player.isFold) return; // block folded player
       if (this.state.currentTurn === -1) return;
 
@@ -282,6 +278,7 @@ export default class NoobRoom extends Room<RoomState> {
       if (!this.state.onReady) return; // ko the action if game is not ready
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return;
+      if (player.statement !== EStatement.Playing) return;
       if (player.isFold) return; // block folded player
 
       this.checkAction(player);
@@ -293,6 +290,7 @@ export default class NoobRoom extends Room<RoomState> {
       if (!this.state.onReady) return; // ko the action if game is not ready
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return;
+      if (player.statement !== EStatement.Playing) return;
       if (player.isFold) return; // block folded player
 
       this.allinAction(client.sessionId, player, player.chips);
@@ -304,6 +302,7 @@ export default class NoobRoom extends Room<RoomState> {
       if (!this.state.onReady) return; // ko the action if game is not ready
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.turn === this.state.currentTurn) return;
+      if (player.statement !== EStatement.Playing) return;
       if (player.isFold) return; // block folded player
 
       this.foldAction(player);
@@ -604,7 +603,7 @@ export default class NoobRoom extends Room<RoomState> {
         betP.push({ i: sessionId, t: p.turn, v: p.accumulatedBet });
     });
     if (this.state.remainingPlayer === 1) {
-      if (betP.length === 1) {
+      if (betP.length === 1 && this.foldArr.length === this.state.players.size - 1) {
         const winner = <Player>this.state.players.get(betP[0].i);
         winner.chips += this.state.potSize;
         result = [{ t: betP[0].t, w: true }];
