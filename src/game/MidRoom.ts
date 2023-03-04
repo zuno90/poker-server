@@ -135,39 +135,10 @@ export default class NoobRoom extends Room<RoomState> {
   }
 
   async onLeave(client: Client, consented: boolean) {
+    const leavingPlayer = <Player>this.state.players.get(client.sessionId);
+    leavingPlayer.connected = false;
     try {
-      const leavingPlayer = <Player>this.state.players.get(client.sessionId);
-      leavingPlayer.connected = false;
       if (consented) throw new Error('consented leave!');
-      if (leavingPlayer.role === ERole.Bot) {
-        console.log('bot ' + client.sessionId + ' has just left');
-        this.state.players.delete(client.sessionId);
-        return this.clock.setTimeout(() => {
-          this.addBot();
-        }, 2000);
-      }
-
-      // handle change host to player
-      const playerInRoom: any[] = [];
-      if (leavingPlayer.isHost) {
-        this.state.players.forEach((player: Player, sessionId: string) => {
-          if (player.role === ERole.Player) {
-            playerInRoom.push({ sessionId, seat: player.seat });
-          }
-        });
-
-        console.log('so player con lai without Bot', playerInRoom);
-
-        if (playerInRoom.length === 1) return await this.disconnect();
-        if (playerInRoom.length > 1) {
-          const newHost = <Player>this.state.players.get(playerInRoom[1].sessionId);
-          newHost.isHost = true;
-          newHost.seat = 1;
-          newHost.turn = 0;
-          this.sendNewState();
-        }
-      }
-
       // allow disconnected client to reconnect into this room until 20 seconds
       await this.allowReconnection(client, 10);
 
@@ -176,6 +147,35 @@ export default class NoobRoom extends Room<RoomState> {
     } catch (err) {
       console.log('client ' + client.sessionId + ' has just left');
       this.state.players.delete(client.sessionId);
+    }
+
+    if (leavingPlayer.role === ERole.Bot) {
+      console.log('bot ' + client.sessionId + ' has just left');
+      this.state.players.delete(client.sessionId);
+      return this.clock.setTimeout(() => {
+        this.addBot();
+      }, 2000);
+    }
+
+    // handle change host to player
+    const playerInRoom: any[] = [];
+    if (leavingPlayer.isHost) {
+      this.state.players.forEach((player: Player, sessionId: string) => {
+        if (player.role === ERole.Player) {
+          playerInRoom.push({ sessionId, seat: player.seat });
+        }
+      });
+
+      console.log('so player con lai without Bot', playerInRoom);
+
+      if (playerInRoom.length === 1) return await this.disconnect();
+      if (playerInRoom.length > 1) {
+        const newHost = <Player>this.state.players.get(playerInRoom[1].sessionId);
+        newHost.isHost = true;
+        newHost.seat = 1;
+        newHost.turn = 0;
+        this.sendNewState();
+      }
     }
   }
 
