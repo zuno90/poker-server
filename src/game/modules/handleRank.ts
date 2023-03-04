@@ -5,7 +5,7 @@ const Hand = require('pokersolver').Hand;
 export const checkPlayerRank = (
   data: Array<{ sessionId: string; combinedCards: Array<string> }>,
 ) => {
-  let wholeHand: Array<any> = [];
+  const wholeHand: Array<any> = [];
 
   for (let i = 0; i < data.length; i++) {
     const hands = Hand.solve(data[i].combinedCards);
@@ -13,6 +13,56 @@ export const checkPlayerRank = (
     wholeHand.push(hands);
   }
   return wholeHand;
+};
+
+export const checkDraw = (allHands: any[], winHand: any) => {
+  const winnArr = [];
+  for (let c of winHand.cards) winnArr.push(c.value);
+
+  let a = [];
+  let allHandCards = [];
+  for (let i = 0; i < allHands.length; i++) {
+    a.push([]);
+    allHandCards.push(allHands[i].cards);
+  }
+  console.log(allHandCards, 44465);
+  let numberOfWinner = 0;
+  for (let j = 0; j < allHandCards.length; j++) {
+    a[j] = allHandCards[j].map((card: any) => card.value);
+    if (a[j].toString() === winnArr.toString()) {
+      console.log('USER HAVE COMBO CARD WIN: ', a[j]);
+      a = a[j];
+      numberOfWinner++;
+    }
+  }
+
+  if (numberOfWinner > 1) {
+    const drawSessions: Array<any> = [];
+    for (let i = 0; i < allHands.length; i++) {
+      if (allHands[i].cards.toString() === winnArr.toString()) {
+        drawSessions.push(allHands[i].sessionId);
+      }
+    }
+    return drawSessions;
+  }
+  return false;
+
+  if (numberOfWinner === 1) {
+    console.log('CÓ 1 NGƯỜI THẮNG. THẮNG');
+  } else if (numberOfWinner > 1) {
+    console.log(`CÓ ${numberOfWinner} NGƯỜI THẮNG. HÒA`);
+  }
+  console.log('COMBO CARD WIN: ', winnArr);
+};
+
+export const pokerSolverHand = (data: any) => {
+  const wholeHandCards: Array<any> = [];
+  for (let i = 0; i < data.length; i++) {
+    const hands = Hand.solve(data[i].combinedCards);
+    hands.sessionId = data[i].sessionId;
+    wholeHandCards.push(hands);
+  }
+  return wholeHandCards;
 };
 
 export const calculateAllinPlayer = (arrPlayers: TAllinPlayer[]) => {

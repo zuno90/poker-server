@@ -133,8 +133,8 @@ export default class NoobRoom extends Room<RoomState> {
     // SET INITIAL PLAYER STATE
     try {
       this.state.players.set(client.sessionId, new Player(player)); // set player every joining
-      if (player.isHost) return await this.addBot();
-      this.sendNewState();
+      if (player.isHost) return this.clock.setTimeout(() => this.addBot(), 5000);
+      return this.sendNewState();
     } catch (err) {
       console.error(err);
     }
@@ -147,7 +147,7 @@ export default class NoobRoom extends Room<RoomState> {
         console.log('bot ' + client.sessionId + ' has just left');
         this.state.players.delete(client.sessionId);
 
-        return this.clock.setTimeout(() => this.addBot(), 3000);
+        return this.clock.setTimeout(() => this.addBot(), 5000);
       }
 
       // handle change host to player
@@ -308,7 +308,7 @@ export default class NoobRoom extends Room<RoomState> {
   private emitDealCards() {
     this.clients.forEach((client: Client, _) => {
       const player = <Player>this.state.players.get(client.sessionId);
-      const rankInfo = checkPlayerRank([
+      const { rankInfo }: any = checkPlayerRank([
         {
           sessionId: client.sessionId,
           combinedCards: [...this.state.bankerCards].concat([...this.player2Cards[player.turn]]),
@@ -361,7 +361,7 @@ export default class NoobRoom extends Room<RoomState> {
     this.clients.forEach((client: Client, _) => {
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.statement === EStatement.Playing && !player.isFold) {
-        const rankInfo = checkPlayerRank([
+        const { rankInfo }: any = checkPlayerRank([
           {
             sessionId: client.sessionId,
             combinedCards: [...this.state.bankerCards].concat([...this.player2Cards[player.turn]]),
@@ -638,7 +638,7 @@ export default class NoobRoom extends Room<RoomState> {
     this.state.players.forEach((player: Player, sessionId: string) => {
       if (player.statement === EStatement.Playing) {
         if (!player.isFold) {
-          const rankInfo = checkPlayerRank([
+          const { rankInfo }: any = checkPlayerRank([
             {
               sessionId,
               combinedCards: [...this.banker5Cards].concat([...this.player2Cards[player.turn]]),
