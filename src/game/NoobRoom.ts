@@ -35,7 +35,7 @@ export interface TAllinPlayer {
 export default class NoobRoom extends Room<RoomState> {
   public readonly maxClients: number = 5;
   private readonly MIN_BET = 1000;
-  private readonly MIN_CHIP = 50000; // 150000
+  private readonly MIN_CHIP = 50000;
   private readonly MAX_CHIP = 200000;
   private currentBet: number = 0;
   private banker5Cards: Array<string> = [];
@@ -244,8 +244,6 @@ export default class NoobRoom extends Room<RoomState> {
       // if (chips >= player.chips) return this.allinAction(client.sessionId, player, player.chips); // trường hợp này chuyển sang allin
       // if (this.currentBet > chips + player.accumulatedBet + this.MIN_BET) return; // chỉ cho phép raise lệnh cao hơn current bet + min bet
       this.raiseAction(player, chips);
-
-      this.sendNewState();
     });
     // CALL
     this.onMessage(CALL, (client: Client) => {
@@ -271,8 +269,6 @@ export default class NoobRoom extends Room<RoomState> {
 
       if (callValue === 0) return this.checkAction(player);
       this.callAction(player, callValue);
-
-      this.sendNewState();
     });
     // CHECK
     this.onMessage(CHECK, (client: Client) => {
@@ -283,8 +279,6 @@ export default class NoobRoom extends Room<RoomState> {
       if (player.isFold) return; // block folded player
 
       this.checkAction(player);
-
-      this.sendNewState();
     });
     // ALLIN
     this.onMessage(ALLIN, (client: Client) => {
@@ -295,8 +289,6 @@ export default class NoobRoom extends Room<RoomState> {
       if (player.isFold) return; // block folded player
 
       this.allinAction(client.sessionId, player, player.chips);
-
-      this.sendNewState();
     });
     // FOLD
     this.onMessage(FOLD, (client: Client, _) => {
@@ -307,8 +299,6 @@ export default class NoobRoom extends Room<RoomState> {
       if (player.isFold) return; // block folded player
 
       this.foldAction(player);
-
-      this.sendNewState();
     });
   }
 
@@ -480,6 +470,8 @@ export default class NoobRoom extends Room<RoomState> {
     this.remainingTurn = this.state.remainingPlayer - 1;
     console.log('RAISE, turn con', this.remainingTurn);
 
+    this.sendNewState(); // send state before raise
+
     if (this.state.remainingPlayer === 1) {
       const { emitResultArr, finalCalculateResult } = this.pickWinner1();
       this.clock.setTimeout(() => {
@@ -504,6 +496,8 @@ export default class NoobRoom extends Room<RoomState> {
 
     this.remainingTurn--;
     console.log('CALL, turn con', { id: player.id, remainturn: this.remainingTurn });
+    this.sendNewState(); // send state before call
+
     if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
   }
 
@@ -514,6 +508,9 @@ export default class NoobRoom extends Room<RoomState> {
 
     this.remainingTurn--;
     console.log('CHECK, turn con', this.remainingTurn);
+
+    this.sendNewState(); // send state before check
+
     if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
   }
 
@@ -531,16 +528,15 @@ export default class NoobRoom extends Room<RoomState> {
     }
     this.state.remainingPlayer--;
 
-    console.log('current bet', this.currentBet);
-    console.log('chip bet', chip);
-
     this.state.currentTurn = player.turn;
     this.state.potSize += chip;
 
+    console.log('ALLIN, turn con', this.remainingTurn);
+
+    this.sendNewState(); // send state before allin
+
     this.allinArr.push(player.turn);
     this.allinList.push({ i: sessionId, t: player.turn, v: player.accumulatedBet });
-
-    console.log('ALLIN, turn con', this.remainingTurn);
 
     const mergeArr = [...this.remainingPlayerArr, ...this.allinArr, ...this.foldArr];
     const remainTurn = getNonDupItem(mergeArr);
@@ -610,9 +606,11 @@ export default class NoobRoom extends Room<RoomState> {
     this.state.remainingPlayer--;
     this.remainingTurn--;
 
-    this.foldArr.push(player.turn);
-
     console.log('FOLD, turn con', this.remainingTurn);
+
+    this.sendNewState(); // send state before fold
+
+    this.foldArr.push(player.turn);
 
     const mergeArr = [...this.remainingPlayerArr, ...this.allinArr, ...this.foldArr];
     const remainTurn = getNonDupItem(mergeArr);
