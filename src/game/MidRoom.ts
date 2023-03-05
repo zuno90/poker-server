@@ -359,7 +359,10 @@ export default class MidRoom extends Room<RoomState> {
       this.state.round = ERound.RIVER;
       this.state.bankerCards = [...this.banker5Cards];
     }
-    return this.clock.setTimeout(() => this.emitRank(), 2000);
+    return this.clock.setTimeout(() => {
+      this.emitRank();
+      this.sendNewState();
+    }, 2000);
   }
 
   private emitRank() {
