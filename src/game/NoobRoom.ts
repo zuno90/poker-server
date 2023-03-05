@@ -2,7 +2,7 @@ import { Client, Delayed, Room } from 'colyseus';
 import { Request } from 'express';
 import { ERound, RoomState } from './schemas/room.schema';
 import { ERole, EStatement, Player } from './schemas/player.schema';
-import { ALL, FRIEND_REQUEST, ROOM_CHAT, START_GAME } from './constants/room.constant';
+import { ALL, FRIEND_REQUEST, RESET_GAME, ROOM_CHAT, START_GAME } from './constants/room.constant';
 import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
 import { RANK, RESULT } from './constants/server-emit.constant';
 import { deal } from './modules/handleCard';
@@ -32,7 +32,7 @@ export interface TAllinPlayer {
   w?: boolean;
 }
 
-export default class MidRoom extends Room<RoomState> {
+export default class NoobRoom extends Room<RoomState> {
   public readonly maxClients: number = 5;
   private readonly MIN_BET = 1000;
   private readonly MIN_CHIP = 50000;
@@ -189,7 +189,14 @@ export default class MidRoom extends Room<RoomState> {
     // START GAME
     this.onMessage(START_GAME, (client: Client, _) => {
       this.startGame(client);
-      console.log('current turn', this.currentBet);
+      console.log('start game:::::current turn', this.currentBet);
+      this.sendNewState();
+    });
+
+    // RESET GAME
+    this.onMessage(RESET_GAME, (client: Client, _) => {
+      this.resetGame(client);
+      console.log('reset game');
       this.sendNewState();
     });
   }
@@ -410,7 +417,10 @@ export default class MidRoom extends Room<RoomState> {
     this.state.round = ERound.PREFLOP;
   }
 
-  private resetGame() {
+  private resetGame(client: Client) {
+    if (this.state.round !== ERound.SHOWDOWN) return; // phai doi toi round welcome
+    const host = <Player>this.state.players.get(client.sessionId);
+    if (!host.isHost) return; // ko phai host ko cho rs
     // global variables
     this.currentBet = 0;
     this.banker5Cards = [];
@@ -431,7 +441,9 @@ export default class MidRoom extends Room<RoomState> {
     // ông nào còn dưới min chíp thì chim cút
     this.clients.forEach(async (client: Client, index: number) => {
       const player = <Player>this.state.players.get(client.sessionId);
-      if (player.chips < this.MIN_CHIP) await client.leave();
+      if (player.chips < this.MIN_CHIP) {
+        await client.leave();
+      }
     });
 
     // player state
@@ -713,15 +725,9 @@ export default class MidRoom extends Room<RoomState> {
 
   private endGame(result: any[]) {
     console.log('end game');
-    this.clock.start();
     this.emitResult(result);
     this.state.round = ERound.SHOWDOWN;
-    this.delayedTimeOut = this.clock.setTimeout(() => {
-      this.sendNewState();
-    }, 5000);
-
     this.clock.setTimeout(() => {
-      this.delayedTimeOut.clear();
       this.state.players.forEach((player: Player, _: string) => {
         if (player.role === ERole.Player) {
           this.presence.publish(
@@ -730,10 +736,8 @@ export default class MidRoom extends Room<RoomState> {
           );
         }
       });
-      this.resetGame();
-      console.log('reset game');
       this.sendNewState();
-    }, 10000);
+    }, 5000);
   }
 
   private async addBot() {
