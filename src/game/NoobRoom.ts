@@ -195,9 +195,22 @@ export default class NoobRoom extends Room<RoomState> {
 
     // RESET GAME
     this.onMessage(RESET_GAME, (client: Client, _) => {
-      this.resetGame(client);
       console.log('reset game');
-      this.sendNewState();
+      this.resetGame(client);
+
+      let count = 0;
+      this.clock.setInterval(() => {
+        count++;
+        this.broadcast(RESET_GAME, `đã đá cmn thằng loz ít tiền ra, đếm ngược ${count}`);
+        if (count === 3) {
+          this.clients.forEach(async (client: Client, index: number) => {
+            const player = <Player>this.state.players.get(client.sessionId);
+            if (player.chips < this.MIN_CHIP) await client.leave();
+          });
+          this.sendNewState();
+          this.clock.clear();
+        }
+      }, 1000);
     });
   }
 
@@ -441,14 +454,6 @@ export default class NoobRoom extends Room<RoomState> {
     this.state.remainingPlayer = 0;
     this.state.currentTurn = 6969;
 
-    // ông nào còn dưới min chíp thì chim cút
-    this.clients.forEach(async (client: Client, index: number) => {
-      const player = <Player>this.state.players.get(client.sessionId);
-      if (player.chips < this.MIN_CHIP) {
-        await client.leave();
-      }
-    });
-
     // player state
     this.state.players.forEach((player: Player, sessionId: string) => {
       const newPlayer = {
@@ -468,6 +473,8 @@ export default class NoobRoom extends Room<RoomState> {
       };
       this.state.players.set(sessionId, new Player(newPlayer));
     });
+
+    this.sendNewState();
   }
 
   private raiseAction(player: Player, chip: number) {
