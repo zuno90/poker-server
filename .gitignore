@@ -8,7 +8,8 @@ res.http
 .env
 .prettierrc
 .idea
-./loadtest.*
+./src/test
+loadtest.*
 redis
 testgame.html
 testgame1.html
