@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon src/index.ts",
     "start": "node dist/index.js",
-    "load": "colyseus-loadtest src/loadtest.ts --room noob --endpoint ws://localhost:9000 --numClients",
+    "load": "colyseus-loadtest src/game/loadtest.ts --room noob --endpoint ws://localhost:9000 --numClients",
     "watch": "tsc -w",
     "build": "tsc -p ."
   },
