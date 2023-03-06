@@ -36,7 +36,7 @@ export class BotClient {
     this.client = server instanceof Colyseus.Client ? server : new Colyseus.Client(server);
   }
 
-  async joinRoom(roomId: string, level: string) {
+  public async joinRoom(roomId: string, level: string) {
     this.room = await this.client.joinById<RoomState>(roomId, { isBot: true }, RoomState);
     this.sessionId = this.room.sessionId;
 
@@ -45,7 +45,6 @@ export class BotClient {
     this.MAX_BET = botConfig!.maxBet;
 
     this.listenEvents();
-    // this.begin();
   }
 
   // emit action to server
@@ -53,20 +52,19 @@ export class BotClient {
     this.room.send(action, data);
   }
 
-  async leave() {
+  public async leave() {
     await this.room.leave(true);
   }
 
-  async dispose() {
+  public async dispose() {
     // clean up here
     console.log('bot se bi dispose', this.room);
   }
 
   // DÙNG CHẠY LOAD TEST
-  attachToRoom(room: Colyseus.Room) {
+  public attachToRoom(room: Colyseus.Room) {
     this.room = room;
     this.listenEvents();
-    // this.begin();
   }
 
   private listenEvents() {

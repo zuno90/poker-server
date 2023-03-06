@@ -11,6 +11,7 @@ import NoobRoom from './game/NoobRoom';
 import MidRoom from './game/MidRoom';
 import ProRoom from './game/ProRoom';
 import TestRoom from './game/TestRoom';
+import DrawRoom from './game/DrawRoom';
 
 const Hand = require('pokersolver').Hand;
 
@@ -112,6 +113,7 @@ async function bootstrap() {
   gameServer.define('pro', ProRoom);
 
   gameServer.define('test', TestRoom);
+  gameServer.define('draw', DrawRoom);
 
   const SERVER_URL = process.env.SERVER_URL || 'poker.dadsnetwork.net';
   const PORT = process.env.PORT || 9000;

@@ -706,12 +706,6 @@ export default class ProRoom extends Room<RoomState> {
      * Draw case
      */
     if (drawArr && drawArr.length > 1) {
-      // [
-      //   { i: 'BiSKyn-__', t: 0, v: 1500000 },
-      //   { i: 'o7mKSlOZy', t: 2, v: 1000000 },
-      //   { i: 'ttfGtvcJ1', t: 1, v: 2000000 }
-      // ]
-
       // số người hoà = số ng đang bet
       if (drawArr.length === calculateResultArr.length) {
         for (const emitResult of emitResultArr) {

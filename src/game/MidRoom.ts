@@ -735,17 +735,26 @@ export default class MidRoom extends Room<RoomState> {
     console.log('end game');
     this.emitResult(result);
     this.state.round = ERound.SHOWDOWN;
-    this.clock.setTimeout(() => {
-      this.state.players.forEach((player: Player, _: string) => {
-        if (player.role === ERole.Player) {
-          this.presence.publish(
-            'poker:update:chip',
-            JSON.stringify({ id: player.id, chips: player.chips }),
-          );
-        }
-      });
-      this.sendNewState();
-    }, 5000);
+    this.state.players.forEach((player: Player, _: string) => {
+      if (player.role === ERole.Player) {
+        this.presence.publish(
+          'poker:update:balance',
+          JSON.stringify({ id: player.id, chips: player.chips }),
+        );
+      }
+    });
+    this.sendNewState();
+    // this.clock.setTimeout(() => {
+    //   this.state.players.forEach((player: Player, _: string) => {
+    //     if (player.role === ERole.Player) {
+    //       this.presence.publish(
+    //         'poker:update:balance',
+    //         JSON.stringify({ id: player.id, chips: player.chips }),
+    //       );
+    //     }
+    //   });
+    //   this.sendNewState();
+    // }, 5000);
   }
 
   private async addBot() {

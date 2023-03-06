@@ -6,6 +6,7 @@ import { RANK, RESULT } from '../game/constants/server-emit.constant';
 import { ALL, FRIEND_REQUEST, START_GAME } from '../game/constants/room.constant';
 import { removePlayer, sortedArr } from '../game/modules/handlePlayer';
 import { ERound } from '../game/schemas/room.schema';
+import { BotClient } from '../game/BotGPT';
 
 type TCurrentBetInfo = {
   turn: number;
@@ -13,6 +14,7 @@ type TCurrentBetInfo = {
   chips: number;
   betEachAction: number;
 };
+
 const config = new Config().pickBot('test');
 const MIN_BET = config!.minBet;
 const MAX_BET = config!.maxBet;
@@ -24,11 +26,15 @@ let cards = [];
 let currentBetInfo: TCurrentBetInfo;
 let seat = 0;
 
+const bot = new BotClient(
+  process.env.NODE_ENV === 'production' ? `${process.env.WS_SERVER}` : 'ws://localhost:9000',
+);
+
 export function requestJoinOptions(this: Client, i: number) {
   console.log('number:::::', i);
   const newSeat = seat;
   seat++;
-  const bot = {
+  const player = {
     id: `test-${i}`,
     username: `test-${i}`,
     chips: 400000,
@@ -37,13 +43,15 @@ export function requestJoinOptions(this: Client, i: number) {
     turn: newSeat === 0 ? 0 : newSeat,
     role: ERole.Player,
   };
-  if (seat === 5) seat = 0;
-  return bot;
+  if (seat === 4) seat = 0;
+  return player;
 }
 
-export function onJoin(this: Room) {
+export async function onJoin(this: Room) {
   console.log(this.sessionId, 'joined room ' + this.id);
-  this.send(START_GAME);
+
+  await bot.attachToRoom(this);
+
   this.onMessage(RANK, data => {
     console.log('rank sau moi round from broadcast', data);
     if (data.c) cards = data.c; // send 2 cards when game has just been started

@@ -10,5 +10,6 @@ export default class Config {
 
     // test
     if (level === 'test') return this.normalBot;
+    if (level === 'draw') return this.normalBot;
   }
 }
