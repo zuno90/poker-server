@@ -405,8 +405,6 @@ export default class DrawRoom extends Room<RoomState> {
     const host = <Player>this.state.players.get(client.sessionId);
     if (!host.isHost) return;
 
-    console.log(45345345345);
-
     // const { onHandCards, banker5Cards } = deal(this.state.players.size);
     // this.banker5Cards = banker5Cards; // cache 5 cards of banker first
     // this.player2Cards = onHandCards; // chia bai
