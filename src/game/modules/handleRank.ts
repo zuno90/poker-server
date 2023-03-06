@@ -95,7 +95,7 @@ export const calculateDraw = (arr: TAllinPlayer[]) => {
   const l = _.filter(loseArr, ({ v }) => v < maxValue!.v);
   let loseValue = 0;
   for (const ml of l) loseValue += ml.v;
-  loseValue += Math.abs(maxValue!.v * (loseArr.length - l.length));
+  loseValue += maxValue!.v * (loseArr.length - l.length);
 
   const doneDraw = _.map(drawArr, item => ({
     ...item,

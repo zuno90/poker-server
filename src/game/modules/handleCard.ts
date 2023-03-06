@@ -32,10 +32,7 @@ export const deal = (numberOfPlayer: number) => {
     onHandCards.push([...dealHelper(deck, i, numberOfPlayer + i)]);
   }
 
-  return {
-    onHandCards,
-    banker5Cards,
-  };
+  return { onHandCards, banker5Cards };
 };
 
 const dealHelper = (deck: Array<string>, index: number, numberOfPlayer: number) => {

@@ -34,6 +34,7 @@ export const botInfo = (level: string) => {
   if (level === 'pro') chips = 1000000;
 
   if (level === 'test') chips = 250000;
+  if (level === 'draw') chips = 250000;
 
   return {
     id: `BOTGPT-wibu-${level}`,

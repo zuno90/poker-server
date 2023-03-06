@@ -5,7 +5,6 @@ import { ERole, EStatement, Player } from './schemas/player.schema';
 import { ALL, FRIEND_REQUEST, RESET_GAME, ROOM_CHAT, START_GAME } from './constants/room.constant';
 import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
 import { RANK, RESULT } from './constants/server-emit.constant';
-import { deal } from './modules/handleCard';
 import { arrangeSeat, arrangeTurn, getNonDupItem, sortedArr } from './modules/handlePlayer';
 import {
   calculateAllinPlayer,
@@ -406,9 +405,14 @@ export default class DrawRoom extends Room<RoomState> {
     const host = <Player>this.state.players.get(client.sessionId);
     if (!host.isHost) return;
 
-    const { onHandCards, banker5Cards } = deal(this.state.players.size);
-    this.banker5Cards = banker5Cards; // cache 5 cards of banker first
-    this.player2Cards = onHandCards; // chia bai
+    // const { onHandCards, banker5Cards } = deal(this.state.players.size);
+    // this.banker5Cards = banker5Cards; // cache 5 cards of banker first
+    // this.player2Cards = onHandCards; // chia bai
+    this.banker5Cards = ['9s', '7d', '7h', '9c', 'Kh'];
+    this.player2Cards = [
+      ['4h', '3c'],
+      ['2d', '5h'],
+    ];
     this.remainingTurn = this.state.players.size;
 
     console.log({ banker: this.banker5Cards, player: this.player2Cards });
