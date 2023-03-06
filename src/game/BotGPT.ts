@@ -61,9 +61,13 @@ export class BotClient {
     console.log('bot se bi dispose', this.room);
   }
 
-  // DÙNG CHẠY LOAD TEST
+  // DÙNG CHẠY LOAD TESTS
   public attachToRoom(room: Colyseus.Room) {
     this.room = room;
+    this.sessionId = this.room.sessionId;
+    const botConfig = this.config.pickBot('draw');
+    this.MIN_BET = botConfig!.minBet;
+    this.MAX_BET = botConfig!.maxBet;
     this.listenEvents();
   }
 

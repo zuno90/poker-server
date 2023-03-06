@@ -31,7 +31,6 @@ const bot = new BotClient(
 );
 
 export function requestJoinOptions(this: Client, i: number) {
-  console.log('number:::::', i);
   const newSeat = seat;
   seat++;
   const player = {
@@ -43,14 +42,15 @@ export function requestJoinOptions(this: Client, i: number) {
     turn: newSeat === 0 ? 0 : newSeat,
     role: ERole.Player,
   };
-  if (seat === 4) seat = 0;
+  console.log('seat', seat);
+  if (seat === 3) seat = 0;
   return player;
 }
 
 export async function onJoin(this: Room) {
   console.log(this.sessionId, 'joined room ' + this.id);
 
-  await bot.attachToRoom(this);
+  await this.send(START_GAME);
 
   this.onMessage(RANK, data => {
     console.log('rank sau moi round from broadcast', data);

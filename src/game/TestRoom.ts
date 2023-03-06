@@ -64,8 +64,10 @@ export default class TestRoom extends Room<RoomState> {
   public delayedTimeOut!: Delayed;
 
   async onAuth(client: Client, options: TJwtAuth, req: Request) {
+    console.log(options, 556);
     try {
       if (options.isBot && !options.jwt) return botInfo(this.roomName);
+      return options;
       // IS REAL PLAYER -> CHECK AUTH
       const auth = await this.checkAuth(options.jwt);
       if (!auth.success) return client.leave();

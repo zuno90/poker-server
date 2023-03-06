@@ -26,34 +26,26 @@ export const checkDraw = (allHands: any[], winHand: any) => {
     a.push([]);
     allHandCards.push(allHands[i].cards);
   }
-  console.log(allHandCards, 44465);
   let numberOfWinner = 0;
   for (let j = 0; j < allHandCards.length; j++) {
     a[j] = allHandCards[j].map((card: any) => card.value);
-    if (a[j].toString() === winnArr.toString()) {
-      console.log('USER HAVE COMBO CARD WIN: ', a[j]);
+    if (a[j].toString() === winHand.cards.map((card: any) => card.value).toString()) {
       a = a[j];
       numberOfWinner++;
     }
   }
+  console.log(winnArr, 'xxxx');
 
   if (numberOfWinner > 1) {
     const drawSessions: Array<any> = [];
     for (let i = 0; i < allHands.length; i++) {
-      if (allHands[i].cards.toString() === winnArr.toString()) {
+      if (allHands[i].cards.toString() === winHand.cards.toString()) {
         drawSessions.push(allHands[i].sessionId);
       }
     }
     return drawSessions;
   }
   return false;
-
-  if (numberOfWinner === 1) {
-    console.log('CÓ 1 NGƯỜI THẮNG. THẮNG');
-  } else if (numberOfWinner > 1) {
-    console.log(`CÓ ${numberOfWinner} NGƯỜI THẮNG. HÒA`);
-  }
-  console.log('COMBO CARD WIN: ', winnArr);
 };
 
 export const pokerSolverHand = (data: any) => {

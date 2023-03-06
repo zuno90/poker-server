@@ -405,6 +405,8 @@ export default class DrawRoom extends Room<RoomState> {
     const host = <Player>this.state.players.get(client.sessionId);
     if (!host.isHost) return;
 
+    console.log(45345345345);
+
     // const { onHandCards, banker5Cards } = deal(this.state.players.size);
     // this.banker5Cards = banker5Cards; // cache 5 cards of banker first
     // this.player2Cards = onHandCards; // chia bai
@@ -735,7 +737,7 @@ export default class DrawRoom extends Room<RoomState> {
     const winHand = Hand.winners(winCardsArr)[0];
 
     // check 1 winner or > 1 winner
-    const drawArr = checkDraw(allHands, winHand);
+    const drawArr = checkDraw(allHands, winHand); // ["45345345","dfer4536345","ergertg34534"]
 
     // biến kết quả
     let finalCalculateResult: any[] = [];
