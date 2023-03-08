@@ -44,6 +44,7 @@ export default class MidRoom extends Room<RoomState> {
   private readonly MIN_BET = 5000;
   private readonly MIN_CHIP = 200000;
   private readonly MAX_CHIP = 500000;
+  private channel: string;
   private currentBet: number = 0;
   private banker5Cards: Array<string> = [];
   private player2Cards: Array<string[]> = [];
@@ -54,8 +55,6 @@ export default class MidRoom extends Room<RoomState> {
   private foldArr: number[] = [];
 
   private bot: Map<string, BotClient> | null = new Map<string, BotClient>(); // new bot
-
-  public delayedTimeOut!: Delayed;
 
   async onAuth(client: Client, options: TJwtAuth, req: Request) {
     try {
@@ -110,6 +109,7 @@ export default class MidRoom extends Room<RoomState> {
 
   async onCreate(options: TJwtAuth) {
     try {
+      this.channel = `poker:room:${this.roomId}`;
       // CREATE AN INITIAL ROOM STATE
       this.setState(new RoomState());
 
@@ -134,7 +134,10 @@ export default class MidRoom extends Room<RoomState> {
     // SET INITIAL PLAYER STATE
     try {
       this.state.players.set(client.sessionId, new Player(player)); // set player every joining
-      if (player.isHost) return this.clock.setTimeout(() => this.addBot(), 2000);
+      if (player.isHost) {
+        this.clock.setTimeout(() => this.addBot(), 2000);
+        return;
+      }
       return this.sendNewState();
     } catch (err) {
       console.error(err);

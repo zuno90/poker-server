@@ -44,6 +44,7 @@ export default class NoobRoom extends Room<RoomState> {
   private readonly MIN_BET = 1000;
   private readonly MIN_CHIP = 50000;
   private readonly MAX_CHIP = 200000;
+  private channel: string = `poker:room:${this.roomId}`;
   private currentBet: number = 0;
   private banker5Cards: Array<string> = [];
   private player2Cards: Array<string[]> = [];
@@ -54,8 +55,6 @@ export default class NoobRoom extends Room<RoomState> {
   private foldArr: number[] = [];
 
   private bot: Map<string, BotClient> | null = new Map<string, BotClient>(); // new bot
-
-  public delayedTimeOut!: Delayed;
 
   async onAuth(client: Client, options: TJwtAuth, req: Request) {
     try {
