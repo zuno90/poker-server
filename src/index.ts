@@ -65,18 +65,21 @@ async function bootstrap() {
         console.log(cards.length);
         for (let j = 0; j < cards.length; j++) {
           a[j] = cards[j].map((card: any) => card.value);
+          console.log(a[j]);
           if (a[j].toString() === winnArr.toString()) {
             console.log('USER HAVE COMBO CARD WIN: ', a[j]);
             a = a[j];
             count++;
+          } else {
           }
         }
+        console.log('countttt', count);
         drawPlayer = count;
       }
 
       console.log(drawPlayer, 'so ng hoa');
 
-      const result = drawPlayer === 0 ? `có 1 người thắng` : `kết quả có ${drawPlayer} hoà`;
+      const result = drawPlayer === 1 ? `có 1 người thắng` : `kết quả có ${drawPlayer} hoà`;
 
       console.log('dddd', result);
 
