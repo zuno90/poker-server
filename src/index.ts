@@ -35,30 +35,34 @@ async function bootstrap() {
 
   // welcome
   app.use('/', async (req: Request, res: Response) => {
+    console.log(req.body);
     try {
       const [h1, h2, h3, h4, h5] = req.body;
       let listCardsGame = [];
-      const hand1 = Hand.solve(h1);
-      const hand2 = Hand.solve(h2);
-      const hand3 = Hand.solve(h3);
-      const hand4 = Hand.solve(h4);
-      const hand5 = Hand.solve(h5);
+      let hand1 = Hand.solve(h1.cards);
+      hand1.color = h1.color;
+
+      let hand2 = Hand.solve(h2.cards);
+      hand2.color = h2.color;
+      let hand3 = Hand.solve(h3.cards);
+      hand3.color = h3.color;
+      let hand4 = Hand.solve(h4.cards);
+      hand4.color = h4.color;
+      let hand5 = Hand.solve(h5.cards);
+      hand5.color = h5.color;
       const winner = Hand.winners([hand1, hand2, hand3, hand4, hand5]); // hand2
       listCardsGame.push(hand1.cards, hand2.cards, hand3.cards, hand4.cards, hand5.cards);
       const winnerCards = winner[0].cards;
       const winnArr: any[] = [];
-      for (let c of winnerCards) {
-        winnArr.push(c.value);
-      }
-      // console.log("WWIN: ", winnArr);
+      for (let c of winnerCards) winnArr.push(c.value);
       let drawPlayer: number = 0;
+
+      let result: string = '';
       y(listCardsGame);
 
       function y(cards: any[]) {
         let a = [];
-        for (let i = 0; i < cards.length; i++) {
-          a.push([]);
-        }
+        for (let i = 0; i < cards.length; i++) a.push([]);
         let count = 0;
         console.log('COMBO CARD WIN: ', winnArr);
 
@@ -70,18 +74,16 @@ async function bootstrap() {
             console.log('USER HAVE COMBO CARD WIN: ', a[j]);
             a = a[j];
             count++;
-          } else {
           }
         }
-        console.log('countttt', count);
         drawPlayer = count;
+        if (drawPlayer === 1) {
+          result = `màu ${winner[0].color} thắng, rank: ${winner[0].descr}`;
+        } else {
+          const x = winner.map((v: any) => v.color);
+          result = `kết quả có ${drawPlayer} hoà, màu ${x.join(' & ')}. Rank: ${winner[0].descr}`;
+        }
       }
-
-      console.log(drawPlayer, 'so ng hoa');
-
-      const result = drawPlayer === 1 ? `có 1 người thắng` : `kết quả có ${drawPlayer} hoà`;
-
-      console.log('dddd', result);
 
       res.status(200).json({
         success: true,
