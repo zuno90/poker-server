@@ -47,3 +47,16 @@ export const botInfo = (level: string) => {
     connected: false,
   };
 };
+
+export const botTest = (index: number) => {
+  return {
+    id: `BOTGPT-wibu-${index}`,
+    username: username[Math.floor(Math.random() * username.length)],
+    email: null,
+    chips: 250000,
+    isHost: false,
+    seat: index + 1,
+    role: ERole.Bot,
+    connected: false,
+  };
+};

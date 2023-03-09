@@ -26,5 +26,6 @@ jobs:
                 -e HOST=172.31.31.206 \
                 -e WS_SERVER=${{ secrets.WS_SERVER }} \
                 -e REDIS_URL=${{ secrets.REDIS_URL }} \
+                -e MONGO_URI=${{ secrets.MONGO_URI }} \
                 -e CMS_URL=${{ secrets.CMS_URL }} \
                 poker-server:$GITHUB_RUN_NUMBER

@@ -53,6 +53,7 @@ async function bootstrap() {
       // console.log("WWIN: ", winnArr);
       let player: any;
       y(listCardsGame);
+
       function y(cards: any[]) {
         let a = [];
         for (let i = 0; i < cards.length; i++) {
@@ -62,7 +63,6 @@ async function bootstrap() {
         console.log('COMBO CARD WIN: ', winnArr);
         for (let j = 0; j < cards.length; j++) {
           a[j] = cards[j].map((card: any) => card.value);
-          // console.log(a[j], " : ", winnArr);
           if (a[j].toString() === winnArr.toString()) {
             console.log('USER HAVE COMBO CARD WIN: ', a[j]);
             a = a[j];
@@ -71,7 +71,8 @@ async function bootstrap() {
         }
         player = count;
       }
-      const result = player === 1 ? `có 1 người thắng` : `kết quả hoà`;
+
+      const result = player === 1 ? `có 1 người thắng` : `kết quả có ${player} hoà`;
       res.status(200).json({
         success: true,
         data: {
