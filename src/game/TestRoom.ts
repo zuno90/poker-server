@@ -412,7 +412,9 @@ export default class TestRoom extends Room<RoomState> {
     const host = <Player>this.state.players.get(client.sessionId);
     if (!host.isHost) return;
 
-    const { bot } = data;
+    const { bot, bankerCards, playerCards } = data;
+    // { bot: 4, bankerCards: ["9h","9h","9h","9h","9h"], playerCards: [["9h","9h"],["9h","9h"],["9h","9h"],["9h","9h"],["9h","9h"]] }
+    this.banker5Cards = bankerCards;
   }
 
   private startGame(client: Client) {
