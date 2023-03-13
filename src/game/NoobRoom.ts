@@ -133,8 +133,8 @@ export default class NoobRoom extends Room<RoomState> {
     // SET INITIAL PLAYER STATE
     try {
       this.state.players.set(client.sessionId, new Player(player)); // set player every joining
-      if (player.isHost) this.clock.setTimeout(() => this.addBot(), 10000);
       this.sendNewState();
+      if (player.isHost) return setTimeout(() => this.addBot(), 10000);
     } catch (err) {
       console.error(err);
     }
