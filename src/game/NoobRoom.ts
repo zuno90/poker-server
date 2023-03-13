@@ -133,8 +133,8 @@ export default class NoobRoom extends Room<RoomState> {
     // SET INITIAL PLAYER STATE
     try {
       this.state.players.set(client.sessionId, new Player(player)); // set player every joining
-      this.sendNewState();
-      if (player.isHost) return setTimeout(() => this.addBot(), 10000);
+      if (player.isHost) return setTimeout(() => this.addBot(), 2000);
+      if (player.role === ERole.Player) return this.sendNewState();
     } catch (err) {
       console.error(err);
     }
@@ -209,9 +209,9 @@ export default class NoobRoom extends Room<RoomState> {
         count++;
         this.broadcast(RESET_GAME, `đã đá cmn thằng loz ít tiền ra, đếm ngược ${count}`);
         if (count === 3) {
-          this.clients.forEach(async (client: Client, index: number) => {
+          this.clients.forEach((client: Client, index: number) => {
             const player = <Player>this.state.players.get(client.sessionId);
-            if (player.chips < this.MIN_CHIP) await client.leave();
+            if (player.chips < this.MIN_CHIP) client.leave();
           });
           this.sendNewState();
           this.clock.clear();
