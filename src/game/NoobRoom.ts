@@ -133,13 +133,8 @@ export default class NoobRoom extends Room<RoomState> {
     // SET INITIAL PLAYER STATE
     try {
       this.state.players.set(client.sessionId, new Player(player)); // set player every joining
-
-      if (player.isHost) {
-        this.sendNewState();
-        this.clock.setTimeout(() => this.addBot(), 2000);
-        return;
-      }
-      if (player.role === ERole.Player && !player.isHost) this.sendNewState();
+      if (player.isHost) this.clock.setTimeout(() => this.addBot(), 2000);
+      this.sendNewState();
     } catch (err) {
       console.error(err);
     }
@@ -820,7 +815,7 @@ export default class NoobRoom extends Room<RoomState> {
     );
     await bot.joinRoom(this.roomId, this.roomName);
     this.bot?.set(bot.sessionId, bot);
-    this.sendNewState();
+    // this.sendNewState();
   }
 
   private sendNewState() {
