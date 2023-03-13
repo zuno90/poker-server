@@ -1,44 +1,31 @@
-name: build and push poker-server
+name: deploy poker-server by ZUNO
 on: push
 jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Set up Docker Context for Buildx
-        id: buildx-context
-        run: |
-          docker context create test-builder
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v2
+      - name: executing remote ssh commands using password
+        uses: supnobita/ssh-action@master
         with:
-          endpoint: test-builder
-      - name: Login to GCR
-        uses: docker/login-action@v2
-        with:
-          registry: 327206169735.dkr.ecr.ap-southeast-1.amazonaws.com
-          username: ${{ secrets.DEPLOY_AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.DEPLOY_AWS_SECRET_ACCESS_KEY }}
-      - name: Build and push
-        id: pushimage
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          push: true
-          tags: |
-            327206169735.dkr.ecr.ap-southeast-1.amazonaws.com/poker:poker-server-${{ github.run_number }}
-          file: Dockerfile
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.DEPLOY_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.DEPLOY_AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-southeast-1
-      # --- #
-      - name: Deploy container
-        uses: ianbelcher/eks-kubectl-action@master
-        with:
-          cluster_name: k8s-dev
-          args: set image --record deployment/poker-server poker-server=327206169735.dkr.ecr.ap-southeast-1.amazonaws.com/poker:poker-server-${{ github.run_number }}
+          host: 175.41.154.239
+          username: ubuntu
+          key: ${{ secrets.POKER_SECRET }}
+          port: 22
+          envs: GITHUB_RUN_NUMBER
+          script: |
+            cd code/
+            rm -rf poker-server/
+            git clone https://${{ secrets.POKER_TOKEN_SSH }}@github.com/zuno90/poker-server.git
+            cd poker-server/
+            DOCKER_BUILDKIT=1 docker build -t poker-server:$GITHUB_RUN_NUMBER .
+            docker stop poker-server || echo "stop docker OK"
+            docker rm poker-server || echo "remove OK"
+            docker run -d --restart unless-stopped --name poker-server -p 9000:9000 \
+                -e NODE_ENV=production \
+                -e HOST=172.31.31.206 \
+                -e WS_SERVER=${{ secrets.WS_SERVER }} \
+                -e REDIS_URL=${{ secrets.REDIS_URL }} \
+                -e MONGO_URI=${{ secrets.MONGO_URI }} \
+                -e CMS_URL=${{ secrets.CMS_URL }} \
+                poker-server:$GITHUB_RUN_NUMBER
