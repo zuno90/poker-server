@@ -1,0 +1,1 @@
+export const LOBBY_PRIVATE_CHAT = 'LOBBY_PRIVATE_CHAT';
