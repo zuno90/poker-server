@@ -109,7 +109,6 @@ export default class MidRoom extends Room<RoomState> {
 
   async onCreate(options: TJwtAuth) {
     try {
-      this.channel = `poker:room:${this.roomId}`;
       // CREATE AN INITIAL ROOM STATE
       this.setState(new RoomState());
 

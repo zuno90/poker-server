@@ -11,45 +11,31 @@ export enum EStatement {
 }
 
 export class Player extends Schema {
-  @type('string')
-  id: string;
+  @type('string') id: string;
 
-  @type('string')
-  username: string;
+  @type('string') username: string;
 
-  @type('boolean')
-  isHost: boolean;
+  @type('boolean') isHost: boolean;
 
-  @type('number')
-  chips: number;
+  @type('number') chips: number;
 
-  @type('string')
-  action: string;
+  @type('string') action: string;
 
-  @type('number')
-  betEachAction: number = 0;
+  @type('number') betEachAction: number = 0;
 
-  @type('number')
-  accumulatedBet: number = 0;
+  @type('number') accumulatedBet: number = 0;
 
-  @type('number')
-  turn: number;
+  @type('number') turn: number;
 
-  @type('number')
-  seat: number;
+  @type('number') seat: number;
 
-  @type('string')
-  role: ERole;
+  @type('string') role: ERole;
 
-  @type('string')
-  statement: EStatement = EStatement.Waiting;
+  @type('string') statement: EStatement = EStatement.Waiting;
 
-  @type('boolean')
-  connected: boolean = true;
+  @type('boolean') connected: boolean = true;
 
-  @type('boolean')
-  isFold: boolean = false;
+  @type('boolean') isFold: boolean = false;
 
-  @type('boolean')
-  bookingLeave: boolean = false;
+  @type('boolean') bookingLeave: boolean = false;
 }
