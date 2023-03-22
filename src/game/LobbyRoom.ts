@@ -1,14 +1,10 @@
 import { Request } from 'express';
 import { Client, Room } from 'colyseus';
 import { MapSchema, Schema, type } from '@colyseus/schema';
-import {
-  LOBBY_CHECK_FRIENDS,
-  LOBBY_PRIVATE_CHAT,
-  REQUEST_CHAT_FRIEND,
-} from './constants/lobby.constant';
+import { LOBBY_CHECK_FRIENDS, LOBBY_PRIVATE_CHAT } from './constants/lobby.constant';
 
 interface IMessageData {
-  receiverSessionId: string;
+  receiverId: string;
   message: string;
 }
 
@@ -53,8 +49,8 @@ export default class LobbyRoom extends Room<RoomState> {
   private handleCheckFriendsChat() {
     this.onMessage(LOBBY_CHECK_FRIENDS, (sender: Client, friendIds: string[]) => {
       const onlineFriends: any[] = [];
-      this.state.players.forEach((player: PlayerState, sessionId: string) => {
-        if (friendIds.includes(player._id)) onlineFriends.push({ s: sessionId, i: player._id });
+      this.state.players.forEach((player: PlayerState, _) => {
+        if (friendIds.includes(player._id)) onlineFriends.push(player._id);
       });
       sender.send(LOBBY_CHECK_FRIENDS, onlineFriends);
     });
@@ -62,13 +58,13 @@ export default class LobbyRoom extends Room<RoomState> {
 
   private handlePrivateChat() {
     this.onMessage(LOBBY_PRIVATE_CHAT, (sender: Client, data: IMessageData) => {
-      console.log(`data send to `, data);
-      const { receiverSessionId, message } = data;
-      this.clients.forEach((client: Client, _) => {
-        console.log(client.sessionId, receiverSessionId);
-        if (client.sessionId === receiverSessionId) {
-          console.log('co neee');
-          return client.send(LOBBY_PRIVATE_CHAT, message);
+      const { receiverId, message } = data;
+      this.state.players.forEach((player: PlayerState, sessionId: string) => {
+        if (player._id === receiverId) {
+          this.clients.forEach((client: Client, _) => {
+            if (client.sessionId === sessionId)
+              return client.send(LOBBY_PRIVATE_CHAT, { s: sender.sessionId, m: message });
+          });
         }
       });
     });
