@@ -6,7 +6,7 @@ import { MongooseDriver, RedisPresence, Server } from 'colyseus';
 import { monitor } from '@colyseus/monitor';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 import { createServer } from 'http';
-import LobbyRoom from './game/LobbyRoom';
+import CustomLobbyRoom from './game/LobbyRoom';
 import NoobRoom from './game/NoobRoom';
 import MidRoom from './game/MidRoom';
 import ProRoom from './game/ProRoom';
@@ -113,7 +113,7 @@ async function bootstrap() {
   });
 
   // join to Global room after Login
-  gameServer.define('lobby', LobbyRoom);
+  gameServer.define('lobby', CustomLobbyRoom);
 
   // define each level of Room
   gameServer.define('noob', NoobRoom);
