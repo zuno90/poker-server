@@ -459,7 +459,7 @@ export default class MidRoom extends Room<RoomState> {
     this.state.potSize = 0;
     this.state.bankerCards = [];
     this.state.remainingPlayer = 0;
-    this.state.currentTurn = 6969;
+    this.state.currentTurn = -2;
 
     // player state
     this.state.players.forEach((player: Player, sessionId: string) => {

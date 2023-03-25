@@ -198,7 +198,7 @@ export class BotClient {
         console.log('bot check sau khi player fold');
         return this.emit(CHECK);
       }
-    }, 5000);
+    }, 7000);
   }
 
   // random number
