@@ -175,6 +175,8 @@ export class BotClient {
         if (round === ERound.TURN) return this.emit(RAISE, { chips: this.randomNumberRange() });
         if (round === ERound.RIVER) return this.emit(RAISE, { chips: this.randomNumberRange() });
       }
+    }, 5000);
+    setTimeout(() => {
       // case go 1st -> false
       if (this.currentBetInfo.action === RAISE) {
         console.log('bot call/allin sau khi co player call/allin');
@@ -198,7 +200,7 @@ export class BotClient {
         console.log('bot check sau khi player fold');
         return this.emit(CHECK);
       }
-    }, 7000);
+    }, 8000);
   }
 
   // random number
