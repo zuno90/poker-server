@@ -1,4 +1,4 @@
-import { Client, Delayed, Room } from 'colyseus';
+import { Client, Presence, Room } from 'colyseus';
 import { Request } from 'express';
 import { ERound, RoomState } from './schemas/room.schema';
 import { ERole, EStatement, Player } from './schemas/player.schema';
@@ -39,6 +39,15 @@ export interface TAllinPlayer {
   w?: boolean;
 }
 
+const getAuth = (redis: Presence, channel: string) => {
+  return new Promise(resolve => {
+    redis.subscribe(channel, (data: any) => {
+      resolve(data);
+      redis.unsubscribe(channel);
+    });
+  });
+};
+
 export default class NoobRoom extends Room<RoomState> {
   public readonly maxClients: number = 5;
   private readonly MIN_BET = 1000;
@@ -61,9 +70,10 @@ export default class NoobRoom extends Room<RoomState> {
       // is BOT
       if (options.isBot && !options.jwt) return botInfo(this.roomName);
       // IS REAL PLAYER -> CHECK AUTH
-      const auth = await this.checkAuth(options.jwt);
-      if (!auth.success) return client.leave();
-      const existedPlayer = auth.data;
+      this.presence.publish('poker:auth:user', options.jwt);
+      const auth = (await getAuth(this.presence, 'cms:auth:user')) as any;
+      if (!auth) return client.leave();
+      const existedPlayer = auth;
 
       // check user to kick
       if (existedPlayer.chips < this.MIN_CHIP && existedPlayer > this.MAX_CHIP)
@@ -671,20 +681,6 @@ export default class NoobRoom extends Room<RoomState> {
       return this.endGame(emitResultArr);
     }
     if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
-  }
-
-  private async checkAuth(jwt: string) {
-    try {
-      const res = await axios.get(
-        `${
-          process.env.NODE_ENV === 'production' ? process.env.CMS_URL : 'http://localhost:9001'
-        }/user`,
-        {
-          headers: { Authorization: 'Bearer ' + jwt },
-        },
-      );
-      return res.data;
-    } catch (err) {}
   }
 
   private pickWinner1() {

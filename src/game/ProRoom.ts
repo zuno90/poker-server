@@ -1,15 +1,8 @@
-import { Client, Delayed, Room } from 'colyseus';
+import { Client, Delayed, Presence, Room } from 'colyseus';
 import { Request } from 'express';
 import { ERound, RoomState } from './schemas/room.schema';
 import { ERole, EStatement, Player } from './schemas/player.schema';
-import {
-  ALL,
-  BOOKING_LEAVE,
-  FRIEND_REQUEST,
-  RESET_GAME,
-  ROOM_CHAT,
-  START_GAME,
-} from './constants/room.constant';
+import { ALL, FRIEND_REQUEST, RESET_GAME, ROOM_CHAT, START_GAME } from './constants/room.constant';
 import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
 import { RANK, RESULT } from './constants/server-emit.constant';
 import { deal } from './modules/handleCard';
@@ -23,7 +16,6 @@ import {
 } from './modules/handleRank';
 import { BotClient } from './BotGPT';
 import { botInfo } from './constants/bot.constant';
-import axios from 'axios';
 import _ from 'lodash';
 
 const Hand = require('pokersolver').Hand; // func handle winner
@@ -46,8 +38,18 @@ export interface TAllinPlayer {
   w?: boolean;
 }
 
+const getAuth = (redis: Presence, channel: string) => {
+  return new Promise(resolve => {
+    redis.subscribe(channel, (data: any) => {
+      resolve(data);
+      redis.unsubscribe(channel);
+    });
+  });
+};
+
 export default class ProRoom extends Room<RoomState> {
   public readonly maxClients: number = 5;
+  public delayedTimeOut!: Delayed;
   private readonly MIN_BET = 10000;
   private readonly MIN_CHIP = 500000;
   private currentBet: number = 0;
@@ -58,19 +60,17 @@ export default class ProRoom extends Room<RoomState> {
   private allinArr: number[] = [];
   private allinList: TAllinPlayer[] = [];
   private foldArr: number[] = [];
-
   private bot: Map<string, BotClient> | null = new Map<string, BotClient>(); // new bot
-
-  public delayedTimeOut!: Delayed;
 
   async onAuth(client: Client, options: TJwtAuth, req: Request) {
     try {
       // is BOT
       if (options.isBot && !options.jwt) return botInfo(this.roomName);
       // IS REAL PLAYER -> CHECK AUTH
-      const auth = await this.checkAuth(options.jwt);
-      if (!auth.success) return client.leave();
-      const existedPlayer = auth.data;
+      this.presence.publish('poker:auth:user', options.jwt);
+      const auth = (await getAuth(this.presence, 'cms:auth:user')) as any;
+      if (!auth) return client.leave();
+      const existedPlayer = auth;
 
       // check user to kick
       if (existedPlayer.chips < this.MIN_CHIP) return client.leave();
@@ -677,20 +677,6 @@ export default class ProRoom extends Room<RoomState> {
       return this.endGame(emitResultArr);
     }
     if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
-  }
-
-  private async checkAuth(jwt: string) {
-    try {
-      const res = await axios.get(
-        `${
-          process.env.NODE_ENV === 'production' ? process.env.CMS_URL : 'http://localhost:9001'
-        }/user`,
-        {
-          headers: { Authorization: 'Bearer ' + jwt },
-        },
-      );
-      return res.data;
-    } catch (err) {}
   }
 
   private pickWinner1() {

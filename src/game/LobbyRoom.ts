@@ -39,7 +39,7 @@ class RoomState extends Schema {
 export default class CustomLobbyRoom extends Room<RoomState> {
   public readonly autoDispose = false;
 
-  private readonly reconnectTimeOut = 10;
+  private readonly reconnectTimeOut = 60;
 
   onAuth(client: Client, options: any, request?: Request) {
     const { _id, username } = options;
@@ -85,6 +85,7 @@ export default class CustomLobbyRoom extends Room<RoomState> {
       const player = <PlayerState>this.state.players.get(sender.sessionId);
       this.presence.publish('poker:friend:list', player._id);
       this.presence.subscribe('cms:friend:list', (friendList: any[]) => {
+        console.log(friendList, 'sub');
         for (let friend of friendList) {
           this.state.players.forEach((player: PlayerState, sessionId) => {
             if (friend._id === player._id) friend.sessionId = sessionId;
