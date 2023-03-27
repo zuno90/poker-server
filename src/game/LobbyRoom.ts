@@ -84,8 +84,7 @@ export default class CustomLobbyRoom extends Room<RoomState> {
     this.onMessage(LOBBY_CHECK_FRIENDS, (sender: Client) => {
       const player = <PlayerState>this.state.players.get(sender.sessionId);
       this.presence.publish('poker:friend:list', player._id);
-      this.presence.subscribe('cms:friend:list', (friendList: any[]) => {
-        console.log(friendList, 'sub');
+      this.presence.subscribe(`cms:friend:list:${player._id}`, (friendList: any[]) => {
         for (let friend of friendList) {
           this.state.players.forEach((player: PlayerState, sessionId) => {
             if (friend._id === player._id) friend.sessionId = sessionId;

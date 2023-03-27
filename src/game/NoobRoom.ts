@@ -16,7 +16,6 @@ import {
 } from './modules/handleRank';
 import { BotClient } from './BotGPT';
 import { botInfo } from './constants/bot.constant';
-import axios from 'axios';
 import _ from 'lodash';
 
 const Hand = require('pokersolver').Hand; // func handle winner
@@ -71,7 +70,7 @@ export default class NoobRoom extends Room<RoomState> {
       if (options.isBot && !options.jwt) return botInfo(this.roomName);
       // IS REAL PLAYER -> CHECK AUTH
       this.presence.publish('poker:auth:user', options.jwt);
-      const auth = (await getAuth(this.presence, 'cms:auth:user')) as any;
+      const auth = (await getAuth(this.presence, `cms:auth:user:${options.jwt}`)) as any;
       if (!auth) return client.leave();
       const existedPlayer = auth;
 
