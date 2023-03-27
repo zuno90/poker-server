@@ -167,15 +167,19 @@ export class BotClient {
   // Bet Algorithm
   private async betAlgorithm(round: ERound, botState: Player) {
     if (this.isEndGame) return;
-    setTimeout(() => {
-      // case go 1st -> true
-      if (this.isGoFirst) {
+
+    // case go 1st -> true
+    if (this.isGoFirst) {
+      setTimeout(() => {
         if (round === ERound.PREFLOP) return this.emit(RAISE, { chips: this.randomNumberRange() });
+      }, 8000);
+      setTimeout(() => {
         if (round === ERound.FLOP) return this.emit(RAISE, { chips: this.randomNumberRange() });
         if (round === ERound.TURN) return this.emit(RAISE, { chips: this.randomNumberRange() });
         if (round === ERound.RIVER) return this.emit(RAISE, { chips: this.randomNumberRange() });
-      }
-    }, 8000);
+      }, 5000);
+    }
+
     setTimeout(() => {
       // case go 1st -> false
       if (this.currentBetInfo.action === RAISE) {
