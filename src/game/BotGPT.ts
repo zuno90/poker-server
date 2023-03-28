@@ -169,41 +169,39 @@ export class BotClient {
     if (this.isEndGame) return;
 
     // case go 1st -> true
-    if (this.isGoFirst) {
-      setTimeout(() => {
-        if (round === ERound.PREFLOP) return this.emit(RAISE, { chips: this.randomNumberRange() });
-      }, 8000);
-      setTimeout(() => {
+    setTimeout(async () => {
+      if (this.isGoFirst) {
+        if (round === ERound.PREFLOP) {
+          await this.sleep(3);
+          return this.emit(RAISE, { chips: this.randomNumberRange() });
+        }
         if (round === ERound.FLOP) return this.emit(RAISE, { chips: this.randomNumberRange() });
         if (round === ERound.TURN) return this.emit(RAISE, { chips: this.randomNumberRange() });
         if (round === ERound.RIVER) return this.emit(RAISE, { chips: this.randomNumberRange() });
-      }, 5000);
-      return;
-    }
-
-    setTimeout(() => {
-      // case go 1st -> false
-      if (this.currentBetInfo.action === RAISE) {
-        console.log('bot call/allin sau khi co player call/allin');
-        if (this.currentBetInfo.betEachAction > botState.chips) return this.emit(ALLIN);
-        return this.emit(CALL);
-      }
-      if (this.currentBetInfo.action === CALL) {
-        console.log('bot call/allin sau khi player call/allin');
-        if (this.currentBetInfo.betEachAction > botState.chips) return this.emit(ALLIN);
-        return this.emit(CALL);
-      }
-      if (this.currentBetInfo.action === CHECK) {
-        console.log('bot check sau khi player check');
-        return this.emit(CHECK);
-      }
-      if (this.currentBetInfo.action === ALLIN) {
-        console.log('bot allin sau khi player allin');
-        return this.emit(ALLIN);
-      }
-      if (this.currentBetInfo.action === FOLD) {
-        console.log('bot check sau khi player fold');
-        return this.emit(CHECK);
+      } else {
+        // case go 1st -> false
+        if (this.currentBetInfo.action === RAISE) {
+          console.log('bot call/allin sau khi co player call/allin');
+          if (this.currentBetInfo.betEachAction > botState.chips) return this.emit(ALLIN);
+          return this.emit(CALL);
+        }
+        if (this.currentBetInfo.action === CALL) {
+          console.log('bot call/allin sau khi player call/allin');
+          if (this.currentBetInfo.betEachAction > botState.chips) return this.emit(ALLIN);
+          return this.emit(CALL);
+        }
+        if (this.currentBetInfo.action === CHECK) {
+          console.log('bot check sau khi player check');
+          return this.emit(CHECK);
+        }
+        if (this.currentBetInfo.action === ALLIN) {
+          console.log('bot allin sau khi player allin');
+          return this.emit(ALLIN);
+        }
+        if (this.currentBetInfo.action === FOLD) {
+          console.log('bot check sau khi player fold');
+          return this.emit(CHECK);
+        }
       }
     }, 5000);
   }
@@ -214,5 +212,9 @@ export class BotClient {
       Math.floor(Math.random() * (this.MAX_BET / 10 - this.MIN_BET / 10 + 1) + this.MIN_BET / 10) *
       10
     );
+  }
+
+  private sleep(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms * 1000));
   }
 }
