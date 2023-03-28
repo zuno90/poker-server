@@ -178,6 +178,7 @@ export class BotClient {
         if (round === ERound.TURN) return this.emit(RAISE, { chips: this.randomNumberRange() });
         if (round === ERound.RIVER) return this.emit(RAISE, { chips: this.randomNumberRange() });
       }, 5000);
+      return;
     }
 
     setTimeout(() => {
