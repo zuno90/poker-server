@@ -16,7 +16,6 @@ import {
 } from './modules/handleRank';
 import { BotClient } from './BotGPT';
 import { botInfo } from './constants/bot.constant';
-import axios from 'axios';
 import _ from 'lodash';
 
 const Hand = require('pokersolver').Hand; // func handle winner
@@ -53,7 +52,6 @@ export default class MidRoom extends Room<RoomState> {
   private readonly MIN_BET = 5000;
   private readonly MIN_CHIP = 200000;
   private readonly MAX_CHIP = 500000;
-  private channel: string;
   private currentBet: number = 0;
   private banker5Cards: Array<string> = [];
   private player2Cards: Array<string[]> = [];
@@ -71,7 +69,7 @@ export default class MidRoom extends Room<RoomState> {
       if (options.isBot && !options.jwt) return botInfo(this.roomName);
       // IS REAL PLAYER -> CHECK AUTH
       this.presence.publish('poker:auth:user', options.jwt);
-      const auth = (await getAuth(this.presence, 'cms:auth:user')) as any;
+      const auth = (await getAuth(this.presence, `cms:auth:user:${options.jwt}`)) as any;
       if (!auth) return client.leave();
       const existedPlayer = auth;
 
@@ -143,11 +141,8 @@ export default class MidRoom extends Room<RoomState> {
     // SET INITIAL PLAYER STATE
     try {
       this.state.players.set(client.sessionId, new Player(player)); // set player every joining
-      if (player.isHost) {
-        this.clock.setTimeout(() => this.addBot(), 2000);
-        return;
-      }
-      return this.sendNewState();
+      this.sendNewState();
+      if (player.isHost) this.clock.setTimeout(() => this.addBot(), 5000);
     } catch (err) {
       console.error(err);
     }
@@ -222,9 +217,9 @@ export default class MidRoom extends Room<RoomState> {
         count++;
         this.broadcast(RESET_GAME, `đã đá cmn thằng loz ít tiền ra, đếm ngược ${count}`);
         if (count === 3) {
-          this.clients.forEach(async (client: Client, index: number) => {
+          this.clients.forEach((client: Client, index: number) => {
             const player = <Player>this.state.players.get(client.sessionId);
-            if (player.chips < this.MIN_CHIP) await client.leave();
+            if (player.chips < this.MIN_CHIP) client.leave();
           });
           this.sendNewState();
           this.clock.clear();
@@ -633,6 +628,7 @@ export default class MidRoom extends Room<RoomState> {
     player.action = FOLD;
     player.isFold = true;
 
+    this.state.currentTurn = player.turn;
     this.state.remainingPlayer--;
     this.remainingTurn--;
 
@@ -814,7 +810,7 @@ export default class MidRoom extends Room<RoomState> {
     );
     await bot.joinRoom(this.roomId, this.roomName);
     this.bot?.set(bot.sessionId, bot);
-    this.sendNewState();
+    // this.sendNewState();
   }
 
   private sendNewState() {

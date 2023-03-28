@@ -52,7 +52,6 @@ export default class NoobRoom extends Room<RoomState> {
   private readonly MIN_BET = 1000;
   private readonly MIN_CHIP = 50000;
   private readonly MAX_CHIP = 200000;
-  private channel: string = `poker:room:${this.roomId}`;
   private currentBet: number = 0;
   private banker5Cards: Array<string> = [];
   private player2Cards: Array<string[]> = [];
@@ -629,6 +628,7 @@ export default class NoobRoom extends Room<RoomState> {
     player.action = FOLD;
     player.isFold = true;
 
+    this.state.currentTurn = player.turn;
     this.state.remainingPlayer--;
     this.remainingTurn--;
 
@@ -810,7 +810,6 @@ export default class NoobRoom extends Room<RoomState> {
     );
     await bot.joinRoom(this.roomId, this.roomName);
     this.bot?.set(bot.sessionId, bot);
-    // this.sendNewState();
   }
 
   private sendNewState() {

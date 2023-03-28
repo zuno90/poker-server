@@ -49,7 +49,6 @@ const getAuth = (redis: Presence, channel: string) => {
 
 export default class ProRoom extends Room<RoomState> {
   public readonly maxClients: number = 5;
-  public delayedTimeOut!: Delayed;
   private readonly MIN_BET = 10000;
   private readonly MIN_CHIP = 500000;
   private currentBet: number = 0;
@@ -60,6 +59,7 @@ export default class ProRoom extends Room<RoomState> {
   private allinArr: number[] = [];
   private allinList: TAllinPlayer[] = [];
   private foldArr: number[] = [];
+
   private bot: Map<string, BotClient> | null = new Map<string, BotClient>(); // new bot
 
   async onAuth(client: Client, options: TJwtAuth, req: Request) {
@@ -68,7 +68,7 @@ export default class ProRoom extends Room<RoomState> {
       if (options.isBot && !options.jwt) return botInfo(this.roomName);
       // IS REAL PLAYER -> CHECK AUTH
       this.presence.publish('poker:auth:user', options.jwt);
-      const auth = (await getAuth(this.presence, 'cms:auth:user')) as any;
+      const auth = (await getAuth(this.presence, `cms:auth:user:${options.jwt}`)) as any;
       if (!auth) return client.leave();
       const existedPlayer = auth;
 
@@ -139,8 +139,8 @@ export default class ProRoom extends Room<RoomState> {
     // SET INITIAL PLAYER STATE
     try {
       this.state.players.set(client.sessionId, new Player(player)); // set player every joining
-      if (player.isHost) return this.clock.setTimeout(() => this.addBot(), 2000);
-      return this.sendNewState();
+      this.sendNewState();
+      if (player.isHost) this.clock.setTimeout(() => this.addBot(), 5000);
     } catch (err) {
       console.error(err);
     }
@@ -215,9 +215,9 @@ export default class ProRoom extends Room<RoomState> {
         count++;
         this.broadcast(RESET_GAME, `đã đá cmn thằng loz ít tiền ra, đếm ngược ${count}`);
         if (count === 3) {
-          this.clients.forEach(async (client: Client, index: number) => {
+          this.clients.forEach((client: Client, index: number) => {
             const player = <Player>this.state.players.get(client.sessionId);
-            if (player.chips < this.MIN_CHIP) await client.leave();
+            if (player.chips < this.MIN_CHIP) client.leave();
           });
           this.sendNewState();
           this.clock.clear();
@@ -626,6 +626,7 @@ export default class ProRoom extends Room<RoomState> {
     player.action = FOLD;
     player.isFold = true;
 
+    this.state.currentTurn = player.turn;
     this.state.remainingPlayer--;
     this.remainingTurn--;
 
@@ -807,7 +808,7 @@ export default class ProRoom extends Room<RoomState> {
     );
     await bot.joinRoom(this.roomId, this.roomName);
     this.bot?.set(bot.sessionId, bot);
-    this.sendNewState();
+    // this.sendNewState();
   }
 
   private sendNewState() {
