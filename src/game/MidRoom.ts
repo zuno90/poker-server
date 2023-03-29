@@ -416,13 +416,13 @@ export default class MidRoom extends Room<RoomState> {
     if (!host.isHost) return;
 
     const { onHandCards, banker5Cards } = deal(this.state.players.size);
-    // this.banker5Cards = banker5Cards; // cache 5 cards of banker first
-    // this.player2Cards = onHandCards; // chia bai
-    this.banker5Cards = ['Qs', 'Ks', 'Kd', 'Qh', '8c'];
-    this.player2Cards = [
-      ['Tc', '4h'],
-      ['Th', '3d'],
-    ];
+    this.banker5Cards = banker5Cards; // cache 5 cards of banker first
+    this.player2Cards = onHandCards; // chia bai
+    // this.banker5Cards = ['Qs', 'Ks', 'Kd', 'Qh', '8c'];
+    // this.player2Cards = [
+    //   ['Tc', '4h'],
+    //   ['Th', '3d'],
+    // ];
     this.remainingTurn = this.state.players.size;
 
     console.log({ banker: this.banker5Cards, player: this.player2Cards });
