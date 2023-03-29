@@ -1,4 +1,4 @@
-import { Client, Delayed, Presence, Room } from 'colyseus';
+import { Client, Presence, Room } from 'colyseus';
 import { Request } from 'express';
 import { ERound, RoomState } from './schemas/room.schema';
 import { ERole, EStatement, Player } from './schemas/player.schema';
@@ -74,9 +74,8 @@ export default class ProRoom extends Room<RoomState> {
 
       // check user to kick
       if (existedPlayer.chips < this.MIN_CHIP) return client.leave();
-      for (const p of this.state.players.values()) {
+      for (const p of this.state.players.values())
         if (existedPlayer._id === p.id) return client.leave();
-      }
 
       if (!this.state.players.size)
         // is HOST
@@ -284,7 +283,9 @@ export default class ProRoom extends Room<RoomState> {
       if (player.turn === this.state.currentTurn) return;
       if (player.statement !== EStatement.Playing) return;
       if (player.isFold) return; // block folded player
-      if (this.state.currentTurn === -1) return;
+      const actionArr = [];
+      for (let p of this.state.players.values()) p.action && actionArr.push(p.action);
+      if (!actionArr.length) return;
 
       let callValue = 0;
 

@@ -286,7 +286,9 @@ export default class MidRoom extends Room<RoomState> {
       if (player.turn === this.state.currentTurn) return;
       if (player.statement !== EStatement.Playing) return;
       if (player.isFold) return; // block folded player
-      if (this.state.currentTurn === -1) return;
+      const actionArr = [];
+      for (let p of this.state.players.values()) p.action && actionArr.push(p.action);
+      if (!actionArr.length) return;
 
       let callValue = 0;
 
@@ -414,8 +416,13 @@ export default class MidRoom extends Room<RoomState> {
     if (!host.isHost) return;
 
     const { onHandCards, banker5Cards } = deal(this.state.players.size);
-    this.banker5Cards = banker5Cards; // cache 5 cards of banker first
-    this.player2Cards = onHandCards; // chia bai
+    // this.banker5Cards = banker5Cards; // cache 5 cards of banker first
+    // this.player2Cards = onHandCards; // chia bai
+    this.banker5Cards = ['Qs', 'Ks', 'Kd', 'Qh', '8c'];
+    this.player2Cards = [
+      ['Tc', '4h'],
+      ['Th', '3d'],
+    ];
     this.remainingTurn = this.state.players.size;
 
     console.log({ banker: this.banker5Cards, player: this.player2Cards });
@@ -733,6 +740,7 @@ export default class MidRoom extends Room<RoomState> {
     /*
      * Draw case
      */
+    console.log('mang hoa', drawArr);
     if (drawArr && drawArr.length > 1) {
       // số người hoà = số ng đang bet
       if (drawArr.length === calculateResultArr.length) {

@@ -34,18 +34,17 @@ export const checkDraw = (allHands: any[], winHand: any) => {
       numberOfWinner++;
     }
   }
-  console.log(winnArr, 'xxxx');
 
+  const drawSessions: any[] = [];
   if (numberOfWinner > 1) {
-    const drawSessions: Array<any> = [];
+    console.log(allHands, 777);
     for (let i = 0; i < allHands.length; i++) {
-      if (allHands[i].cards.toString() === winHand.cards.toString()) {
-        drawSessions.push(allHands[i].sessionId);
-      }
+      const a = [];
+      for (let c of allHands[i].cards) a.push(c.value);
+      if (a.toString() === winnArr.toString()) drawSessions.push(allHands[i].sessionId);
     }
-    return drawSessions;
   }
-  return false;
+  return drawSessions;
 };
 
 export const pokerSolverHand = (data: any) => {

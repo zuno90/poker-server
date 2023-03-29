@@ -69,7 +69,7 @@ export default class NoobRoom extends Room<RoomState> {
       if (options.isBot && !options.jwt) return botInfo(this.roomName);
       // IS REAL PLAYER -> CHECK AUTH
       this.presence.publish('poker:auth:user', options.jwt);
-      const auth = (await getAuth(this.presence, `cms:auth:user:${options.jwt}`)) as any;
+      const auth = <any>await getAuth(this.presence, `cms:auth:user:${options.jwt}`);
       if (!auth) return client.leave();
       const existedPlayer = auth;
 
@@ -286,10 +286,12 @@ export default class NoobRoom extends Room<RoomState> {
       if (player.turn === this.state.currentTurn) return;
       if (player.statement !== EStatement.Playing) return;
       if (player.isFold) return; // block folded player
-      if (this.state.currentTurn === -1) return;
+      const actionArr = [];
+      for (let p of this.state.players.values()) p.action && actionArr.push(p.action);
+      if (!actionArr.length) return;
 
+      // after check
       let callValue = 0;
-
       if (this.currentBet < player.chips + player.accumulatedBet) {
         callValue = this.currentBet - player.accumulatedBet;
       }
