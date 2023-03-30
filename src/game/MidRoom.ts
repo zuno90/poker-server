@@ -69,7 +69,7 @@ export default class MidRoom extends Room<RoomState> {
       if (options.isBot && !options.jwt) return botInfo(this.roomName);
       // IS REAL PLAYER -> CHECK AUTH
       this.presence.publish('poker:auth:user', options.jwt);
-      const auth = (await getAuth(this.presence, `cms:auth:user:${options.jwt}`)) as any;
+      const auth = <any>await getAuth(this.presence, `cms:auth:user:${options.jwt}`);
       if (!auth) return client.leave();
       const existedPlayer = auth;
 

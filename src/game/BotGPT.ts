@@ -167,14 +167,12 @@ export class BotClient {
   // Bet Algorithm
   private async betAlgorithm(round: ERound, botState: Player) {
     if (this.isEndGame) return;
-    await this.sleep(5);
+    await this.sleep(8);
     // case go 1st -> true
 
     if (this.isGoFirst) {
-      if (round === ERound.PREFLOP) {
-        await this.sleep(3);
-        return this.emit(RAISE, { chips: this.randomNumberRange() });
-      }
+      if (round === ERound.PREFLOP) return this.emit(RAISE, { chips: this.randomNumberRange() });
+
       if (round === ERound.FLOP) return this.emit(RAISE, { chips: this.randomNumberRange() });
       if (round === ERound.TURN) return this.emit(RAISE, { chips: this.randomNumberRange() });
       if (round === ERound.RIVER) return this.emit(RAISE, { chips: this.randomNumberRange() });

@@ -2,9 +2,12 @@ import { Request } from 'express';
 import { Client, Room } from 'colyseus';
 import { ArraySchema, MapSchema, Schema, type } from '@colyseus/schema';
 import {
+  CMS_FRIEND_LIST,
+  GM_ANNOUNCEMENT,
   LOBBY_CHECK_FRIENDS,
   LOBBY_PRIVATE_CHAT,
   LOBBY_REQUEST_CHAT_FRIEND,
+  POKER_FRIEND_LIST,
 } from './constants/lobby.constant';
 
 interface IMessageData {
@@ -49,6 +52,7 @@ export default class CustomLobbyRoom extends Room<RoomState> {
   onCreate(options: any) {
     this.roomId = 'zunohandsome';
     this.setState(new RoomState());
+    this.handleAllMessagesFromGM();
     this.handleCheckFriendsChat();
     this.handleReqChat();
     this.handlePrivateChat();
@@ -79,12 +83,21 @@ export default class CustomLobbyRoom extends Room<RoomState> {
     console.log('room ', this.roomId, ' is disposing...');
   }
 
+  // GM join
+  private handleAllMessagesFromGM() {
+    this.presence.subscribe(GM_ANNOUNCEMENT, (data: any) => {
+      console.log(data);
+      this.broadcast(GM_ANNOUNCEMENT);
+      this.presence.unsubscribe(GM_ANNOUNCEMENT);
+    });
+  }
+
   // helper
   private handleCheckFriendsChat() {
     this.onMessage(LOBBY_CHECK_FRIENDS, (sender: Client) => {
       const player = <PlayerState>this.state.players.get(sender.sessionId);
-      this.presence.publish('poker:friend:list', player._id);
-      this.presence.subscribe(`cms:friend:list:${player._id}`, (friendList: any[]) => {
+      this.presence.publish(POKER_FRIEND_LIST, player._id);
+      this.presence.subscribe(`${CMS_FRIEND_LIST}:${player._id}`, (friendList: any[]) => {
         for (let friend of friendList) {
           this.state.players.forEach((player: PlayerState, sessionId) => {
             if (friend._id === player._id) friend.sessionId = sessionId;
