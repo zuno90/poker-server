@@ -173,19 +173,13 @@ export default class MidRoom extends Room<RoomState> {
     const playerInRoom: any[] = [];
     if (leavingPlayer.isHost) {
       this.state.players.forEach((player: Player, sessionId: string) => {
-        if (player.role === ERole.Player) {
-          playerInRoom.push({ sessionId, seat: player.seat });
-        }
+        if (player.role === ERole.Player) playerInRoom.push({ sessionId, seat: player.seat });
       });
-
-      console.log('so player  without Bot', playerInRoom);
 
       if (playerInRoom.length === 1) return await this.disconnect();
       if (playerInRoom.length > 1) {
         const newHost = <Player>this.state.players.get(playerInRoom[1].sessionId);
         newHost.isHost = true;
-        newHost.seat = 1;
-        newHost.turn = 0;
         this.sendNewState();
       }
     }

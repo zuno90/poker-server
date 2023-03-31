@@ -108,8 +108,6 @@ export class BotClient {
         }
       }
 
-      console.log({ endgame: this.isEndGame, active: this.isActive, gofirst: this.isGoFirst });
-
       if (state.round === ERound.WELCOME) {
         this.isEndGame = true;
         this.isActive = false;
@@ -125,12 +123,9 @@ export class BotClient {
       } // reset BOT
 
       this.botReadyToAction(this.botState, state.currentTurn, remainingPlayerTurn); // active/deactive bot
-      if (!this.isActive) return;
+      console.log({ endgame: this.isEndGame, active: this.isActive, gofirst: this.isGoFirst });
+      if (!this.isActive || this.isEndGame) return;
       this.betAlgorithm(state.round, this.botState); // run algorithm of bot
-    });
-
-    this.room.onMessage(ROOM_CHAT, data => {
-      return;
     });
   }
 
@@ -166,13 +161,12 @@ export class BotClient {
 
   // Bet Algorithm
   private async betAlgorithm(round: ERound, botState: Player) {
-    if (this.isEndGame) return;
+    // if (this.isEndGame) return;
     await this.sleep(8);
     // case go 1st -> true
 
     if (this.isGoFirst) {
       if (round === ERound.PREFLOP) return this.emit(RAISE, { chips: this.randomNumberRange() });
-
       if (round === ERound.FLOP) return this.emit(RAISE, { chips: this.randomNumberRange() });
       if (round === ERound.TURN) return this.emit(RAISE, { chips: this.randomNumberRange() });
       if (round === ERound.RIVER) return this.emit(RAISE, { chips: this.randomNumberRange() });
