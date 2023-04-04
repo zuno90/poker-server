@@ -68,14 +68,15 @@ export default class ProRoom extends Room<RoomState> {
       if (options.isBot && !options.jwt) return botInfo(this.roomName);
       // IS REAL PLAYER -> CHECK AUTH
       this.presence.publish('poker:auth:user', options.jwt);
-      const auth = (await getAuth(this.presence, `cms:auth:user:${options.jwt}`)) as any;
+      const auth = <any>await getAuth(this.presence, `cms:auth:user:${options.jwt}`);
       if (!auth) return client.leave();
       const existedPlayer = auth;
 
       // check user to kick
       if (existedPlayer.chips < this.MIN_CHIP) return client.leave();
-      for (const p of this.state.players.values())
+      for (const p of this.state.players.values()) {
         if (existedPlayer._id === p.id) return client.leave();
+      }
 
       if (!this.state.players.size)
         // is HOST
@@ -148,6 +149,7 @@ export default class ProRoom extends Room<RoomState> {
   async onLeave(client: Client, consented: boolean) {
     const leavingPlayer = <Player>this.state.players.get(client.sessionId);
     leavingPlayer.connected = false;
+    leavingPlayer.isFold = true;
     // try {
     //   if (consented) throw new Error('consented leave!');
     //   // allow disconnected client to reconnect into this room until 10 seconds
@@ -180,8 +182,11 @@ export default class ProRoom extends Room<RoomState> {
         this.sendNewState();
       }
     }
+
     console.log('client ' + client.sessionId + ' has just left');
-    this.state.players.delete(client.sessionId);
+
+    // this.state.players.delete(client.sessionId);
+    this.sendNewState();
   }
 
   async onDispose() {
@@ -281,8 +286,8 @@ export default class ProRoom extends Room<RoomState> {
       for (let p of this.state.players.values()) p.action && actionArr.push(p.action);
       if (!actionArr.length) return;
 
+      // after check
       let callValue = 0;
-
       if (this.currentBet < player.chips + player.accumulatedBet) {
         callValue = this.currentBet - player.accumulatedBet;
       }
@@ -460,7 +465,10 @@ export default class ProRoom extends Room<RoomState> {
     this.state.currentTurn = -2;
 
     // player state
+
     this.state.players.forEach((player: Player, sessionId: string) => {
+      // 3 ng -> 4 state -> connect = false
+      if (!player.connected) this.state.players.delete(sessionId);
       const newPlayer = {
         id: player.id,
         username: player.username,
@@ -663,6 +671,7 @@ export default class ProRoom extends Room<RoomState> {
         }
       }
     }
+
     if (this.remainingTurn === 0 && this.state.remainingPlayer === 0) {
       const { emitResultArr, finalCalculateResult }: any = this.pickWinner1();
       for (const c of finalCalculateResult) {
@@ -803,7 +812,6 @@ export default class ProRoom extends Room<RoomState> {
     );
     await bot.joinRoom(this.roomId, this.roomName);
     this.bot?.set(bot.sessionId, bot);
-    // this.sendNewState();
   }
 
   private sendNewState() {

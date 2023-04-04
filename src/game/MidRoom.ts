@@ -151,6 +151,7 @@ export default class MidRoom extends Room<RoomState> {
   async onLeave(client: Client, consented: boolean) {
     const leavingPlayer = <Player>this.state.players.get(client.sessionId);
     leavingPlayer.connected = false;
+    leavingPlayer.isFold = true;
     // try {
     //   if (consented) throw new Error('consented leave!');
     //   // allow disconnected client to reconnect into this room until 10 seconds
@@ -183,8 +184,11 @@ export default class MidRoom extends Room<RoomState> {
         this.sendNewState();
       }
     }
+
     console.log('client ' + client.sessionId + ' has just left');
-    this.state.players.delete(client.sessionId);
+
+    // this.state.players.delete(client.sessionId);
+    this.sendNewState();
   }
 
   async onDispose() {
@@ -284,8 +288,8 @@ export default class MidRoom extends Room<RoomState> {
       for (let p of this.state.players.values()) p.action && actionArr.push(p.action);
       if (!actionArr.length) return;
 
+      // after check
       let callValue = 0;
-
       if (this.currentBet < player.chips + player.accumulatedBet) {
         callValue = this.currentBet - player.accumulatedBet;
       }
@@ -412,11 +416,6 @@ export default class MidRoom extends Room<RoomState> {
     const { onHandCards, banker5Cards } = deal(this.state.players.size);
     this.banker5Cards = banker5Cards; // cache 5 cards of banker first
     this.player2Cards = onHandCards; // chia bai
-    // this.banker5Cards = ['Qs', 'Ks', 'Kd', 'Qh', '8c'];
-    // this.player2Cards = [
-    //   ['Tc', '4h'],
-    //   ['Th', '3d'],
-    // ];
     this.remainingTurn = this.state.players.size;
 
     console.log({ banker: this.banker5Cards, player: this.player2Cards });
@@ -468,7 +467,10 @@ export default class MidRoom extends Room<RoomState> {
     this.state.currentTurn = -2;
 
     // player state
+
     this.state.players.forEach((player: Player, sessionId: string) => {
+      // 3 ng -> 4 state -> connect = false
+      if (!player.connected) this.state.players.delete(sessionId);
       const newPlayer = {
         id: player.id,
         username: player.username,
@@ -671,6 +673,7 @@ export default class MidRoom extends Room<RoomState> {
         }
       }
     }
+
     if (this.remainingTurn === 0 && this.state.remainingPlayer === 0) {
       const { emitResultArr, finalCalculateResult }: any = this.pickWinner1();
       for (const c of finalCalculateResult) {
@@ -734,7 +737,6 @@ export default class MidRoom extends Room<RoomState> {
     /*
      * Draw case
      */
-    console.log('mang hoa', drawArr);
     if (drawArr && drawArr.length > 1) {
       // số người hoà = số ng đang bet
       if (drawArr.length === calculateResultArr.length) {
@@ -812,7 +814,6 @@ export default class MidRoom extends Room<RoomState> {
     );
     await bot.joinRoom(this.roomId, this.roomName);
     this.bot?.set(bot.sessionId, bot);
-    // this.sendNewState();
   }
 
   private sendNewState() {
