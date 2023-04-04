@@ -161,8 +161,8 @@ export class BotClient {
 
   // Bet Algorithm
   private async betAlgorithm(round: ERound, botState: Player) {
-    // if (this.isEndGame) return;
-    await this.sleep(8);
+    // if (this.isEndGame || !this.isActive) return;
+    await this.sleep(3);
     // case go 1st -> true
 
     if (this.isGoFirst) {
@@ -191,8 +191,8 @@ export class BotClient {
         return this.emit(ALLIN);
       }
       if (this.currentBetInfo.action === FOLD) {
-        console.log('bot check sau khi player fold');
-        return this.emit(CHECK);
+        console.log('bot fold sau khi player fold');
+        return this.emit(FOLD);
       }
     }
   }

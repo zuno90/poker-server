@@ -658,9 +658,9 @@ export default class ProRoom extends Room<RoomState> {
               const betPlayer = <Player>this.state.players.get(c.i);
               betPlayer.chips += c.v;
             }
+            return this.endGame(result);
           }
         }
-        return this.endGame(result);
       }
     }
     if (this.remainingTurn === 0 && this.state.remainingPlayer === 0) {

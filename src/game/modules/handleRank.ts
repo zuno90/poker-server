@@ -37,7 +37,6 @@ export const checkDraw = (allHands: any[], winHand: any) => {
 
   const drawSessions: any[] = [];
   if (numberOfWinner > 1) {
-    console.log(allHands, 777);
     for (let i = 0; i < allHands.length; i++) {
       const a = [];
       for (let c of allHands[i].cards) a.push(c.value);
