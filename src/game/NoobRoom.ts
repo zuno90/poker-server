@@ -151,6 +151,7 @@ export default class NoobRoom extends Room<RoomState> {
   async onLeave(client: Client, consented: boolean) {
     const leavingPlayer = <Player>this.state.players.get(client.sessionId);
     leavingPlayer.connected = false;
+    leavingPlayer.isFold = true;
     // try {
     //   if (consented) throw new Error('consented leave!');
     //   // allow disconnected client to reconnect into this room until 10 seconds
@@ -183,8 +184,10 @@ export default class NoobRoom extends Room<RoomState> {
         this.sendNewState();
       }
     }
+
     console.log('client ' + client.sessionId + ' has just left');
-    this.state.players.delete(client.sessionId);
+
+    // this.state.players.delete(client.sessionId);
     this.sendNewState();
   }
 
@@ -464,7 +467,10 @@ export default class NoobRoom extends Room<RoomState> {
     this.state.currentTurn = -2;
 
     // player state
+
     this.state.players.forEach((player: Player, sessionId: string) => {
+      // 3 ng -> 4 state -> connect = false
+      if (!player.connected) this.state.players.delete(sessionId);
       const newPlayer = {
         id: player.id,
         username: player.username,
