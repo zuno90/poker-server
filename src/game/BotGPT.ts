@@ -162,7 +162,7 @@ export class BotClient {
   // Bet Algorithm
   private async betAlgorithm(round: ERound, botState: Player) {
     // if (this.isEndGame || !this.isActive) return;
-    await this.sleep(3);
+    await this.sleep(8);
     // case go 1st -> true
 
     if (this.isGoFirst) {
