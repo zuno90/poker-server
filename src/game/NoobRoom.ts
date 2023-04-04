@@ -185,6 +185,7 @@ export default class NoobRoom extends Room<RoomState> {
     }
     console.log('client ' + client.sessionId + ' has just left');
     this.state.players.delete(client.sessionId);
+    this.sendNewState();
   }
 
   async onDispose() {
