@@ -142,7 +142,7 @@ export default class MidRoom extends Room<RoomState> {
     try {
       this.state.players.set(client.sessionId, new Player(player)); // set player every joining
       this.sendNewState();
-      if (player.isHost) this.clock.setTimeout(() => this.addBot(), 5000);
+      if (player.isHost) this.clock.setTimeout(() => this.addBot(), 2000);
     } catch (err) {
       console.error(err);
     }
@@ -150,45 +150,41 @@ export default class MidRoom extends Room<RoomState> {
 
   async onLeave(client: Client, consented: boolean) {
     const leavingPlayer = <Player>this.state.players.get(client.sessionId);
-    leavingPlayer.connected = false;
-    leavingPlayer.isFold = true;
-    // try {
-    //   if (consented) throw new Error('consented leave!');
-    //   // allow disconnected client to reconnect into this room until 10 seconds
-    //   await this.allowReconnection(client, 10);
-    //   // client returned! let's re-activate it.
-    //   leavingPlayer.connected = true;
-    // } catch (err) {
-    //   console.log('client ' + client.sessionId + ' has just left');
-    //   this.state.players.delete(client.sessionId);
-    // }
+    try {
+      if (consented) throw new Error('consented leave!');
 
-    if (leavingPlayer.role === ERole.Bot) {
-      console.log('bot ' + client.sessionId + ' has just left');
-      this.state.players.delete(client.sessionId);
-      return this.clock.setTimeout(() => {
-        this.addBot();
-      }, 2000);
-    }
-    // handle change host to player
-    const playerInRoom: any[] = [];
-    if (leavingPlayer.isHost) {
-      this.state.players.forEach((player: Player, sessionId: string) => {
-        if (player.role === ERole.Player) playerInRoom.push({ sessionId, seat: player.seat });
-      });
-
-      if (playerInRoom.length === 1) return await this.disconnect();
-      if (playerInRoom.length > 1) {
-        const newHost = <Player>this.state.players.get(playerInRoom[1].sessionId);
-        newHost.isHost = true;
-        this.sendNewState();
+      leavingPlayer.connected = false;
+      leavingPlayer.isFold = true;
+      if (leavingPlayer.role === ERole.Bot) {
+        console.log('bot ' + client.sessionId + ' has just left');
+        this.state.players.delete(client.sessionId);
+        return this.clock.setTimeout(() => {
+          this.addBot();
+        }, 2000);
       }
+      // handle change host to player
+      const playerInRoom: any[] = [];
+      if (leavingPlayer.isHost) {
+        this.state.players.forEach((player: Player, sessionId: string) => {
+          if (player.role === ERole.Player) playerInRoom.push({ sessionId, seat: player.seat });
+        });
+
+        if (playerInRoom.length === 1) return await this.disconnect();
+        if (playerInRoom.length > 1) {
+          const newHost = <Player>this.state.players.get(playerInRoom[1].sessionId);
+          newHost.isHost = true;
+          this.sendNewState();
+        }
+      }
+
+      console.log('client ' + client.sessionId + ' has just left nhưng giữ lại state');
+
+      // this.state.players.delete(client.sessionId);
+      this.sendNewState();
+    } catch (err) {
+      console.log('client ' + client.sessionId + ' has just left ngay lập tức');
+      this.state.players.delete(client.sessionId);
     }
-
-    console.log('client ' + client.sessionId + ' has just left');
-
-    // this.state.players.delete(client.sessionId);
-    this.sendNewState();
   }
 
   async onDispose() {
@@ -215,7 +211,7 @@ export default class MidRoom extends Room<RoomState> {
         count++;
         this.broadcast(RESET_GAME, `đã đá cmn thằng loz ít tiền ra, đếm ngược ${count}`);
         if (count === 3) {
-          this.clients.forEach((client: Client, index: number) => {
+          this.clients.forEach((client: Client, _) => {
             const player = <Player>this.state.players.get(client.sessionId);
             if (player.chips < this.MIN_CHIP) client.leave();
           });
@@ -726,7 +722,10 @@ export default class MidRoom extends Room<RoomState> {
     console.log('pick winner trong nay', calculateResultArr);
 
     // handle winner tại đây và show kết quả
+    console.log(winCardsArr, 34534);
     const winHand = Hand.winners(winCardsArr)[0];
+
+    console.log(winHand, '666hahaha');
 
     // check 1 winner or > 1 winner
     const drawArr = checkDraw(allHands, winHand); // ["45345345","dfer4536345","ergertg34534"]
@@ -782,7 +781,7 @@ export default class MidRoom extends Room<RoomState> {
   }
 
   private endGame(result: any[]) {
-    console.log('end game');
+    console.log('end game', result);
     this.emitResult(result);
     this.state.round = ERound.SHOWDOWN;
     this.state.players.forEach((player: Player, _: string) => {
@@ -794,17 +793,6 @@ export default class MidRoom extends Room<RoomState> {
       }
     });
     this.sendNewState();
-    // this.clock.setTimeout(() => {
-    //   this.state.players.forEach((player: Player, _: string) => {
-    //     if (player.role === ERole.Player) {
-    //       this.presence.publish(
-    //         'poker:update:balance',
-    //         JSON.stringify({ id: player.id, chips: player.chips }),
-    //       );
-    //     }
-    //   });
-    //   this.sendNewState();
-    // }, 5000);
   }
 
   private async addBot() {

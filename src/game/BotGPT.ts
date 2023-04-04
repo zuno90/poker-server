@@ -4,7 +4,7 @@ import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
 import { RANK, RESULT } from './constants/server-emit.constant';
 import { ERole, EStatement, Player } from './schemas/player.schema';
 import { removePlayer, sortedArr } from './modules/handlePlayer';
-import { ALL, FRIEND_REQUEST, ROOM_CHAT } from './constants/room.constant';
+import { ALL, FRIEND_REQUEST, RESET_GAME, ROOM_CHAT } from './constants/room.constant';
 import Config from './config';
 
 type TCurrentBetInfo = {
@@ -79,8 +79,8 @@ export class BotClient {
     });
     this.room.onMessage(RESULT, data => {
       console.log('ket qua from broadcast', data);
-      this.isEndGame = true;
     });
+
     this.room.onMessage(FRIEND_REQUEST, data => {
       console.log('lời mời kết bạn', data);
     });
@@ -108,30 +108,14 @@ export class BotClient {
         }
       }
 
-      if (state.round === ERound.WELCOME) {
-        this.isEndGame = true;
-        this.isActive = false;
-        this.isGoFirst = false;
-        return;
-      } // before starting game - after reset game
-      if (state.round === ERound.PREFLOP) this.isEndGame = false;
-      if (state.round === ERound.SHOWDOWN) {
-        this.isEndGame = true;
-        this.isActive = false;
-        this.isGoFirst = false;
-        return;
-      } // reset BOT
-
-      this.botReadyToAction(this.botState, state.currentTurn, remainingPlayerTurn); // active/deactive bot
-      console.log({ endgame: this.isEndGame, active: this.isActive, gofirst: this.isGoFirst });
-      if (!this.isActive || this.isEndGame) return;
+      this.botReadyToAction(state, this.botState, remainingPlayerTurn); // active/deactive bot
       this.betAlgorithm(state.round, this.botState); // run algorithm of bot
     });
   }
 
   // check bot goes first
-  private botReadyToAction(bot: Player, currentTurn: number, sortedRemainingPlayerTurn: number[]) {
-    if (currentTurn === -1) return;
+  private botReadyToAction(state: any, bot: Player, sortedRemainingPlayerTurn: number[]) {
+    if (state.currentTurn === -1) return;
     if (bot.statement !== EStatement.Playing) return;
 
     let rIFPlayer = [];
@@ -141,30 +125,53 @@ export class BotClient {
       rIFPlayer = sortedArr([...new Set([...sortedRemainingPlayerTurn])]);
     }
 
+    if (!this.currentBetInfo.action) {
+      this.isGoFirst = true;
+    } // at turn preflop
+    if (
+      this.currentBetInfo.action === RAISE ||
+      this.currentBetInfo.action === ALLIN ||
+      this.currentBetInfo.betEachAction > bot.betEachAction
+    ) {
+      this.isGoFirst = false;
+    }
+
     // check bot is fold or allin
     const isHasBotTurn = rIFPlayer.find(turn => turn > this.currentBetInfo.turn);
     console.log('turn bot', isHasBotTurn);
     if (isHasBotTurn !== bot.turn) {
       this.isActive = false;
-      return;
+    } else {
+      if (state.round === ERound.WELCOME) {
+        this.isEndGame = true;
+        this.isActive = false;
+        this.isGoFirst = false;
+      } // before starting game - after reset game
+      if (
+        state.round === ERound.PREFLOP ||
+        state.round === ERound.FLOP ||
+        state.round === ERound.TURN ||
+        state.round === ERound.RIVER
+      ) {
+        this.isEndGame = false;
+        this.isActive = true;
+      }
+      if (state.round === ERound.SHOWDOWN) {
+        console.log('showdown r ne!!!!');
+        this.isEndGame = true;
+        this.isActive = false;
+        this.isGoFirst = false;
+      } // reset BOT
     }
-    this.isActive = true;
-
-    if (!this.currentBetInfo.action) this.isGoFirst = true; // at turn preflop
-    if (
-      this.currentBetInfo.action === RAISE ||
-      this.currentBetInfo.action === ALLIN ||
-      this.currentBetInfo.betEachAction > bot.betEachAction
-    )
-      this.isGoFirst = false;
   }
 
   // Bet Algorithm
   private async betAlgorithm(round: ERound, botState: Player) {
-    // if (this.isEndGame || !this.isActive) return;
-    await this.sleep(8);
+    console.log({ end: this.isEndGame, active: this.isActive, go1st: this.isGoFirst });
+    await this.sleep(2);
+    if (!this.isActive || this.isEndGame) return;
     // case go 1st -> true
-
+    console.log('bot actionnnnnn');
     if (this.isGoFirst) {
       if (round === ERound.PREFLOP) return this.emit(RAISE, { chips: this.randomNumberRange() });
       if (round === ERound.FLOP) return this.emit(RAISE, { chips: this.randomNumberRange() });
