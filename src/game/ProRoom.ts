@@ -152,7 +152,14 @@ export default class ProRoom extends Room<RoomState> {
       if (consented) throw new Error('consented leave!');
 
       leavingPlayer.connected = false;
-      leavingPlayer.isFold = true;
+      if (
+        this.state.round === ERound.PREFLOP ||
+        this.state.round === ERound.FLOP ||
+        this.state.round === ERound.TURN ||
+        this.state.round === ERound.RIVER
+      ) {
+        leavingPlayer.isFold = true;
+      }
       if (leavingPlayer.role === ERole.Bot) {
         console.log('bot ' + client.sessionId + ' has just left');
         this.state.players.delete(client.sessionId);
