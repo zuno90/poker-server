@@ -1,4 +1,4 @@
-import express, { Express, Request, Response } from 'express';
+import express, { Express } from 'express';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import cors from 'cors';
@@ -15,7 +15,7 @@ import DrawRoom from './game/DrawRoom';
 
 dotenv.config();
 
-const Hand = require('pokersolver').Hand;
+// const Hand = require('pokersolver').Hand;
 
 async function bootstrap() {
   const app: Express = express();
@@ -24,8 +24,9 @@ async function bootstrap() {
   app.use(express.urlencoded({ extended: true }));
   app.use(cors({ origin: '*', credentials: true }));
   const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100000,
+    windowMs: 1000, // 15 minutes
+    max: 1,
+    message: "You can't make any more requests at the moment. Try again later",
   });
   app.use('/matchmake/', apiLimiter);
   app.set('trust proxy', 1);

@@ -109,7 +109,7 @@ export class BotClient {
       }
 
       this.botReadyToAction(state, this.botState, remainingPlayerTurn); // active/deactive bot
-      this.betAlgorithm(state.round, this.botState); // run algorithm of bot
+      return this.betAlgorithm(state.round, this.botState); // run algorithm of bot
     });
   }
 
@@ -168,8 +168,8 @@ export class BotClient {
   // Bet Algorithm
   private async betAlgorithm(round: ERound, botState: Player) {
     console.log({ end: this.isEndGame, active: this.isActive, go1st: this.isGoFirst });
-    await this.sleep(5);
     if (!this.isActive || this.isEndGame) return;
+    await this.sleep(5);
     // case go 1st -> true
     console.log('bot actionnnnnn');
     if (this.isGoFirst) {
@@ -213,7 +213,7 @@ export class BotClient {
     );
   }
 
-  private sleep(ms: number) {
-    return new Promise(resolve => setTimeout(resolve, ms * 1000));
+  private sleep(s: number) {
+    return new Promise(resolve => setTimeout(resolve, s * 1000));
   }
 }
