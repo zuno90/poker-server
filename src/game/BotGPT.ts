@@ -142,10 +142,11 @@ export class BotClient {
     if (isHasBotTurn !== bot.turn) {
       this.isActive = false;
     } else {
-      if (state.round === ERound.WELCOME) {
+      if (state.round === ERound.WELCOME || state.round === ERound.SHOWDOWN) {
         this.isEndGame = true;
         this.isActive = false;
         this.isGoFirst = false;
+        return;
       } // before starting game - after reset game
       if (
         state.round === ERound.PREFLOP ||
@@ -156,12 +157,6 @@ export class BotClient {
         this.isEndGame = false;
         this.isActive = true;
       }
-      if (state.round === ERound.SHOWDOWN) {
-        console.log('showdown r ne!!!!');
-        this.isEndGame = true;
-        this.isActive = false;
-        this.isGoFirst = false;
-      } // reset BOT
     }
   }
 

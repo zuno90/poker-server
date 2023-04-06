@@ -139,8 +139,11 @@ export default class ProRoom extends Room<RoomState> {
     // SET INITIAL PLAYER STATE
     try {
       this.state.players.set(client.sessionId, new Player(player)); // set player every joining
+      if (player.isHost) {
+        await this.sleep(2);
+        await this.addBot();
+      }
       this.sendNewState();
-      if (player.isHost) this.clock.setTimeout(() => this.addBot(), 2000);
     } catch (err) {
       console.error(err);
     }
@@ -148,48 +151,38 @@ export default class ProRoom extends Room<RoomState> {
 
   async onLeave(client: Client, consented: boolean) {
     const leavingPlayer = <Player>this.state.players.get(client.sessionId);
+    leavingPlayer.connected = false;
+    leavingPlayer.isFold = true;
+
     try {
       if (consented) throw new Error('consented leave!');
-
-      leavingPlayer.connected = false;
-      if (
-        this.state.round === ERound.PREFLOP ||
-        this.state.round === ERound.FLOP ||
-        this.state.round === ERound.TURN ||
-        this.state.round === ERound.RIVER
-      ) {
-        leavingPlayer.isFold = true;
-      }
-      if (leavingPlayer.role === ERole.Bot) {
-        console.log('bot ' + client.sessionId + ' has just left');
-        this.state.players.delete(client.sessionId);
-        return this.clock.setTimeout(() => {
-          this.addBot();
-        }, 2000);
-      }
-      // handle change host to player
-      const playerInRoom: any[] = [];
-      if (leavingPlayer.isHost) {
-        this.state.players.forEach((player: Player, sessionId: string) => {
-          if (player.role === ERole.Player) playerInRoom.push({ sessionId, seat: player.seat });
-        });
-
-        if (playerInRoom.length === 1) return await this.disconnect();
-        if (playerInRoom.length > 1) {
-          const newHost = <Player>this.state.players.get(playerInRoom[1].sessionId);
-          newHost.isHost = true;
-          this.sendNewState();
-        }
-      }
-
-      console.log('client ' + client.sessionId + ' has just left nhưng giữ lại state');
-
-      // this.state.players.delete(client.sessionId);
-      this.sendNewState();
     } catch (err) {
       console.log('client ' + client.sessionId + ' has just left ngay lập tức');
       this.state.players.delete(client.sessionId);
     }
+
+    if (leavingPlayer.role === ERole.Bot) {
+      console.log('bot ' + client.sessionId + ' has just left');
+      this.state.players.delete(client.sessionId);
+      await this.sleep(2);
+      await this.addBot();
+    }
+    // handle change host to player
+    const playerInRoom: any[] = [];
+    if (leavingPlayer.isHost) {
+      this.state.players.forEach((player: Player, sessionId: string) => {
+        if (player.role === ERole.Player) playerInRoom.push({ sessionId, seat: player.seat });
+      });
+
+      if (playerInRoom.length === 1) return await this.disconnect();
+      if (playerInRoom.length > 1) {
+        const newHost = <Player>this.state.players.get(playerInRoom[1].sessionId);
+        newHost.isHost = true;
+      }
+    }
+
+    console.log('client ' + client.sessionId + ' has just left nhưng giữ lại state');
+    this.sendNewState();
   }
 
   async onDispose() {
@@ -212,17 +205,17 @@ export default class ProRoom extends Room<RoomState> {
       this.resetGame(client);
 
       let count = 0;
-      this.clock.setInterval(() => {
-        count++;
-        this.broadcast(RESET_GAME, `đã đá cmn thằng loz ít tiền ra, đếm ngược ${count}`);
+      let interval: any = setInterval(() => {
         if (count === 3) {
-          this.clients.forEach((client: Client, _) => {
+          this.clients.forEach(async (client: Client, _) => {
             const player = <Player>this.state.players.get(client.sessionId);
-            if (player.chips < this.MIN_CHIP) client.leave();
+            if (player.chips < this.MIN_CHIP) await client.leave();
           });
           this.sendNewState();
-          this.clock.clear();
+          return clearInterval(interval);
         }
+        count++;
+        this.broadcast(RESET_GAME, `đếm xuôi ${count}`);
       }, 1000);
     });
   }
@@ -727,10 +720,7 @@ export default class ProRoom extends Room<RoomState> {
     console.log('pick winner trong nay', calculateResultArr);
 
     // handle winner tại đây và show kết quả
-    console.log(winCardsArr, 34534);
     const winHand = Hand.winners(winCardsArr)[0];
-
-    console.log(winHand, '666hahaha');
 
     // check 1 winner or > 1 winner
     const drawArr = checkDraw(allHands, winHand); // ["45345345","dfer4536345","ergertg34534"]
@@ -767,7 +757,7 @@ export default class ProRoom extends Room<RoomState> {
     /*
      * in case unique winner
      */
-    const winPlayer = <Player>this.state.players.get(winHand.sessionId);
+    // const winPlayer = <Player>this.state.players.get(winHand.sessionId);
     for (const emitResult of emitResultArr) {
       if (winHand.sessionId === emitResult.i) emitResult.w = true;
       delete emitResult.i;
@@ -813,5 +803,9 @@ export default class ProRoom extends Room<RoomState> {
     this.clients.forEach((client: Client, index: number) => {
       client.send(ALL, this.state);
     });
+  }
+
+  private sleep(s: number) {
+    return new Promise(resolve => setTimeout(resolve, s * 1000));
   }
 }
