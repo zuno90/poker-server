@@ -156,10 +156,10 @@ export default class NoobRoom extends Room<RoomState> {
     leavingPlayer.connected = false;
     leavingPlayer.isFold = true;
 
-    console.log('ng roi phong', leavingPlayer.toJSON());
-    // leave()
     try {
       if (consented) throw new Error('consented leave!');
+      console.log('client ' + client.sessionId + ' has just left nhưng giữ lại state');
+    } catch (err) {
       // handle change host to player
       const playerInRoom: any[] = [];
       if (leavingPlayer.isHost) {
@@ -174,9 +174,6 @@ export default class NoobRoom extends Room<RoomState> {
           newHost.isHost = true;
         }
       }
-
-      console.log('client ' + client.sessionId + ' has just left nhưng giữ lại state');
-    } catch (err) {
       console.log('client ' + client.sessionId + ' has just left ngay lập tức');
       this.state.players.delete(client.sessionId);
     }

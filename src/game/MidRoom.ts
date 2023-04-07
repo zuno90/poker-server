@@ -158,32 +158,25 @@ export default class MidRoom extends Room<RoomState> {
 
     try {
       if (consented) throw new Error('consented leave!');
+      console.log('client ' + client.sessionId + ' has just left nhưng giữ lại state');
     } catch (err) {
+      // handle change host to player
+      const playerInRoom: any[] = [];
+      if (leavingPlayer.isHost) {
+        this.state.players.forEach((player: Player, sessionId: string) => {
+          if (player.role === ERole.Player) playerInRoom.push({ sessionId, seat: player.seat });
+        });
+        if (playerInRoom.length === 1) {
+          return await this.disconnect();
+        }
+        if (playerInRoom.length > 1) {
+          const newHost = <Player>this.state.players.get(playerInRoom[1].sessionId);
+          newHost.isHost = true;
+        }
+      }
       console.log('client ' + client.sessionId + ' has just left ngay lập tức');
       this.state.players.delete(client.sessionId);
     }
-
-    if (leavingPlayer.role === ERole.Bot) {
-      console.log('bot ' + client.sessionId + ' has just left');
-      this.state.players.delete(client.sessionId);
-      await this.sleep(2);
-      await this.addBot();
-    }
-    // handle change host to player
-    const playerInRoom: any[] = [];
-    if (leavingPlayer.isHost) {
-      this.state.players.forEach((player: Player, sessionId: string) => {
-        if (player.role === ERole.Player) playerInRoom.push({ sessionId, seat: player.seat });
-      });
-
-      if (playerInRoom.length === 1) return await this.disconnect();
-      if (playerInRoom.length > 1) {
-        const newHost = <Player>this.state.players.get(playerInRoom[1].sessionId);
-        newHost.isHost = true;
-      }
-    }
-
-    console.log('client ' + client.sessionId + ' has just left nhưng giữ lại state');
     this.sendNewState();
   }
 
