@@ -156,6 +156,18 @@ export default class NoobRoom extends Room<RoomState> {
     leavingPlayer.connected = false;
     leavingPlayer.isFold = true;
 
+    const playerInRoom: any[] = [];
+    if (leavingPlayer.isHost) {
+      this.state.players.forEach((player: Player, sessionId: string) => {
+        if (player.role === ERole.Player) playerInRoom.push({ sessionId, seat: player.seat });
+      });
+      if (playerInRoom.length === 1) return await this.disconnect();
+      if (playerInRoom.length > 1) {
+        const newHost = <Player>this.state.players.get(playerInRoom[1].sessionId);
+        newHost.isHost = true;
+      }
+    }
+
     try {
       if (consented) throw new Error('consented leave!');
       if (!this.state.onReady || leavingPlayer.statement === EStatement.Waiting)
@@ -163,20 +175,6 @@ export default class NoobRoom extends Room<RoomState> {
 
       console.log('user dang choi, nen giu lai state!');
     } catch (err) {
-      // handle change host to player
-      const playerInRoom: any[] = [];
-      if (leavingPlayer.isHost) {
-        this.state.players.forEach((player: Player, sessionId: string) => {
-          if (player.role === ERole.Player) playerInRoom.push({ sessionId, seat: player.seat });
-        });
-        if (playerInRoom.length === 1) {
-          return await this.disconnect();
-        }
-        if (playerInRoom.length > 1) {
-          const newHost = <Player>this.state.players.get(playerInRoom[1].sessionId);
-          newHost.isHost = true;
-        }
-      }
       console.log('client ' + client.sessionId + ' has just left ngay lập tức');
       this.state.players.delete(client.sessionId);
     }

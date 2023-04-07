@@ -154,6 +154,18 @@ export default class ProRoom extends Room<RoomState> {
     leavingPlayer.connected = false;
     leavingPlayer.isFold = true;
 
+    const playerInRoom: any[] = [];
+    if (leavingPlayer.isHost) {
+      this.state.players.forEach((player: Player, sessionId: string) => {
+        if (player.role === ERole.Player) playerInRoom.push({ sessionId, seat: player.seat });
+      });
+      if (playerInRoom.length === 1) return await this.disconnect();
+      if (playerInRoom.length > 1) {
+        const newHost = <Player>this.state.players.get(playerInRoom[1].sessionId);
+        newHost.isHost = true;
+      }
+    }
+
     try {
       if (consented) throw new Error('consented leave!');
       if (!this.state.onReady || leavingPlayer.statement === EStatement.Waiting)
@@ -161,20 +173,6 @@ export default class ProRoom extends Room<RoomState> {
 
       console.log('user dang choi, nen giu lai state!');
     } catch (err) {
-      // handle change host to player
-      const playerInRoom: any[] = [];
-      if (leavingPlayer.isHost) {
-        this.state.players.forEach((player: Player, sessionId: string) => {
-          if (player.role === ERole.Player) playerInRoom.push({ sessionId, seat: player.seat });
-        });
-        if (playerInRoom.length === 1) {
-          return await this.disconnect();
-        }
-        if (playerInRoom.length > 1) {
-          const newHost = <Player>this.state.players.get(playerInRoom[1].sessionId);
-          newHost.isHost = true;
-        }
-      }
       console.log('client ' + client.sessionId + ' has just left ngay lập tức');
       this.state.players.delete(client.sessionId);
     }
@@ -721,8 +719,6 @@ export default class ProRoom extends Room<RoomState> {
 
     // handle winner tại đây và show kết quả
     const winHand = Hand.winners(winCardsArr)[0];
-
-    console.log({ winCardsArr, winHand });
 
     // check 1 winner or > 1 winner
     const drawArr = checkDraw(allHands, winHand); // ["45345345","dfer4536345","ergertg34534"]
