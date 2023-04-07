@@ -726,7 +726,7 @@ export default class MidRoom extends Room<RoomState> {
     console.log('pick winner trong nay', calculateResultArr);
 
     // handle winner tại đây và show kết quả
-    const winHand = Hand.winners(winCardsArr);
+    const winHand = Hand.winners(winCardsArr)[0];
 
     console.log({ winCardsArr, winHand });
 
