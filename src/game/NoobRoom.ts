@@ -156,34 +156,30 @@ export default class NoobRoom extends Room<RoomState> {
     leavingPlayer.connected = false;
     leavingPlayer.isFold = true;
 
+    console.log('ng roi phong', leavingPlayer.toJSON());
+    // leave()
     try {
       if (consented) throw new Error('consented leave!');
+      // handle change host to player
+      const playerInRoom: any[] = [];
+      if (leavingPlayer.isHost) {
+        this.state.players.forEach((player: Player, sessionId: string) => {
+          if (player.role === ERole.Player) playerInRoom.push({ sessionId, seat: player.seat });
+        });
+        if (playerInRoom.length === 1) {
+          return await this.disconnect();
+        }
+        if (playerInRoom.length > 1) {
+          const newHost = <Player>this.state.players.get(playerInRoom[1].sessionId);
+          newHost.isHost = true;
+        }
+      }
+
+      console.log('client ' + client.sessionId + ' has just left nhưng giữ lại state');
     } catch (err) {
       console.log('client ' + client.sessionId + ' has just left ngay lập tức');
       this.state.players.delete(client.sessionId);
     }
-
-    if (leavingPlayer.role === ERole.Bot) {
-      console.log('bot ' + client.sessionId + ' has just left');
-      this.state.players.delete(client.sessionId);
-      await this.sleep(2);
-      await this.addBot();
-    }
-    // handle change host to player
-    const playerInRoom: any[] = [];
-    if (leavingPlayer.isHost) {
-      this.state.players.forEach((player: Player, sessionId: string) => {
-        if (player.role === ERole.Player) playerInRoom.push({ sessionId, seat: player.seat });
-      });
-
-      if (playerInRoom.length === 1) return await this.disconnect();
-      if (playerInRoom.length > 1) {
-        const newHost = <Player>this.state.players.get(playerInRoom[1].sessionId);
-        newHost.isHost = true;
-      }
-    }
-
-    console.log('client ' + client.sessionId + ' has just left nhưng giữ lại state');
     this.sendNewState();
   }
 
@@ -211,7 +207,13 @@ export default class NoobRoom extends Room<RoomState> {
         if (count === 3) {
           this.clients.forEach(async (client: Client, _) => {
             const player = <Player>this.state.players.get(client.sessionId);
-            if (player.chips < this.MIN_CHIP) await client.leave();
+            if (player.chips < this.MIN_CHIP) {
+              await client.leave();
+              if (player.role === ERole.Bot) {
+                await this.sleep(2);
+                await this.addBot();
+              }
+            }
           });
           this.sendNewState();
           return clearInterval(interval);

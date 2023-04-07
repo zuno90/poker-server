@@ -14,7 +14,7 @@ WORKDIR /usr/src/app/poker-server
 
 COPY ./package*.json ./
 
-RUN yarn --only=production && yarn cache clean
+RUN yarn --only=production
 
 COPY . .
 
