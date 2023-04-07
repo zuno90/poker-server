@@ -655,7 +655,6 @@ export default class NoobRoom extends Room<RoomState> {
         const winner = <Player>this.state.players.get(betP[0].i);
         winner.chips += this.state.potSize;
         result = [{ t: betP[0].t, w: true }];
-        console.log(winner.toJSON(), 'nguoi win!');
         return this.endGame(result);
       }
       if (betP.length > 1) {

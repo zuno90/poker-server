@@ -466,23 +466,27 @@ export default class MidRoom extends Room<RoomState> {
 
     this.state.players.forEach((player: Player, sessionId: string) => {
       // 3 ng -> 4 state -> connect = false
-      if (!player.connected) this.state.players.delete(sessionId);
-      const newPlayer = {
-        id: player.id,
-        username: player.username,
-        isHost: player.isHost,
-        chips: player.chips,
-        action: null,
-        accumulatedBet: 0,
-        betEachAction: 0,
-        turn: player.turn,
-        seat: player.seat,
-        role: player.role,
-        statement: EStatement.Waiting,
-        connected: player.connected,
-        isFold: false,
-      };
-      this.state.players.set(sessionId, new Player(newPlayer));
+      if (!player.connected) {
+        console.log('player connect false');
+        this.state.players.delete(sessionId);
+      } else {
+        const newPlayer = {
+          id: player.id,
+          username: player.username,
+          isHost: player.isHost,
+          chips: player.chips,
+          action: null,
+          accumulatedBet: 0,
+          betEachAction: 0,
+          turn: player.turn,
+          seat: player.seat,
+          role: player.role,
+          statement: EStatement.Waiting,
+          connected: player.connected,
+          isFold: false,
+        };
+        this.state.players.set(sessionId, new Player(newPlayer));
+      }
     });
 
     this.sendNewState();
@@ -722,7 +726,9 @@ export default class MidRoom extends Room<RoomState> {
     console.log('pick winner trong nay', calculateResultArr);
 
     // handle winner tại đây và show kết quả
-    const winHand = Hand.winners(winCardsArr)[0];
+    const winHand = Hand.winners(winCardsArr);
+
+    console.log({ winCardsArr, winHand });
 
     // check 1 winner or > 1 winner
     const drawArr = checkDraw(allHands, winHand); // ["45345345","dfer4536345","ergertg34534"]

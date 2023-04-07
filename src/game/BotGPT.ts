@@ -126,7 +126,7 @@ export class BotClient {
         this.isActive = true;
       }
       if (this.isEndGame || !this.isActive) return;
-      this.botReadyToAction(state, this.botState, remainingPlayerTurn); // active/deactive bot
+      return this.botReadyToAction(state, this.botState, remainingPlayerTurn); // active/deactive bot
     });
   }
 
@@ -194,42 +194,42 @@ export class BotClient {
   }
 
   // Bet Algorithm
-  private async betAlgorithm(round: ERound, botState: Player) {
-    console.log({ end: this.isEndGame, active: this.isActive, go1st: this.isGoFirst });
-    await this.sleep(5);
-    // case go 1st -> true
-    if (this.isGoFirst) {
-      await this.sleep(3);
-      if (round === ERound.PREFLOP) return this.emit(RAISE, { chips: this.randomNumberRange() });
-      if (round === ERound.FLOP) return this.emit(RAISE, { chips: this.randomNumberRange() });
-      if (round === ERound.TURN) return this.emit(RAISE, { chips: this.randomNumberRange() });
-      if (round === ERound.RIVER) return this.emit(RAISE, { chips: this.randomNumberRange() });
-    } else {
-      // case go 1st -> false
-      if (this.currentBetInfo.action === RAISE) {
-        console.log('bot call/allin sau khi co player call/allin');
-        if (this.currentBetInfo.betEachAction > botState.chips) return this.emit(ALLIN);
-        return this.emit(CALL);
-      }
-      if (this.currentBetInfo.action === CALL) {
-        console.log('bot call/allin sau khi player call/allin');
-        if (this.currentBetInfo.betEachAction > botState.chips) return this.emit(ALLIN);
-        return this.emit(CALL);
-      }
-      if (this.currentBetInfo.action === CHECK) {
-        console.log('bot check sau khi player check');
-        return this.emit(CHECK);
-      }
-      if (this.currentBetInfo.action === ALLIN) {
-        console.log('bot allin sau khi player allin');
-        return this.emit(ALLIN);
-      }
-      if (this.currentBetInfo.action === FOLD) {
-        console.log('bot fold sau khi player fold');
-        return this.emit(FOLD);
-      }
-    }
-  }
+  // private async betAlgorithm(round: ERound, botState: Player) {
+  //   console.log({ end: this.isEndGame, active: this.isActive, go1st: this.isGoFirst });
+  //   await this.sleep(5);
+  //   // case go 1st -> true
+  //   if (this.isGoFirst) {
+  //     await this.sleep(3);
+  //     if (round === ERound.PREFLOP) return this.emit(RAISE, { chips: this.randomNumberRange() });
+  //     if (round === ERound.FLOP) return this.emit(RAISE, { chips: this.randomNumberRange() });
+  //     if (round === ERound.TURN) return this.emit(RAISE, { chips: this.randomNumberRange() });
+  //     if (round === ERound.RIVER) return this.emit(RAISE, { chips: this.randomNumberRange() });
+  //   } else {
+  //     // case go 1st -> false
+  //     if (this.currentBetInfo.action === RAISE) {
+  //       console.log('bot call/allin sau khi co player call/allin');
+  //       if (this.currentBetInfo.betEachAction > botState.chips) return this.emit(ALLIN);
+  //       return this.emit(CALL);
+  //     }
+  //     if (this.currentBetInfo.action === CALL) {
+  //       console.log('bot call/allin sau khi player call/allin');
+  //       if (this.currentBetInfo.betEachAction > botState.chips) return this.emit(ALLIN);
+  //       return this.emit(CALL);
+  //     }
+  //     if (this.currentBetInfo.action === CHECK) {
+  //       console.log('bot check sau khi player check');
+  //       return this.emit(CHECK);
+  //     }
+  //     if (this.currentBetInfo.action === ALLIN) {
+  //       console.log('bot allin sau khi player allin');
+  //       return this.emit(ALLIN);
+  //     }
+  //     if (this.currentBetInfo.action === FOLD) {
+  //       console.log('bot fold sau khi player fold');
+  //       return this.emit(FOLD);
+  //     }
+  //   }
+  // }
 
   // handle reset bot action
 
