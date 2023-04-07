@@ -2,9 +2,12 @@ export const arrangeSeat = (seatArr: number[]) => {
   // if only host (case is not BOT here)
   if (seatArr.length === 1) return 2;
   // if had BOT here
+
   // const seatArrSort = [...seatArr].sort((a: number, b: number) => a - b);
   const seatArrSort = sortedArr(seatArr);
+  console.log(seatArrSort);
   let s: number | any;
+  if (seatArrSort[0] > 1) return 1;
   for (let i = 0; i < seatArrSort.length; i++) {
     const y = seatArrSort[i + 1] - seatArrSort[i];
     if (y === 1) s = seatArrSort[i + 1];
