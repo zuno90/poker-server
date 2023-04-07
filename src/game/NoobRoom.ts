@@ -70,14 +70,14 @@ export default class NoobRoom extends Room<RoomState> {
       // IS REAL PLAYER -> CHECK AUTH
       this.presence.publish('poker:auth:user', options.jwt);
       const auth = <any>await getAuth(this.presence, `cms:auth:user:${options.jwt}`);
-      if (!auth) return client.leave();
+      if (!auth) return client.leave(1000);
       const existedPlayer = auth;
 
       // check user to kick
       if (existedPlayer.chips < this.MIN_CHIP && existedPlayer > this.MAX_CHIP)
-        return client.leave();
+        return client.leave(1000);
       for (const p of this.state.players.values()) {
-        if (existedPlayer._id === p.id) return client.leave();
+        if (existedPlayer._id === p.id) return client.leave(1000);
       }
 
       if (!this.state.players.size)
@@ -158,7 +158,10 @@ export default class NoobRoom extends Room<RoomState> {
 
     try {
       if (consented) throw new Error('consented leave!');
-      console.log('client ' + client.sessionId + ' has just left nhưng giữ lại state');
+      if (!this.state.onReady || leavingPlayer.statement === EStatement.Waiting)
+        return this.state.players.delete(client.sessionId);
+
+      console.log('user dang choi, nen giu lai state!');
     } catch (err) {
       // handle change host to player
       const playerInRoom: any[] = [];
@@ -205,7 +208,7 @@ export default class NoobRoom extends Room<RoomState> {
           this.clients.forEach(async (client: Client, _) => {
             const player = <Player>this.state.players.get(client.sessionId);
             if (player.chips < this.MIN_CHIP) {
-              await client.leave();
+              await client.leave(1000);
               if (player.role === ERole.Bot) {
                 await this.sleep(2);
                 await this.addBot();

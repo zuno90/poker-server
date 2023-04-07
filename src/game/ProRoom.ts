@@ -156,7 +156,10 @@ export default class ProRoom extends Room<RoomState> {
 
     try {
       if (consented) throw new Error('consented leave!');
-      console.log('client ' + client.sessionId + ' has just left nhưng giữ lại state');
+      if (!this.state.onReady || leavingPlayer.statement === EStatement.Waiting)
+        return this.state.players.delete(client.sessionId);
+
+      console.log('user dang choi, nen giu lai state!');
     } catch (err) {
       // handle change host to player
       const playerInRoom: any[] = [];
