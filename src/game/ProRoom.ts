@@ -69,13 +69,13 @@ export default class ProRoom extends Room<RoomState> {
       // IS REAL PLAYER -> CHECK AUTH
       this.presence.publish('poker:auth:user', options.jwt);
       const auth = <any>await getAuth(this.presence, `cms:auth:user:${options.jwt}`);
-      if (!auth) return client.leave();
+      if (!auth) return client.leave(1000);
       const existedPlayer = auth;
 
       // check user to kick
-      if (existedPlayer.chips < this.MIN_CHIP) return client.leave();
+      if (existedPlayer.chips < this.MIN_CHIP) return client.leave(1000);
       for (const p of this.state.players.values()) {
-        if (existedPlayer._id === p.id) return client.leave();
+        if (existedPlayer._id === p.id) return client.leave(1000);
       }
 
       if (!this.state.players.size)
@@ -106,7 +106,7 @@ export default class ProRoom extends Room<RoomState> {
           role: ERole.Player,
         };
       }
-      throw Error('Bot is on room -> dispose room!');
+      throw new Error('Bot is on room -> dispose room!');
     } catch (err) {
       console.error(err);
       await this.disconnect();
@@ -166,6 +166,10 @@ export default class ProRoom extends Room<RoomState> {
       }
     }
 
+    // disconnect then connect new bot
+    if (leavingPlayer.role === ERole.Bot) {
+    }
+
     try {
       if (consented) throw new Error('consented leave!');
       if (!this.state.onReady || leavingPlayer.statement === EStatement.Waiting)
@@ -203,9 +207,14 @@ export default class ProRoom extends Room<RoomState> {
         if (count === 3) {
           this.clients.forEach(async (client: Client, _) => {
             const player = <Player>this.state.players.get(client.sessionId);
-            if (player.chips < this.MIN_CHIP) await client.leave();
+            if (player.chips < this.MIN_CHIP) {
+              await client.leave(1000);
+              if (player.role === ERole.Bot) {
+                await this.sleep(2);
+                await this.addBot();
+              }
+            }
           });
-          this.sendNewState();
           return clearInterval(interval);
         }
         count++;
@@ -433,7 +442,7 @@ export default class ProRoom extends Room<RoomState> {
     this.state.round = ERound.PREFLOP;
   }
 
-  private resetGame(client: Client) {
+  private async resetGame(client: Client) {
     if (this.state.round !== ERound.SHOWDOWN) return; // phai doi toi round welcome
     const host = <Player>this.state.players.get(client.sessionId);
     if (!host.isHost) return; // ko phai host ko cho rs
@@ -455,11 +464,9 @@ export default class ProRoom extends Room<RoomState> {
     this.state.currentTurn = -2;
 
     // player state
-
     this.state.players.forEach((player: Player, sessionId: string) => {
       // 3 ng -> 4 state -> connect = false
       if (!player.connected) {
-        console.log('player connect false');
         this.state.players.delete(sessionId);
       } else {
         const newPlayer = {
@@ -719,6 +726,8 @@ export default class ProRoom extends Room<RoomState> {
 
     // handle winner tại đây và show kết quả
     const winHand = Hand.winners(winCardsArr)[0];
+
+    console.log({ winCardsArr, winHand });
 
     // check 1 winner or > 1 winner
     const drawArr = checkDraw(allHands, winHand); // ["45345345","dfer4536345","ergertg34534"]

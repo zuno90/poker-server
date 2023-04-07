@@ -108,7 +108,7 @@ export default class NoobRoom extends Room<RoomState> {
           role: ERole.Player,
         };
       }
-      throw Error('Bot is on room -> dispose room!');
+      throw new Error('Bot is on room -> dispose room!');
     } catch (err) {
       console.error(err);
       await this.disconnect();
@@ -168,6 +168,10 @@ export default class NoobRoom extends Room<RoomState> {
       }
     }
 
+    // disconnect then connect new bot
+    if (leavingPlayer.role === ERole.Bot) {
+    }
+
     try {
       if (consented) throw new Error('consented leave!');
       if (!this.state.onReady || leavingPlayer.statement === EStatement.Waiting)
@@ -213,7 +217,6 @@ export default class NoobRoom extends Room<RoomState> {
               }
             }
           });
-          this.sendNewState();
           return clearInterval(interval);
         }
         count++;
@@ -441,7 +444,7 @@ export default class NoobRoom extends Room<RoomState> {
     this.state.round = ERound.PREFLOP;
   }
 
-  private resetGame(client: Client) {
+  private async resetGame(client: Client) {
     if (this.state.round !== ERound.SHOWDOWN) return; // phai doi toi round welcome
     const host = <Player>this.state.players.get(client.sessionId);
     if (!host.isHost) return; // ko phai host ko cho rs
@@ -463,11 +466,9 @@ export default class NoobRoom extends Room<RoomState> {
     this.state.currentTurn = -2;
 
     // player state
-
     this.state.players.forEach((player: Player, sessionId: string) => {
       // 3 ng -> 4 state -> connect = false
       if (!player.connected) {
-        console.log('player connect false');
         this.state.players.delete(sessionId);
       } else {
         const newPlayer = {
