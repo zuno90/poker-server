@@ -490,6 +490,7 @@ export default class NoobRoom extends Room<RoomState> {
       };
       this.state.players.set(sessionId, new Player(newPlayer));
     });
+    this.sendNewState();
   }
 
   private raiseAction(player: Player, chip: number) {
