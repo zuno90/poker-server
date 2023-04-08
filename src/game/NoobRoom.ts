@@ -179,6 +179,24 @@ export default class NoobRoom extends Room<RoomState> {
         return this.state.players.delete(client.sessionId);
 
       console.log('user dang choi, nen giu lai state!');
+      // set current turn &
+      const playingTurnArr = [];
+      for (const p of this.state.players.values()) {
+        p.statement === EStatement.Playing && playingTurnArr.push(p.turn);
+      }
+      const sortedTurn = sortedArr(playingTurnArr);
+      if (
+        leavingPlayer.turn === Math.min(...sortedTurn) &&
+        this.state.currentTurn === Math.max(...sortedTurn)
+      ) {
+        this.state.currentTurn = leavingPlayer.turn;
+      }
+      if (
+        leavingPlayer.turn !== Math.min(...sortedTurn) &&
+        leavingPlayer.turn === this.state.currentTurn + 1
+      ) {
+        this.state.currentTurn = leavingPlayer.turn;
+      }
     } catch (err) {
       console.log('client ' + client.sessionId + ' has just left ngay lập tức');
       this.state.players.delete(client.sessionId);
