@@ -142,17 +142,19 @@ export class BotClient {
       rIFPlayer = sortedArr([...new Set([...sortedRemainingPlayerTurn])]);
     }
 
-    if (!this.currentBetInfo.action) this.isGoFirst = true;
-    if (
-      this.currentBetInfo.action === RAISE ||
-      this.currentBetInfo.action === ALLIN ||
-      this.currentBetInfo.betEachAction > bot.betEachAction
-    )
-      this.isGoFirst = false;
-
     // check bot is fold or allin
     const isHasBotTurn = rIFPlayer.find(turn => turn > this.currentBetInfo.turn);
     if (!isHasBotTurn || isHasBotTurn !== bot.turn) this.isActive = false;
+
+    if (!this.currentBetInfo.action) {
+      this.isGoFirst = true;
+    } else if (
+      this.currentBetInfo.action === RAISE ||
+      this.currentBetInfo.action === ALLIN ||
+      this.currentBetInfo.betEachAction > bot.betEachAction
+    ) {
+      this.isGoFirst = false;
+    }
 
     await this.sleep(5);
     console.log({ end: this.isEndGame, active: this.isActive, go1st: this.isGoFirst });
