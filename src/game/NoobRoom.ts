@@ -197,6 +197,9 @@ export default class NoobRoom extends Room<RoomState> {
       ) {
         this.state.currentTurn = leavingPlayer.turn;
       }
+      if (leavingPlayer.turn !== Math.min(...sortedTurn) && this.state.currentTurn === -1) {
+        this.state.currentTurn = leavingPlayer.turn;
+      }
     } catch (err) {
       console.log('client ' + client.sessionId + ' has just left ngay lập tức');
       this.state.players.delete(client.sessionId);
