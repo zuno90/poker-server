@@ -189,15 +189,15 @@ export default class NoobRoom extends Room<RoomState> {
         this.state.currentTurn === Math.max(...sortedTurn)
       ) {
         this.foldAction(leavingPlayer);
-      }
-      if (
+      } else if (
         leavingPlayer.turn !== Math.min(...sortedTurn) &&
         leavingPlayer.turn === this.state.currentTurn + 1
       ) {
         this.foldAction(leavingPlayer);
-      }
-      if (leavingPlayer.turn === Math.min(...sortedTurn) && this.state.currentTurn === -1) {
+      } else if (leavingPlayer.turn === Math.min(...sortedTurn) && this.state.currentTurn === -1) {
         this.foldAction(leavingPlayer);
+      } else {
+        leavingPlayer.isFold = true;
       }
     } catch (err) {
       console.log('client ' + client.sessionId + ' has just left ngay lập tức');
