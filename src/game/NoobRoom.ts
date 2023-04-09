@@ -154,7 +154,6 @@ export default class NoobRoom extends Room<RoomState> {
   async onLeave(client: Client, consented: boolean) {
     const leavingPlayer = <Player>this.state.players.get(client.sessionId);
     leavingPlayer.connected = false;
-    leavingPlayer.isFold = true;
 
     const playerInRoom: any[] = [];
     if (leavingPlayer.isHost) {
@@ -189,16 +188,16 @@ export default class NoobRoom extends Room<RoomState> {
         leavingPlayer.turn === Math.min(...sortedTurn) &&
         this.state.currentTurn === Math.max(...sortedTurn)
       ) {
-        this.state.currentTurn = leavingPlayer.turn;
+        this.foldAction(leavingPlayer);
       }
       if (
         leavingPlayer.turn !== Math.min(...sortedTurn) &&
         leavingPlayer.turn === this.state.currentTurn + 1
       ) {
-        this.state.currentTurn = leavingPlayer.turn;
+        this.foldAction(leavingPlayer);
       }
       if (leavingPlayer.turn === Math.min(...sortedTurn) && this.state.currentTurn === -1) {
-        this.state.currentTurn = leavingPlayer.turn;
+        this.foldAction(leavingPlayer);
       }
     } catch (err) {
       console.log('client ' + client.sessionId + ' has just left ngay lập tức');
