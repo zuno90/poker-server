@@ -197,7 +197,7 @@ export default class NoobRoom extends Room<RoomState> {
       ) {
         this.state.currentTurn = leavingPlayer.turn;
       }
-      if (leavingPlayer.turn !== Math.min(...sortedTurn) && this.state.currentTurn === -1) {
+      if (leavingPlayer.turn === Math.min(...sortedTurn) && this.state.currentTurn === -1) {
         this.state.currentTurn = leavingPlayer.turn;
       }
     } catch (err) {
