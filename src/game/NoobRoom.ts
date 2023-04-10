@@ -188,14 +188,14 @@ export default class NoobRoom extends Room<RoomState> {
         leavingPlayer.turn === Math.min(...sortedTurn) &&
         this.state.currentTurn === Math.max(...sortedTurn)
       ) {
-        this.foldAction(leavingPlayer);
+        if (!leavingPlayer.isFold) this.foldAction(leavingPlayer);
       } else if (
         leavingPlayer.turn !== Math.min(...sortedTurn) &&
         leavingPlayer.turn === this.state.currentTurn + 1
       ) {
-        this.foldAction(leavingPlayer);
+        if (!leavingPlayer.isFold) this.foldAction(leavingPlayer);
       } else if (leavingPlayer.turn === Math.min(...sortedTurn) && this.state.currentTurn === -1) {
-        this.foldAction(leavingPlayer);
+        if (!leavingPlayer.isFold) this.foldAction(leavingPlayer);
       } else {
         leavingPlayer.isFold = true;
       }

@@ -174,24 +174,20 @@ export class BotClient {
         console.log('bot call/allin sau khi co player call/allin');
         if (this.currentBetInfo.betEachAction > bot.chips) return this.emit(ALLIN);
         return this.emit(CALL);
-      }
-      if (this.currentBetInfo.action === CALL) {
+      } else if (this.currentBetInfo.action === CALL) {
         console.log('bot call/allin sau khi player call/allin');
         if (this.currentBetInfo.betEachAction > bot.chips) return this.emit(ALLIN);
         return this.emit(CALL);
-      }
-      if (this.currentBetInfo.action === CHECK) {
+      } else if (this.currentBetInfo.action === CHECK) {
         console.log('bot check sau khi player check');
         return this.emit(CHECK);
-      }
-      if (this.currentBetInfo.action === ALLIN) {
+      } else if (this.currentBetInfo.action === ALLIN) {
         console.log('bot allin sau khi player allin');
         return this.emit(ALLIN);
-      }
-      if (this.currentBetInfo.action === FOLD) {
+      } else if (this.currentBetInfo.action === FOLD) {
         console.log('bot fold sau khi player fold');
         return this.emit(FOLD);
-      }
+      } else return;
     }
   }
 
