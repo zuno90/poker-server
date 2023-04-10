@@ -482,11 +482,11 @@ export default class NoobRoom extends Room<RoomState> {
     this.state.currentTurn = -2;
 
     // kick under min  balance
-    const kickedPlayers: string[] = [];
+
     this.clients.forEach(async (client: Client, _) => {
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.chips < this.MIN_CHIP) {
-        kickedPlayers.push(player.id);
+        client.send(KICK_PLAYER, player.id);
         client.leave(1000);
         if (player.role === ERole.Bot) {
           await this.sleep(2);
@@ -494,7 +494,6 @@ export default class NoobRoom extends Room<RoomState> {
         }
       }
     });
-    this.broadcast(KICK_PLAYER, kickedPlayers);
 
     // remove not-connected from state
     this.state.players.forEach((p: Player, sessionId: string) => {
