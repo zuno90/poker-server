@@ -95,6 +95,6 @@ export const calculateDraw = (arr: TAllinPlayer[]) => {
     ...item,
     v: item.v >= maxValue!.v ? item.v - maxValue!.v : 0,
   }));
-  console.log([...doneDraw, ...doneLost]);
+  // console.log([...doneDraw, ...doneLost]);
   return [...doneDraw, ...doneLost];
 };

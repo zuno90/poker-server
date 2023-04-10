@@ -216,7 +216,6 @@ export default class NoobRoom extends Room<RoomState> {
     // START GAME
     this.onMessage(START_GAME, (client: Client, _) => {
       this.startGame(client);
-      this.sendNewState();
     });
 
     // RESET GAME
@@ -404,7 +403,7 @@ export default class NoobRoom extends Room<RoomState> {
       this.state.bankerCards = [...this.banker5Cards];
     }
     this.emitRank();
-    this.sendNewState();
+    if (round !== ERound.WELCOME) this.sendNewState();
   }
 
   private emitRank() {
@@ -423,8 +422,9 @@ export default class NoobRoom extends Room<RoomState> {
   }
 
   private startGame(client: Client) {
-    console.log("state room", this.state.onReady)
+    console.log('state room 1', this.state.onReady);
     if (this.state.onReady) return; // check game is ready or not
+    console.log('state room 2', this.state.onReady);
     if (this.state.round !== ERound.WELCOME) return; // phai doi toi round welcome
     if (this.state.players.size < 2) return; // allow start game when > 2 players
     // check accept only host
@@ -461,6 +461,8 @@ export default class NoobRoom extends Room<RoomState> {
     });
     this.emitDealCards();
     this.state.round = ERound.PREFLOP;
+
+    this.sendNewState();
   }
 
   private async resetGame(client: Client) {
@@ -508,6 +510,7 @@ export default class NoobRoom extends Room<RoomState> {
       };
       this.state.players.set(sessionId, new Player(newPlayer));
     });
+
     this.sendNewState();
   }
 
