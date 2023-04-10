@@ -225,19 +225,7 @@ export default class NoobRoom extends Room<RoomState> {
 
       let count = 0;
       let interval: any = setInterval(() => {
-        if (count === 3) {
-          this.clients.forEach(async (client: Client, _) => {
-            const player = <Player>this.state.players.get(client.sessionId);
-            if (player.chips < this.MIN_CHIP) {
-              await client.leave(1000);
-              if (player.role === ERole.Bot) {
-                await this.sleep(2);
-                await this.addBot();
-              }
-            }
-          });
-          return clearInterval(interval);
-        }
+        if (count === 3) return clearInterval(interval);
         count++;
         this.broadcast(RESET_GAME, `đếm xuôi ${count}`);
       }, 1000);
@@ -485,6 +473,17 @@ export default class NoobRoom extends Room<RoomState> {
     this.state.bankerCards = [];
     this.state.remainingPlayer = 0;
     this.state.currentTurn = -2;
+
+    this.clients.forEach(async (client: Client, _) => {
+      const player = <Player>this.state.players.get(client.sessionId);
+      if (player.chips < this.MIN_CHIP) {
+        client.leave(1000);
+        if (player.role === ERole.Bot) {
+          await this.sleep(2);
+          await this.addBot();
+        }
+      }
+    });
 
     // remove not-connected from state
     this.state.players.forEach((p: Player, sessionId: string) => {
