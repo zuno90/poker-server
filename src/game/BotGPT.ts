@@ -156,7 +156,7 @@ export class BotClient {
       this.isGoFirst = false;
     }
 
-    await this.sleep(5);
+    await this.sleep(7);
     console.log({ end: this.isEndGame, active: this.isActive, go1st: this.isGoFirst });
     if (this.isEndGame || !this.isActive) return;
     // case go 1st -> true
