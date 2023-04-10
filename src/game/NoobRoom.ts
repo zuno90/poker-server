@@ -216,7 +216,6 @@ export default class NoobRoom extends Room<RoomState> {
     // START GAME
     this.onMessage(START_GAME, (client: Client, _) => {
       this.startGame(client);
-      console.log('start game:::::current turn', this.currentBet);
       this.sendNewState();
     });
 
@@ -318,8 +317,6 @@ export default class NoobRoom extends Room<RoomState> {
         callValue = player.chips;
         return this.allinAction(client.sessionId, player, callValue);
       }
-
-      console.log({ chip: player.chips, callValue, currentbet: this.currentBet });
 
       if (callValue === 0) return this.checkAction(player);
       this.callAction(player, callValue);
@@ -426,6 +423,7 @@ export default class NoobRoom extends Room<RoomState> {
   }
 
   private startGame(client: Client) {
+    console.log("state room", this.state.onReady)
     if (this.state.onReady) return; // check game is ready or not
     if (this.state.round !== ERound.WELCOME) return; // phai doi toi round welcome
     if (this.state.players.size < 2) return; // allow start game when > 2 players
@@ -550,7 +548,7 @@ export default class NoobRoom extends Room<RoomState> {
     this.state.potSize += chip;
 
     this.remainingTurn--;
-    console.log('CALL, turn con', { id: player.id, remainturn: this.remainingTurn });
+
     this.sendNewState(); // send state before call
 
     if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);

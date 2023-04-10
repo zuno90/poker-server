@@ -146,7 +146,7 @@ export class BotClient {
     const isHasBotTurn = rIFPlayer.find(turn => turn > this.currentBetInfo.turn);
     if (!isHasBotTurn || isHasBotTurn !== bot.turn) this.isActive = false;
 
-    if (!this.currentBetInfo.action && isHasBotTurn) {
+    if (!this.currentBetInfo.action && isHasBotTurn === bot.turn) {
       this.isGoFirst = true;
     } else if (
       this.currentBetInfo.action === RAISE ||
