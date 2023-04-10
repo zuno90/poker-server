@@ -689,6 +689,7 @@ export default class NoobRoom extends Room<RoomState> {
               const betPlayer = <Player>this.state.players.get(c.i);
               betPlayer.chips += c.v;
             }
+            this.state.bankerCards = this.banker5Cards;
             return this.endGame(result);
           }
         }
