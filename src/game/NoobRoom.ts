@@ -2,7 +2,14 @@ import { Client, Presence, Room } from 'colyseus';
 import { Request } from 'express';
 import { ERound, RoomState } from './schemas/room.schema';
 import { ERole, EStatement, Player } from './schemas/player.schema';
-import { ALL, FRIEND_REQUEST, RESET_GAME, ROOM_CHAT, START_GAME } from './constants/room.constant';
+import {
+  ALL,
+  FRIEND_REQUEST,
+  KICK_PLAYER,
+  RESET_GAME,
+  ROOM_CHAT,
+  START_GAME,
+} from './constants/room.constant';
 import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
 import { RANK, RESULT } from './constants/server-emit.constant';
 import { deal } from './modules/handleCard';
@@ -474,9 +481,12 @@ export default class NoobRoom extends Room<RoomState> {
     this.state.remainingPlayer = 0;
     this.state.currentTurn = -2;
 
+    // kick under min  balance
+    const kickedPlayers: string[] = [];
     this.clients.forEach(async (client: Client, _) => {
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.chips < this.MIN_CHIP) {
+        kickedPlayers.push(player.id);
         client.leave(1000);
         if (player.role === ERole.Bot) {
           await this.sleep(2);
@@ -484,6 +494,7 @@ export default class NoobRoom extends Room<RoomState> {
         }
       }
     });
+    this.broadcast(KICK_PLAYER, kickedPlayers);
 
     // remove not-connected from state
     this.state.players.forEach((p: Player, sessionId: string) => {

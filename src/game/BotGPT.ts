@@ -116,16 +116,16 @@ export class BotClient {
       } // before starting game - after reset game
       if (state.round === ERound.PREFLOP) {
         this.isEndGame = false;
-        this.isActive = true;
+        this.isActive = false;
       } else if (
         state.round === ERound.FLOP ||
         state.round === ERound.TURN ||
         state.round === ERound.RIVER
       ) {
         this.isEndGame = false;
-        this.isActive = true;
+        this.isActive = false;
       }
-      if (this.isEndGame || !this.isActive) return;
+
       return this.botReadyToAction(state, this.botState, remainingPlayerTurn); // active/deactive bot
     });
   }
@@ -144,7 +144,7 @@ export class BotClient {
 
     // check bot is fold or allin
     const isHasBotTurn = rIFPlayer.find(turn => turn > this.currentBetInfo.turn);
-    if (!isHasBotTurn || isHasBotTurn !== bot.turn) this.isActive = false;
+    if (isHasBotTurn && isHasBotTurn === bot.turn) this.isActive = true;
 
     if (!this.currentBetInfo.action && isHasBotTurn === bot.turn) {
       this.isGoFirst = true;
