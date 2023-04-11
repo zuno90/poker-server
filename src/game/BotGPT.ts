@@ -142,9 +142,14 @@ export class BotClient {
       rIFPlayer = sortedArr([...new Set([...sortedRemainingPlayerTurn])]); // [0,1,2] => 5
     }
 
-    // check bot is fold or allin
+    // check bot has turn
     const isHasBotTurn = rIFPlayer.find(turn => turn > this.currentBetInfo.turn);
-    if (isHasBotTurn && isHasBotTurn === bot.turn) this.isActive = true;
+    if (isHasBotTurn && isHasBotTurn === bot.turn) {
+      this.isActive = true;
+      if (this.isEndGame) this.isActive = false;
+    }
+
+    console.log('round', state.round);
 
     if (!this.currentBetInfo.action && isHasBotTurn === bot.turn) {
       this.isGoFirst = true;
@@ -157,10 +162,12 @@ export class BotClient {
     }
 
     console.log({ end: this.isEndGame, active: this.isActive, go1st: this.isGoFirst });
-    if (this.isEndGame || !this.isActive) return;
+    if (state.round === ERound.WELCOME || state.round === ERound.SHOWDOWN) return;
+
     // case go 1st -> true
     if (this.isGoFirst) {
       await this.sleep(8);
+      if (this.isEndGame || !this.isActive) return;
       if (state.round === ERound.PREFLOP)
         return this.emit(RAISE, { chips: this.randomNumberRange() });
       if (state.round === ERound.FLOP) return this.emit(RAISE, { chips: this.randomNumberRange() });
@@ -169,6 +176,7 @@ export class BotClient {
         return this.emit(RAISE, { chips: this.randomNumberRange() });
     } else {
       await this.sleep(5);
+      if (this.isEndGame || !this.isActive) return;
       // case go 1st -> false
       if (this.currentBetInfo.action === RAISE) {
         console.log('bot call/allin sau khi co player call/allin');

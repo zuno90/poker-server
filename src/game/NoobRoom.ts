@@ -262,11 +262,7 @@ export default class NoobRoom extends Room<RoomState> {
 
       this.presence.publish('poker:friend:request', { from: reqUser.id, to: acceptUser.id });
       this.clients.forEach((c: Client, _: number) => {
-        if (c.sessionId === acceptUser.sessionId)
-          c.send(FRIEND_REQUEST, `Thằng ${client.sessionId} add friend mày kìa!`);
-      });
-      this.presence.subscribe('cms:friend:accept', (data: any) => {
-        console.log(data);
+        if (c.sessionId === acceptUser.sessionId) c.send(FRIEND_REQUEST, reqUser.id);
       });
     });
   }
