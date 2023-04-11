@@ -259,8 +259,6 @@ export default class NoobRoom extends Room<RoomState> {
       const reqUser = <Player>this.state.players.get(client.sessionId);
       if (!reqUser || !acceptUser) return;
 
-      console.log('poker toid', `cms:friend:${toId}`);
-
       this.presence.publish('poker:friend:request', { from: reqUser.id, to: acceptUser.id });
       const notificationId = await getSubChannel(this.presence, `cms:friend:${toId}`);
 
@@ -564,6 +562,7 @@ export default class NoobRoom extends Room<RoomState> {
     this.state.potSize += chip;
 
     this.remainingTurn--;
+    console.log('CALL, turn con', this.remainingTurn);
 
     this.sendNewState(); // send state before call
 
@@ -688,7 +687,7 @@ export default class NoobRoom extends Room<RoomState> {
     let result: any[] = [];
     const betP: any[] = [];
     this.state.players.forEach((p: Player, sessionId: string) => {
-      if (p.statement === EStatement.Playing && !p.isFold)
+      if (p.connected && p.statement === EStatement.Playing && !p.isFold)
         betP.push({ i: sessionId, t: p.turn, v: p.accumulatedBet });
     });
     if (this.state.remainingPlayer === 1) {
