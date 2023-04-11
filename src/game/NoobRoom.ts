@@ -248,7 +248,6 @@ export default class NoobRoom extends Room<RoomState> {
   }
 
   // handle friend request
-
   private handleFriendRequest() {
     this.onMessage(FRIEND_REQUEST, async (client: Client, toId: string) => {
       // get sessionId of toPlayer
@@ -260,8 +259,11 @@ export default class NoobRoom extends Room<RoomState> {
       const reqUser = <Player>this.state.players.get(client.sessionId);
       if (!reqUser || !acceptUser) return;
 
+      console.log('poker toid', `cms:friend:${toId}`);
+
       this.presence.publish('poker:friend:request', { from: reqUser.id, to: acceptUser.id });
       const notificationId = await getSubChannel(this.presence, `cms:friend:${toId}`);
+
       this.clients.forEach((c: Client, _: number) => {
         if (c.sessionId === acceptUser.sessionId)
           c.send(FRIEND_REQUEST, {
