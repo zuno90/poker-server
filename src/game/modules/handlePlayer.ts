@@ -5,7 +5,6 @@ export const arrangeSeat = (seatArr: number[]) => {
 
   // const seatArrSort = [...seatArr].sort((a: number, b: number) => a - b);
   const seatArrSort = sortedArr(seatArr);
-  console.log(seatArrSort);
   let s: number | any;
   if (seatArrSort[0] > 1) return 1;
   for (let i = 0; i < seatArrSort.length; i++) {

@@ -203,8 +203,6 @@ export default class NoobRoom extends Room<RoomState> {
         if (!leavingPlayer.isFold) this.foldAction(leavingPlayer);
       } else if (leavingPlayer.turn === Math.min(...sortedTurn) && this.state.currentTurn === -1) {
         if (!leavingPlayer.isFold) this.foldAction(leavingPlayer);
-      } else {
-        leavingPlayer.isFold = true;
       }
     } catch (err) {
       console.log('client ' + client.sessionId + ' has just left ngay lập tức');
@@ -252,7 +250,7 @@ export default class NoobRoom extends Room<RoomState> {
   // handle friend request
 
   private handleFriendRequest() {
-    this.onMessage(FRIEND_REQUEST, async (client: Client, toId: string) => {
+    this.onMessage(FRIEND_REQUEST, (client: Client, toId: string) => {
       // get sessionId of toPlayer
       let acceptUser: any;
       this.state.players.forEach((player: Player, sessionId: string) => {
@@ -262,12 +260,12 @@ export default class NoobRoom extends Room<RoomState> {
       const reqUser = <Player>this.state.players.get(client.sessionId);
       if (!reqUser || !acceptUser) return;
 
-      await this.presence.publish('poker:friend:request', { from: reqUser.id, to: acceptUser.id });
+      this.presence.publish('poker:friend:request', { from: reqUser.id, to: acceptUser.id });
       this.clients.forEach((c: Client, _: number) => {
         if (c.sessionId === acceptUser.sessionId)
           c.send(FRIEND_REQUEST, `Thằng ${client.sessionId} add friend mày kìa!`);
       });
-      await this.presence.subscribe('cms:friend:accept', (data: any) => {
+      this.presence.subscribe('cms:friend:accept', (data: any) => {
         console.log(data);
       });
     });
@@ -548,6 +546,8 @@ export default class NoobRoom extends Room<RoomState> {
       this.state.bankerCards = this.banker5Cards;
       return this.endGame(emitResultArr);
     }
+
+    this.actionFoldPlayer();
   }
 
   private callAction(player: Player, chip: number) {
@@ -564,6 +564,8 @@ export default class NoobRoom extends Room<RoomState> {
     this.sendNewState(); // send state before call
 
     if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
+
+    this.actionFoldPlayer();
   }
 
   private checkAction(player: Player) {
@@ -577,6 +579,8 @@ export default class NoobRoom extends Room<RoomState> {
     this.sendNewState(); // send state before check
 
     if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
+
+    this.actionFoldPlayer();
   }
 
   private allinAction(sessionId: string, player: Player, chip: number) {
@@ -656,6 +660,8 @@ export default class NoobRoom extends Room<RoomState> {
     // allin cuối xong và còn nhiều người chơi
     if (this.remainingTurn === 0 && this.state.remainingPlayer > 1)
       return this.changeNextRound(this.state.round);
+
+    this.actionFoldPlayer();
   }
 
   private foldAction(player: Player) {
@@ -716,6 +722,8 @@ export default class NoobRoom extends Room<RoomState> {
       return this.endGame(emitResultArr);
     }
     if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
+
+    this.actionFoldPlayer();
   }
 
   private pickWinner1() {
@@ -826,6 +834,23 @@ export default class NoobRoom extends Room<RoomState> {
       }
     });
     this.sendNewState();
+  }
+
+  private actionFoldPlayer() {
+    const playingTurnArr = [];
+    for (const p of this.state.players.values())
+      p.statement === EStatement.Playing && playingTurnArr.push(p.turn);
+
+    const sortedTurn = sortedArr(playingTurnArr);
+    const currentTurn = this.state.currentTurn;
+
+    let nextTurn: number;
+    if (currentTurn === Math.max(...sortedTurn)) nextTurn = sortedTurn[0];
+    else nextTurn = currentTurn + 1;
+
+    for (const fP of this.state.players.values()) {
+      if (!fP.connected && fP.turn === nextTurn) this.foldAction(fP);
+    }
   }
 
   private async addBot() {

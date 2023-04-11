@@ -67,11 +67,12 @@ export default class CustomLobbyRoom extends Room<RoomState> {
     const player = <PlayerState>this.state.players.get(client.sessionId);
     player.connected = false;
     this.state.players.delete(client.sessionId);
+
     // try {
     //   if (consented) throw new Error('consented leave');
     //   // allow disconnected client to reconnect into this room until 20 seconds
     //   await this.allowReconnection(client, this.reconnectTimeOut);
-    //
+
     //   // client returned! let's re-activate it.
     //   player.connected = true;
     // } catch (e) {
