@@ -368,7 +368,6 @@ export default class NoobRoom extends Room<RoomState> {
   private async changeNextRound(round: ERound) {
     // check winner first (river -> showdown)
     if (round === ERound.RIVER) {
-      // this.state.round = ERound.SHOWDOWN;
       this.state.bankerCards = this.banker5Cards;
       const { emitResultArr, finalCalculateResult }: any = this.pickWinner1();
       for (const c of finalCalculateResult) {
@@ -399,6 +398,9 @@ export default class NoobRoom extends Room<RoomState> {
     }
     this.emitRank();
     if (round !== ERound.WELCOME) this.sendNewState();
+
+    if (round === ERound.PREFLOP || round === ERound.FLOP || round === ERound.TURN)
+      this.actionFoldPlayer();
   }
 
   private emitRank() {
@@ -852,7 +854,10 @@ export default class NoobRoom extends Room<RoomState> {
     else nextTurn = currentTurn + 1;
 
     for (const fP of this.state.players.values()) {
-      if (!fP.connected && fP.turn === nextTurn) this.foldAction(fP);
+      if (!fP.connected && fP.turn === nextTurn) {
+        console.log(fP.username, fP.turn);
+        this.foldAction(fP);
+      }
     }
   }
 
