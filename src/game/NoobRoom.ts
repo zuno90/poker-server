@@ -45,7 +45,7 @@ export interface TAllinPlayer {
   w?: boolean;
 }
 
-const getAuth = (redis: Presence, channel: string) => {
+const getSubChannel = (redis: Presence, channel: string) => {
   return new Promise(resolve => {
     redis.subscribe(channel, (data: any) => {
       resolve(data);
@@ -76,7 +76,7 @@ export default class NoobRoom extends Room<RoomState> {
       if (options.isBot && !options.jwt) return botInfo(this.roomName);
       // IS REAL PLAYER -> CHECK AUTH
       this.presence.publish('poker:auth:user', options.jwt);
-      const auth = <any>await getAuth(this.presence, `cms:auth:user:${options.jwt}`);
+      const auth = <any>await getSubChannel(this.presence, `cms:auth:user:${options.jwt}`);
       if (!auth) return client.leave(1000);
       const existedPlayer = auth;
 
@@ -250,7 +250,7 @@ export default class NoobRoom extends Room<RoomState> {
   // handle friend request
 
   private handleFriendRequest() {
-    this.onMessage(FRIEND_REQUEST, (client: Client, toId: string) => {
+    this.onMessage(FRIEND_REQUEST, async (client: Client, toId: string) => {
       // get sessionId of toPlayer
       let acceptUser: any;
       this.state.players.forEach((player: Player, sessionId: string) => {
@@ -261,8 +261,14 @@ export default class NoobRoom extends Room<RoomState> {
       if (!reqUser || !acceptUser) return;
 
       this.presence.publish('poker:friend:request', { from: reqUser.id, to: acceptUser.id });
+      const notificationId = await getSubChannel(this.presence, `cms:friend:${toId}`);
       this.clients.forEach((c: Client, _: number) => {
-        if (c.sessionId === acceptUser.sessionId) c.send(FRIEND_REQUEST, reqUser.id);
+        if (c.sessionId === acceptUser.sessionId)
+          c.send(FRIEND_REQUEST, {
+            notificationId,
+            reqUserId: reqUser.id,
+            reqUsername: reqUser.username,
+          });
       });
     });
   }
