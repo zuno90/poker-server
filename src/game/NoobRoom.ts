@@ -174,6 +174,11 @@ export default class NoobRoom extends Room<RoomState> {
         newHost.isHost = true;
       }
     }
+    // con moi bot
+    if (this.clients.length === 1) {
+      const bot = <Player>this.state.players.get(this.clients[0].sessionId);
+      if (bot.role === ERole.Bot) await this.disconnect();
+    }
 
     // disconnect then connect new bot
     try {
