@@ -4,6 +4,7 @@ import { ERound, RoomState } from './schemas/room.schema';
 import { ERole, EStatement, Player } from './schemas/player.schema';
 import {
   ALL,
+  FRIEND_CHECK,
   FRIEND_REQUEST,
   KICK_PLAYER,
   RESET_GAME,
@@ -181,10 +182,8 @@ export default class NoobRoom extends Room<RoomState> {
         !this.state.onReady ||
         leavingPlayer.statement === EStatement.Waiting ||
         leavingPlayer.role === ERole.Bot
-      ) {
-        this.sendNewState();
-        return this.state.players.delete(client.sessionId);
-      }
+      )
+        throw new Error('Can leave immediately!');
 
       console.log('user dang choi, nen giu lai state!');
       // set current turn &
@@ -251,26 +250,40 @@ export default class NoobRoom extends Room<RoomState> {
 
   // handle friend request
   private handleFriendRequest() {
-    this.onMessage(FRIEND_REQUEST, async (client: Client, toId: string) => {
-      // get sessionId of toPlayer
-      let acceptUser: any;
-      this.state.players.forEach((player: Player, sessionId: string) => {
-        if (player.id === toId) acceptUser = { sessionId, id: player.id };
+    // check friend
+    this.onMessage(FRIEND_CHECK, async (client: Client, toId: string) => {
+      const { reqUser, acceptUser } = <any>this.friendCheck(client, toId);
+      this.presence.publish('poker:friend:check', {
+        checkFrom: reqUser.id,
+        checkTo: acceptUser.id,
       });
 
-      const reqUser = <Player>this.state.players.get(client.sessionId);
-      if (!reqUser || !acceptUser) return;
-
-      this.presence.publish('poker:friend:request', { from: reqUser.id, to: acceptUser.id });
-      const notificationId = await getSubChannel(this.presence, `cms:friend:${toId}`);
-
+      const isFriend = await getSubChannel(this.presence, `cms:friend:check:${reqUser.id}`);
       this.clients.forEach((c: Client, _: number) => {
         if (c.sessionId === acceptUser.sessionId)
-          c.send(FRIEND_REQUEST, {
-            notificationId,
-            reqUserId: reqUser.id,
-            reqUsername: reqUser.username,
-          });
+          isFriend && c.send(FRIEND_CHECK, `You and ${acceptUser.username} already were friend!`);
+      });
+    });
+
+    // add friend
+    this.onMessage(FRIEND_REQUEST, async (client: Client, toId: string) => {
+      const { reqUser, acceptUser } = <any>this.friendCheck(client, toId);
+
+      this.presence.publish('poker:friend:request', { reqFrom: reqUser.id, reqTo: acceptUser.id });
+
+      const notificationId = await getSubChannel(
+        this.presence,
+        `cms:friend:request:${acceptUser.id}`,
+      );
+      this.clients.forEach((c: Client, _: number) => {
+        if (c.sessionId === acceptUser.sessionId)
+          notificationId
+            ? c.send(FRIEND_REQUEST, {
+                notificationId,
+                reqUserId: reqUser.id,
+                reqUsername: reqUser.username,
+              })
+            : c.send(FRIEND_REQUEST, 'Bad request!');
       });
     });
   }
@@ -879,5 +892,17 @@ export default class NoobRoom extends Room<RoomState> {
 
   private sleep(s: number) {
     return new Promise(resolve => setTimeout(resolve, s * 1000));
+  }
+
+  private friendCheck(client: Client, toId: string) {
+    let acceptUser: any;
+    this.state.players.forEach((player: Player, sessionId: string) => {
+      if (player.id === toId) acceptUser = { sessionId, id: player.id };
+    });
+
+    const reqUser = <Player>this.state.players.get(client.sessionId);
+    if (!reqUser || !acceptUser) return;
+
+    return { reqUser, acceptUser };
   }
 }
