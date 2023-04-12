@@ -2,7 +2,15 @@ import { Client, Presence, Room } from 'colyseus';
 import { Request } from 'express';
 import { ERound, RoomState } from './schemas/room.schema';
 import { ERole, EStatement, Player } from './schemas/player.schema';
-import { ALL, FRIEND_REQUEST, RESET_GAME, ROOM_CHAT, START_GAME } from './constants/room.constant';
+import {
+  ALL,
+  FRIEND_CHECK,
+  FRIEND_REQUEST,
+  KICK_PLAYER,
+  RESET_GAME,
+  ROOM_CHAT,
+  START_GAME,
+} from './constants/room.constant';
 import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
 import { RANK, RESULT } from './constants/server-emit.constant';
 import { deal } from './modules/handleCard';
@@ -38,7 +46,7 @@ export interface TAllinPlayer {
   w?: boolean;
 }
 
-const getAuth = (redis: Presence, channel: string) => {
+const getSubChannel = (redis: Presence, channel: string) => {
   return new Promise(resolve => {
     redis.subscribe(channel, (data: any) => {
       resolve(data);
@@ -68,7 +76,7 @@ export default class ProRoom extends Room<RoomState> {
       if (options.isBot && !options.jwt) return botInfo(this.roomName);
       // IS REAL PLAYER -> CHECK AUTH
       this.presence.publish('poker:auth:user', options.jwt);
-      const auth = <any>await getAuth(this.presence, `cms:auth:user:${options.jwt}`);
+      const auth = <any>await getSubChannel(this.presence, `cms:auth:user:${options.jwt}`);
       if (!auth) return client.leave(1000);
       const existedPlayer = auth;
 
@@ -152,7 +160,6 @@ export default class ProRoom extends Room<RoomState> {
   async onLeave(client: Client, consented: boolean) {
     const leavingPlayer = <Player>this.state.players.get(client.sessionId);
     leavingPlayer.connected = false;
-    leavingPlayer.isFold = true;
 
     const playerInRoom: any[] = [];
     if (leavingPlayer.isHost) {
@@ -167,15 +174,35 @@ export default class ProRoom extends Room<RoomState> {
     }
 
     // disconnect then connect new bot
-    if (leavingPlayer.role === ERole.Bot) {
-    }
-
     try {
       if (consented) throw new Error('consented leave!');
-      if (!this.state.onReady || leavingPlayer.statement === EStatement.Waiting)
-        return this.state.players.delete(client.sessionId);
+      if (
+        !this.state.onReady ||
+        leavingPlayer.statement === EStatement.Waiting ||
+        leavingPlayer.role === ERole.Bot
+      )
+        throw new Error('Can leave immediately!');
 
       console.log('user dang choi, nen giu lai state!');
+      // set current turn &
+      const playingTurnArr = [];
+      for (const p of this.state.players.values()) {
+        p.statement === EStatement.Playing && playingTurnArr.push(p.turn);
+      }
+      const sortedTurn = sortedArr(playingTurnArr);
+      if (
+        leavingPlayer.turn === Math.min(...sortedTurn) &&
+        this.state.currentTurn === Math.max(...sortedTurn)
+      ) {
+        if (!leavingPlayer.isFold) this.foldAction(leavingPlayer);
+      } else if (
+        leavingPlayer.turn !== Math.min(...sortedTurn) &&
+        leavingPlayer.turn === this.state.currentTurn + 1
+      ) {
+        if (!leavingPlayer.isFold) this.foldAction(leavingPlayer);
+      } else if (leavingPlayer.turn === Math.min(...sortedTurn) && this.state.currentTurn === -1) {
+        if (!leavingPlayer.isFold) this.foldAction(leavingPlayer);
+      }
     } catch (err) {
       console.log('client ' + client.sessionId + ' has just left ngay lập tức');
       this.state.players.delete(client.sessionId);
@@ -193,8 +220,6 @@ export default class ProRoom extends Room<RoomState> {
     // START GAME
     this.onMessage(START_GAME, (client: Client, _) => {
       this.startGame(client);
-      console.log('start game:::::current turn', this.currentBet);
-      this.sendNewState();
     });
 
     // RESET GAME
@@ -204,19 +229,7 @@ export default class ProRoom extends Room<RoomState> {
 
       let count = 0;
       let interval: any = setInterval(() => {
-        if (count === 3) {
-          this.clients.forEach(async (client: Client, _) => {
-            const player = <Player>this.state.players.get(client.sessionId);
-            if (player.chips < this.MIN_CHIP) {
-              await client.leave(1000);
-              if (player.role === ERole.Bot) {
-                await this.sleep(2);
-                await this.addBot();
-              }
-            }
-          });
-          return clearInterval(interval);
-        }
+        if (count === 3) return clearInterval(interval);
         count++;
         this.broadcast(RESET_GAME, `đếm xuôi ${count}`);
       }, 1000);
@@ -234,25 +247,41 @@ export default class ProRoom extends Room<RoomState> {
   }
 
   // handle friend request
-
   private handleFriendRequest() {
-    this.onMessage(FRIEND_REQUEST, async (client: Client, toId: string) => {
-      // get sessionId of toPlayer
-      let acceptUser: any;
-      this.state.players.forEach((player: Player, sessionId: string) => {
-        if (player.id === toId) acceptUser = { sessionId, id: player.id };
+    // check friend
+    this.onMessage(FRIEND_CHECK, async (client: Client, toId: string) => {
+      const { reqUser, acceptUser } = <any>this.friendCheck(client, toId);
+      this.presence.publish('poker:friend:check', {
+        checkFrom: reqUser.id,
+        checkTo: acceptUser.id,
       });
 
-      const reqUser = <Player>this.state.players.get(client.sessionId);
-      if (!reqUser || !acceptUser) return;
-
-      await this.presence.publish('poker:friend:request', { from: reqUser.id, to: acceptUser.id });
+      const isFriend = await getSubChannel(this.presence, `cms:friend:check:${reqUser.id}`);
       this.clients.forEach((c: Client, _: number) => {
         if (c.sessionId === acceptUser.sessionId)
-          c.send(FRIEND_REQUEST, `Thằng ${client.sessionId} add friend mày kìa!`);
+          isFriend && c.send(FRIEND_CHECK, `You and ${acceptUser.username} already were friend!`);
       });
-      await this.presence.subscribe('cms:friend:accept', (data: any) => {
-        console.log(data);
+    });
+
+    // add friend
+    this.onMessage(FRIEND_REQUEST, async (client: Client, toId: string) => {
+      const { reqUser, acceptUser } = <any>this.friendCheck(client, toId);
+
+      this.presence.publish('poker:friend:request', { reqFrom: reqUser.id, reqTo: acceptUser.id });
+
+      const notificationId = await getSubChannel(
+        this.presence,
+        `cms:friend:request:${acceptUser.id}`,
+      );
+      this.clients.forEach((c: Client, _: number) => {
+        if (c.sessionId === acceptUser.sessionId)
+          notificationId
+            ? c.send(FRIEND_REQUEST, {
+                notificationId,
+                reqUserId: reqUser.id,
+                reqUsername: reqUser.username,
+              })
+            : c.send(FRIEND_REQUEST, 'Bad request!');
       });
     });
   }
@@ -295,8 +324,6 @@ export default class ProRoom extends Room<RoomState> {
         callValue = player.chips;
         return this.allinAction(client.sessionId, player, callValue);
       }
-
-      console.log({ chip: player.chips, callValue, currentbet: this.currentBet });
 
       if (callValue === 0) return this.checkAction(player);
       this.callAction(player, callValue);
@@ -354,7 +381,6 @@ export default class ProRoom extends Room<RoomState> {
   private async changeNextRound(round: ERound) {
     // check winner first (river -> showdown)
     if (round === ERound.RIVER) {
-      // this.state.round = ERound.SHOWDOWN;
       this.state.bankerCards = this.banker5Cards;
       const { emitResultArr, finalCalculateResult }: any = this.pickWinner1();
       for (const c of finalCalculateResult) {
@@ -384,7 +410,10 @@ export default class ProRoom extends Room<RoomState> {
       this.state.bankerCards = [...this.banker5Cards];
     }
     this.emitRank();
-    this.sendNewState();
+    if (round !== ERound.WELCOME) this.sendNewState();
+
+    if (round === ERound.PREFLOP || round === ERound.FLOP || round === ERound.TURN)
+      this.actionFoldPlayer();
   }
 
   private emitRank() {
@@ -403,7 +432,9 @@ export default class ProRoom extends Room<RoomState> {
   }
 
   private startGame(client: Client) {
+    console.log('state room 1', this.state.onReady);
     if (this.state.onReady) return; // check game is ready or not
+    console.log('state room 2', this.state.onReady);
     if (this.state.round !== ERound.WELCOME) return; // phai doi toi round welcome
     if (this.state.players.size < 2) return; // allow start game when > 2 players
     // check accept only host
@@ -440,6 +471,8 @@ export default class ProRoom extends Room<RoomState> {
     });
     this.emitDealCards();
     this.state.round = ERound.PREFLOP;
+
+    this.sendNewState();
   }
 
   private async resetGame(client: Client) {
@@ -463,29 +496,42 @@ export default class ProRoom extends Room<RoomState> {
     this.state.remainingPlayer = 0;
     this.state.currentTurn = -2;
 
+    // kick under min  balance
+    this.clients.forEach(async (client: Client, _) => {
+      const player = <Player>this.state.players.get(client.sessionId);
+      if (player.chips < this.MIN_CHIP) {
+        client.send(KICK_PLAYER, player.id);
+        client.leave(1000);
+        if (player.role === ERole.Bot) {
+          await this.sleep(2);
+          await this.addBot();
+        }
+      }
+    });
+
+    // remove not-connected from state
+    this.state.players.forEach((p: Player, sessionId: string) => {
+      if (!p.connected) this.state.players.delete(sessionId);
+    });
+
     // player state
     this.state.players.forEach((player: Player, sessionId: string) => {
-      // 3 ng -> 4 state -> connect = false
-      if (!player.connected) {
-        this.state.players.delete(sessionId);
-      } else {
-        const newPlayer = {
-          id: player.id,
-          username: player.username,
-          isHost: player.isHost,
-          chips: player.chips,
-          action: null,
-          accumulatedBet: 0,
-          betEachAction: 0,
-          turn: player.turn,
-          seat: player.seat,
-          role: player.role,
-          statement: EStatement.Waiting,
-          connected: player.connected,
-          isFold: false,
-        };
-        this.state.players.set(sessionId, new Player(newPlayer));
-      }
+      const newPlayer = {
+        id: player.id,
+        username: player.username,
+        isHost: player.isHost,
+        chips: player.chips,
+        action: null,
+        accumulatedBet: 0,
+        betEachAction: 0,
+        turn: player.turn,
+        seat: player.seat,
+        role: player.role,
+        statement: EStatement.Waiting,
+        connected: player.connected,
+        isFold: false,
+      };
+      this.state.players.set(sessionId, new Player(newPlayer));
     });
 
     this.sendNewState();
@@ -516,6 +562,8 @@ export default class ProRoom extends Room<RoomState> {
       this.state.bankerCards = this.banker5Cards;
       return this.endGame(emitResultArr);
     }
+
+    this.actionFoldPlayer();
   }
 
   private callAction(player: Player, chip: number) {
@@ -528,10 +576,13 @@ export default class ProRoom extends Room<RoomState> {
     this.state.potSize += chip;
 
     this.remainingTurn--;
-    console.log('CALL, turn con', { id: player.id, remainturn: this.remainingTurn });
+    console.log('CALL, turn con', this.remainingTurn);
+
     this.sendNewState(); // send state before call
 
     if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
+
+    this.actionFoldPlayer();
   }
 
   private checkAction(player: Player) {
@@ -545,6 +596,8 @@ export default class ProRoom extends Room<RoomState> {
     this.sendNewState(); // send state before check
 
     if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
+
+    this.actionFoldPlayer();
   }
 
   private allinAction(sessionId: string, player: Player, chip: number) {
@@ -624,6 +677,8 @@ export default class ProRoom extends Room<RoomState> {
     // allin cuối xong và còn nhiều người chơi
     if (this.remainingTurn === 0 && this.state.remainingPlayer > 1)
       return this.changeNextRound(this.state.round);
+
+    this.actionFoldPlayer();
   }
 
   private foldAction(player: Player) {
@@ -646,7 +701,7 @@ export default class ProRoom extends Room<RoomState> {
     let result: any[] = [];
     const betP: any[] = [];
     this.state.players.forEach((p: Player, sessionId: string) => {
-      if (p.statement === EStatement.Playing && !p.isFold)
+      if (p.connected && p.statement === EStatement.Playing && !p.isFold)
         betP.push({ i: sessionId, t: p.turn, v: p.accumulatedBet });
     });
     if (this.state.remainingPlayer === 1) {
@@ -667,6 +722,7 @@ export default class ProRoom extends Room<RoomState> {
               const betPlayer = <Player>this.state.players.get(c.i);
               betPlayer.chips += c.v;
             }
+            this.state.bankerCards = this.banker5Cards;
             return this.endGame(result);
           }
         }
@@ -683,6 +739,8 @@ export default class ProRoom extends Room<RoomState> {
       return this.endGame(emitResultArr);
     }
     if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
+
+    this.actionFoldPlayer();
   }
 
   private pickWinner1() {
@@ -726,8 +784,6 @@ export default class ProRoom extends Room<RoomState> {
 
     // handle winner tại đây và show kết quả
     const winHand = Hand.winners(winCardsArr)[0];
-
-    console.log({ winCardsArr, winHand });
 
     // check 1 winner or > 1 winner
     const drawArr = checkDraw(allHands, winHand); // ["45345345","dfer4536345","ergertg34534"]
@@ -797,6 +853,26 @@ export default class ProRoom extends Room<RoomState> {
     this.sendNewState();
   }
 
+  private actionFoldPlayer() {
+    const playingTurnArr = [];
+    for (const p of this.state.players.values())
+      p.statement === EStatement.Playing && playingTurnArr.push(p.turn);
+
+    const sortedTurn = sortedArr(playingTurnArr);
+    const currentTurn = this.state.currentTurn;
+
+    let nextTurn: number;
+    if (currentTurn === Math.max(...sortedTurn)) nextTurn = sortedTurn[0];
+    else nextTurn = currentTurn + 1;
+
+    for (const fP of this.state.players.values()) {
+      if (!fP.connected && fP.turn === nextTurn) {
+        console.log(fP.username, fP.turn);
+        this.foldAction(fP);
+      }
+    }
+  }
+
   private async addBot() {
     if (this.clients.length === this.maxClients) return;
     const bot = new BotClient(
@@ -814,5 +890,17 @@ export default class ProRoom extends Room<RoomState> {
 
   private sleep(s: number) {
     return new Promise(resolve => setTimeout(resolve, s * 1000));
+  }
+
+  private friendCheck(client: Client, toId: string) {
+    let acceptUser: any;
+    this.state.players.forEach((player: Player, sessionId: string) => {
+      if (player.id === toId) acceptUser = { sessionId, id: player.id };
+    });
+
+    const reqUser = <Player>this.state.players.get(client.sessionId);
+    if (!reqUser || !acceptUser) return;
+
+    return { reqUser, acceptUser };
   }
 }
