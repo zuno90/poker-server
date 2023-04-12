@@ -4,7 +4,7 @@ import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
 import { RANK, RESULT } from './constants/server-emit.constant';
 import { ERole, EStatement, Player } from './schemas/player.schema';
 import { removePlayer, sortedArr } from './modules/handlePlayer';
-import { ALL, FRIEND_REQUEST } from './constants/room.constant';
+import { ALL, FRIEND_REQUEST, KICK_PLAYER } from './constants/room.constant';
 import Config from './config';
 
 type TCurrentBetInfo = {
@@ -84,6 +84,10 @@ export class BotClient {
       console.log('lời mời kết bạn', data);
     });
 
+    this.room.onMessage(KICK_PLAYER, state => {
+      if (state) return this.leave();
+    });
+
     this.room.onMessage(ALL, state => {
       if (!state.onReady) return;
       const playerArr: Player[] = Object.values(state.players);
@@ -147,8 +151,6 @@ export class BotClient {
       this.isActive = true;
       if (this.isEndGame) this.isActive = false;
     }
-
-    console.log('round', state.round);
 
     if (!this.currentBetInfo.action && isHasBotTurn === bot.turn) {
       this.isGoFirst = true;

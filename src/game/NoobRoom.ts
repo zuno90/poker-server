@@ -175,14 +175,16 @@ export default class NoobRoom extends Room<RoomState> {
     }
 
     // disconnect then connect new bot
-    if (leavingPlayer.role === ERole.Bot) {
-      console.log('bot leave!', client.sessionId);
-    }
-
     try {
       if (consented) throw new Error('consented leave!');
-      if (!this.state.onReady || leavingPlayer.statement === EStatement.Waiting)
+      if (
+        !this.state.onReady ||
+        leavingPlayer.statement === EStatement.Waiting ||
+        leavingPlayer.role === ERole.Bot
+      ) {
+        this.sendNewState();
         return this.state.players.delete(client.sessionId);
+      }
 
       console.log('user dang choi, nen giu lai state!');
       // set current turn &
@@ -484,7 +486,6 @@ export default class NoobRoom extends Room<RoomState> {
     this.state.currentTurn = -2;
 
     // kick under min  balance
-
     this.clients.forEach(async (client: Client, _) => {
       const player = <Player>this.state.players.get(client.sessionId);
       if (player.chips < this.MIN_CHIP) {
