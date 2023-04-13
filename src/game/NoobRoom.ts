@@ -92,7 +92,8 @@ export default class NoobRoom extends Room<RoomState> {
         // is HOST
         return {
           id: existedPlayer._id,
-          username: existedPlayer.username ?? existedPlayer.email,
+          name: existedPlayer.username ?? existedPlayer.name ?? existedPlayer.email,
+          avatar: existedPlayer.avatar,
           chips: existedPlayer.chips,
           isHost: true,
           seat: 1,
@@ -109,7 +110,8 @@ export default class NoobRoom extends Room<RoomState> {
 
         return {
           id: existedPlayer._id,
-          username: existedPlayer.username ?? existedPlayer.email,
+          name: existedPlayer.username ?? existedPlayer.name ?? existedPlayer.email,
+          avatar: existedPlayer.avatar,
           chips: existedPlayer.chips,
           isHost: false,
           seat: nextSeat,
@@ -323,16 +325,19 @@ export default class NoobRoom extends Room<RoomState> {
 
       // after check
       let callValue = 0;
-      if (this.currentBet < player.chips + player.accumulatedBet) {
-        callValue = this.currentBet - player.accumulatedBet;
-      }
-      if (player.chips < this.currentBet - player.accumulatedBet) {
-        // buộc phải all in
-        callValue = player.chips;
-        return this.allinAction(client.sessionId, player, callValue);
-      }
-
-      if (callValue === 0) return this.checkAction(player);
+      console.log({
+        currentBet: this.currentBet,
+        chips: player.chips,
+        accu: player.accumulatedBet,
+      });
+      // if (this.currentBet < player.chips + player.accumulatedBet) {
+      //   callValue = this.currentBet - player.accumulatedBet;
+      // }
+      // else {
+      // callValue = player.chips;// buo allin
+      // return this.allinAction(client.sessionId, player, callValue);
+      // }
+      callValue = this.currentBet - player.accumulatedBet;
       this.callAction(player, callValue);
     });
     // CHECK
@@ -389,7 +394,7 @@ export default class NoobRoom extends Room<RoomState> {
     // check winner first (river -> showdown)
     if (round === ERound.RIVER) {
       this.state.bankerCards = this.banker5Cards;
-      const { emitResultArr, finalCalculateResult }: any = this.pickWinner1();
+      const { emitResultArr, finalCalculateResult } = this.pickWinner1();
       for (const c of finalCalculateResult) {
         const betPlayer = <Player>this.state.players.get(c.i);
         betPlayer.chips += c.v;
@@ -449,8 +454,14 @@ export default class NoobRoom extends Room<RoomState> {
     if (!host.isHost) return;
 
     const { onHandCards, banker5Cards } = deal(this.state.players.size);
-    this.banker5Cards = banker5Cards; // cache 5 cards of banker first
-    this.player2Cards = onHandCards; // chia bai
+    // this.banker5Cards = banker5Cards; // cache 5 cards of banker first
+    // this.player2Cards = onHandCards; // chia bai
+    this.banker5Cards = ['9s', '7c', 'Ad', 'Kd', '7s'];
+    this.player2Cards = [
+      ['2s', 'Kc'],
+      ['Tc', '5d'],
+      ['Kh', 'Jd'],
+    ];
     this.remainingTurn = this.state.players.size;
 
     console.log({ banker: this.banker5Cards, player: this.player2Cards });
@@ -525,7 +536,8 @@ export default class NoobRoom extends Room<RoomState> {
     this.state.players.forEach((player: Player, sessionId: string) => {
       const newPlayer = {
         id: player.id,
-        username: player.username,
+        name: player.name,
+        avatar: player.avatar,
         isHost: player.isHost,
         chips: player.chips,
         action: null,
@@ -561,7 +573,7 @@ export default class NoobRoom extends Room<RoomState> {
     this.sendNewState(); // send state before raise
 
     if (this.state.remainingPlayer === 1) {
-      const { emitResultArr, finalCalculateResult }: any = this.pickWinner1();
+      const { emitResultArr, finalCalculateResult } = this.pickWinner1();
       for (const c of finalCalculateResult) {
         const betPlayer = <Player>this.state.players.get(c.i);
         betPlayer.chips += c.v;
@@ -587,6 +599,15 @@ export default class NoobRoom extends Room<RoomState> {
 
     this.sendNewState(); // send state before call
 
+    if (this.state.remainingPlayer === 1) {
+      const { emitResultArr, finalCalculateResult } = this.pickWinner1();
+      for (const c of finalCalculateResult) {
+        const betPlayer = <Player>this.state.players.get(c.i);
+        betPlayer.chips += c.v;
+      }
+      this.state.bankerCards = this.banker5Cards;
+      return this.endGame(emitResultArr);
+    }
     if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
 
     this.actionFoldPlayer();
@@ -663,7 +684,7 @@ export default class NoobRoom extends Room<RoomState> {
 
     // hết player
     if (this.state.remainingPlayer === 0) {
-      const { emitResultArr, finalCalculateResult }: any = this.pickWinner1();
+      const { emitResultArr, finalCalculateResult } = this.pickWinner1();
       for (const c of finalCalculateResult) {
         const betPlayer = <Player>this.state.players.get(c.i);
         betPlayer.chips += c.v;
@@ -673,7 +694,7 @@ export default class NoobRoom extends Room<RoomState> {
     }
     // allin turn cuối và còn có 1 ng chơi
     if (this.remainingTurn === 0 && this.state.remainingPlayer === 1) {
-      const { emitResultArr, finalCalculateResult }: any = this.pickWinner1();
+      const { emitResultArr, finalCalculateResult } = this.pickWinner1();
       for (const c of finalCalculateResult) {
         const betPlayer = <Player>this.state.players.get(c.i);
         betPlayer.chips += c.v;
@@ -723,7 +744,7 @@ export default class NoobRoom extends Room<RoomState> {
         for (const b of betP) betVal.push(b.v);
         for (const bet of betP) {
           if (bet.t === remainTurn[0] && Math.max(...betVal) === bet.v) {
-            const { emitResultArr, finalCalculateResult }: any = this.pickWinner1();
+            const { emitResultArr, finalCalculateResult } = this.pickWinner1();
             result = emitResultArr;
             for (const c of finalCalculateResult) {
               const betPlayer = <Player>this.state.players.get(c.i);
@@ -737,7 +758,7 @@ export default class NoobRoom extends Room<RoomState> {
     }
 
     if (this.remainingTurn === 0 && this.state.remainingPlayer === 0) {
-      const { emitResultArr, finalCalculateResult }: any = this.pickWinner1();
+      const { emitResultArr, finalCalculateResult } = this.pickWinner1();
       for (const c of finalCalculateResult) {
         const betPlayer = <Player>this.state.players.get(c.i);
         betPlayer.chips += c.v;
@@ -817,11 +838,14 @@ export default class NoobRoom extends Room<RoomState> {
         // emit
         const e = _.find(emitResultArr, { i: drawer });
         e.w = true;
-        emitDrawResult.push(e);
-      }
-      finalCalculateResult = calculateDraw(calculateResultArr);
 
-      return { emitDrawResult, finalCalculateResult };
+        // result
+        const f = _.find(calculateResultArr, { i: drawer });
+        f.w = true;
+      }
+
+      finalCalculateResult = calculateDraw(calculateResultArr);
+      return { emitResultArr, finalCalculateResult };
     }
 
     /*
@@ -873,10 +897,7 @@ export default class NoobRoom extends Room<RoomState> {
     else nextTurn = currentTurn + 1;
 
     for (const fP of this.state.players.values()) {
-      if (!fP.connected && fP.turn === nextTurn) {
-        console.log(fP.username, fP.turn);
-        this.foldAction(fP);
-      }
+      if (!fP.connected && fP.turn === nextTurn) this.foldAction(fP);
     }
   }
 

@@ -82,6 +82,7 @@ export const calculateDraw = (arr: TAllinPlayer[]) => {
   const loseArr = _.differenceWith(arr, drawArr, _.isEqual);
 
   const maxValue = _.maxBy(drawArr, 'v');
+
   const l = _.filter(loseArr, ({ v }) => v < maxValue!.v);
   let loseValue = 0;
   for (const ml of l) loseValue += ml.v;

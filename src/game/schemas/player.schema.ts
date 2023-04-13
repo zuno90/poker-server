@@ -13,7 +13,9 @@ export enum EStatement {
 export class Player extends Schema {
   @type('string') id: string;
 
-  @type('string') username: string;
+  @type('string') name: string;
+
+  @type('string') avatar: string;
 
   @type('boolean') isHost: boolean;
 
