@@ -27,6 +27,8 @@ const username = [
   'Obito',
 ];
 
+const avatar = ['default-avatar.png', 'ava2', 'ava3', 'ava4', 'ava5', 'ava6'];
+
 export const botInfo = (level: string) => {
   let chips;
   if (level === 'noob') chips = 150000;
@@ -38,7 +40,8 @@ export const botInfo = (level: string) => {
 
   return {
     id: `BOTGPT-wibu-${level}`,
-    username: username[Math.floor(Math.random() * username.length)],
+    name: username[Math.floor(Math.random() * username.length)],
+    avatar: avatar[Math.floor(Math.random() * avatar.length)],
     email: null,
     chips,
     isHost: false,
