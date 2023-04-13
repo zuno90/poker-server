@@ -454,14 +454,8 @@ export default class NoobRoom extends Room<RoomState> {
     if (!host.isHost) return;
 
     const { onHandCards, banker5Cards } = deal(this.state.players.size);
-    // this.banker5Cards = banker5Cards; // cache 5 cards of banker first
-    // this.player2Cards = onHandCards; // chia bai
-    this.banker5Cards = ['9s', '7c', 'Ad', 'Kd', '7s'];
-    this.player2Cards = [
-      ['2s', 'Kc'],
-      ['Tc', '5d'],
-      ['Kh', 'Jd'],
-    ];
+    this.banker5Cards = banker5Cards; // cache 5 cards of banker first
+    this.player2Cards = onHandCards; // chia bai
     this.remainingTurn = this.state.players.size;
 
     console.log({ banker: this.banker5Cards, player: this.player2Cards });
