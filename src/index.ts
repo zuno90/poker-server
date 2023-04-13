@@ -10,8 +10,6 @@ import CustomLobbyRoom from './game/LobbyRoom';
 import NoobRoom from './game/NoobRoom';
 import MidRoom from './game/MidRoom';
 import ProRoom from './game/ProRoom';
-import TestRoom from './game/TestRoom';
-import DrawRoom from './game/DrawRoom';
 
 dotenv.config();
 
@@ -120,9 +118,6 @@ async function bootstrap() {
   gameServer.define('noob', NoobRoom);
   gameServer.define('normal', MidRoom);
   gameServer.define('pro', ProRoom);
-
-  gameServer.define('test', TestRoom);
-  gameServer.define('draw', DrawRoom);
 
   const SERVER_URL = process.env.SERVER_URL || 'poker.dadsnetwork.net';
   const PORT = process.env.PORT || 9000;
