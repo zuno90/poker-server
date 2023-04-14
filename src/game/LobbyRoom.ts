@@ -46,8 +46,8 @@ export default class CustomLobbyRoom extends Room<RoomState> {
   private readonly reconnectTimeOut = 60;
 
   onAuth(client: Client, options: any, request?: Request) {
-    const { _id, username } = options;
-    return { _id, displayName: username };
+    const { _id, name, avatar } = options;
+    return { _id, displayName: name, avatar };
   }
 
   onCreate(options: any) {
