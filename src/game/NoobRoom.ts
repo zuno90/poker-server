@@ -92,7 +92,7 @@ export default class NoobRoom extends Room<RoomState> {
         // is HOST
         return {
           id: existedPlayer._id,
-          name: existedPlayer.username ?? existedPlayer.name ?? existedPlayer.email,
+          name: existedPlayer.name ?? existedPlayer.username ?? existedPlayer.email,
           avatar: existedPlayer.avatar,
           chips: existedPlayer.chips,
           isHost: true,
@@ -110,7 +110,7 @@ export default class NoobRoom extends Room<RoomState> {
 
         return {
           id: existedPlayer._id,
-          name: existedPlayer.username ?? existedPlayer.name ?? existedPlayer.email,
+          name: existedPlayer.name ?? existedPlayer.username ?? existedPlayer.email,
           avatar: existedPlayer.avatar,
           chips: existedPlayer.chips,
           isHost: false,
@@ -268,7 +268,7 @@ export default class NoobRoom extends Room<RoomState> {
       const isFriend = await getSubChannel(this.presence, `cms:friend:check:${reqUser.id}`);
       this.clients.forEach((c: Client, _: number) => {
         if (c.sessionId === acceptUser.sessionId)
-          isFriend && c.send(FRIEND_CHECK, `You and ${acceptUser.username} already were friend!`);
+          isFriend && c.send(FRIEND_CHECK, `You and ${acceptUser.name} already were friend!`);
       });
     });
 
@@ -288,7 +288,7 @@ export default class NoobRoom extends Room<RoomState> {
             ? c.send(FRIEND_REQUEST, {
                 notificationId,
                 reqUserId: reqUser.id,
-                reqUsername: reqUser.username,
+                reqUsername: reqUser.name,
               })
             : c.send(FRIEND_REQUEST, 'Bad request!');
       });

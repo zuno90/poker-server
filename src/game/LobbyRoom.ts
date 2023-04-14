@@ -28,6 +28,7 @@ class ArrayMessage extends Schema {
 class PlayerState extends Schema {
   @type('string') _id: string;
   @type('string') displayName: string;
+  @type('string') avatar: string;
   @type({ map: ArrayMessage }) in = new MapSchema<ArrayMessage>();
   @type({ map: ArrayMessage }) out = new MapSchema<ArrayMessage>();
   @type('boolean')
@@ -105,7 +106,7 @@ export default class CustomLobbyRoom extends Room<RoomState> {
             if (friend._id === player._id) friend.sessionId = sessionId;
           });
         }
-        this.presence.unsubscribe('cms:friend:list');
+        this.presence.unsubscribe(`${CMS_FRIEND_LIST}:${player._id}`);
         return sender.send(LOBBY_CHECK_FRIENDS, friendList);
       });
     });
@@ -143,7 +144,7 @@ export default class CustomLobbyRoom extends Room<RoomState> {
 
       this.clients.forEach((client: Client, _) => {
         if (client.sessionId === receiverId)
-          return client.send(LOBBY_PRIVATE_CHAT, { message, time: t });
+          return client.send(LOBBY_PRIVATE_CHAT, { avatar: receiver.avatar, message, time: t });
       });
     });
   }
