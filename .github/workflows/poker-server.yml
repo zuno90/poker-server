@@ -28,4 +28,5 @@ jobs:
                 -e REDIS_URL=${{ secrets.REDIS_URL }} \
                 -e MONGO_URI=${{ secrets.MONGO_URI }} \
                 -e CMS_URL=${{ secrets.CMS_URL }} \
+                -e COLYSEUS_SEAT_RESERVATION_TIME=300 \
                 poker-server:$GITHUB_RUN_NUMBER
