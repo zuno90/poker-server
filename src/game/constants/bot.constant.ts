@@ -54,11 +54,12 @@ export const botInfo = (level: string) => {
 export const botTest = (index: number) => {
   return {
     id: `BOTGPT-wibu-${index}`,
-    username: username[Math.floor(Math.random() * username.length)],
+    name: username[Math.floor(Math.random() * username.length)],
+    avatar: avatar[Math.floor(Math.random() * avatar.length)],
     email: null,
-    chips: 250000,
+    chips: 150000,
     isHost: false,
-    seat: index + 1,
+    seat: index,
     role: ERole.Bot,
     connected: false,
   };

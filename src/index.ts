@@ -10,6 +10,7 @@ import CustomLobbyRoom from './game/LobbyRoom';
 import NoobRoom from './game/NoobRoom';
 import MidRoom from './game/MidRoom';
 import ProRoom from './game/ProRoom';
+import TestRoom from './game/TestRoom';
 
 dotenv.config();
 
@@ -22,8 +23,8 @@ async function bootstrap() {
   app.use(express.urlencoded({ extended: true }));
   app.use(cors({ origin: '*', credentials: true }));
   const apiLimiter = rateLimit({
-    windowMs: 1000, // 15 minutes
-    max: 1,
+    windowMs: 1000 * 60 * 15, // 15 minutes
+    max: 10000000,
     message: "You can't make any more requests at the moment. Try again later",
   });
   app.use('/matchmake/', apiLimiter);
@@ -115,6 +116,8 @@ async function bootstrap() {
   gameServer.define('lobby', CustomLobbyRoom);
 
   // define each level of Room
+  gameServer.define('test', TestRoom);
+
   gameServer.define('noob', NoobRoom);
   gameServer.define('normal', MidRoom);
   gameServer.define('pro', ProRoom);

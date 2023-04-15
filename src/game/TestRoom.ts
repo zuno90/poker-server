@@ -23,15 +23,10 @@ import {
   pokerSolverHand,
 } from './modules/handleRank';
 import { BotClient } from './BotGPT';
-import { botInfo } from './constants/bot.constant';
+import { botInfo, botTest } from './constants/bot.constant';
 import _ from 'lodash';
 
 const Hand = require('pokersolver').Hand; // func handle winner
-
-type TJwtAuth = {
-  jwt: string;
-  isBot?: boolean;
-};
 
 type TRoomChat = {
   username: string;
@@ -55,7 +50,7 @@ const getSubChannel = (redis: Presence, channel: string) => {
   });
 };
 
-export default class NoobRoom extends Room<RoomState> {
+export default class TestRoom extends Room<RoomState> {
   public readonly maxClients: number = 5;
   private readonly MIN_BET = 1000;
   private readonly MIN_CHIP = 50000;
@@ -71,61 +66,16 @@ export default class NoobRoom extends Room<RoomState> {
 
   private bot: Map<string, BotClient> | null = new Map<string, BotClient>(); // new bot
 
-  async onAuth(client: Client, options: TJwtAuth, req: Request) {
+  async onAuth(client: Client, options: number, req: Request) {
     try {
-      // is BOT
-      if (options.isBot && !options.jwt) return botInfo(this.roomName);
-      // IS REAL PLAYER -> CHECK AUTH
-      this.presence.publish('poker:auth:user', options.jwt);
-      const auth = <any>await getSubChannel(this.presence, `cms:auth:user:${options.jwt}`);
-      if (!auth) return client.leave(1000);
-      const existedPlayer = auth;
-
-      // check user to kick
-      if (existedPlayer.chips < this.MIN_CHIP && existedPlayer > this.MAX_CHIP)
-        return client.leave(1000);
-      for (const p of this.state.players.values()) {
-        if (existedPlayer._id === p.id) return client.leave(1000);
-      }
-
-      if (!this.state.players.size)
-        // is HOST
-        return {
-          id: existedPlayer._id,
-          name: existedPlayer.name ?? existedPlayer.username ?? existedPlayer.email,
-          avatar: existedPlayer.avatar,
-          chips: existedPlayer.chips,
-          isHost: true,
-          seat: 1,
-          turn: 0,
-          role: ERole.Player,
-        };
-
-      // IS NOT HOST AND PLAYER NUMBER > 2
-      if (this.state.players.size > 0) {
-        let playerSeatArr: number[] = [];
-        this.state.players.forEach((player: Player, _) => playerSeatArr.push(player.seat));
-        // find out next seat for this player
-        const nextSeat = arrangeSeat(playerSeatArr); // next seat - 1 = 1
-
-        return {
-          id: existedPlayer._id,
-          name: existedPlayer.name ?? existedPlayer.username ?? existedPlayer.email,
-          avatar: existedPlayer.avatar,
-          chips: existedPlayer.chips,
-          isHost: false,
-          seat: nextSeat,
-          role: ERole.Player,
-        };
-      }
-      throw new Error('Bot is on room -> dispose room!');
+      return botTest(options);
     } catch (err) {
       console.error(err);
       await this.disconnect();
     }
   }
 
-  async onCreate(options: TJwtAuth) {
+  async onCreate(options: number) {
     try {
       // CREATE AN INITIAL ROOM STATE
       this.setState(new RoomState());
@@ -141,16 +91,13 @@ export default class NoobRoom extends Room<RoomState> {
 
       // HANDLE ALL ACTION FROM PLAYER
       this.handleAction();
-
-      // HANDLE GET_STATE FROM CLIENT
-      this.handleGetState();
     } catch (err) {
       console.error('error:::::', err);
       await this.disconnect();
     }
   }
 
-  async onJoin(client: Client, options: TJwtAuth, player: Player) {
+  async onJoin(client: Client, options: number, player: Player) {
     // SET INITIAL PLAYER STATE
     try {
       this.state.players.set(client.sessionId, new Player(player)); // set player every joining
@@ -910,12 +857,6 @@ export default class NoobRoom extends Room<RoomState> {
   private sendNewState() {
     this.clients.forEach((client: Client, index: number) => {
       client.send(ALL, this.state);
-    });
-  }
-
-  private handleGetState() {
-    this.onMessage('GET_STATE', (client: Client, data: any) => {
-      this.sendNewState();
     });
   }
 
