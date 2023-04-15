@@ -914,8 +914,10 @@ export default class NoobRoom extends Room<RoomState> {
   }
 
   private handleGetState() {
-    this.onMessage('GET_STATE', (client: Client, data: any) => {
-      this.sendNewState();
+    this.onMessage('GET_STATE', (_: Client, __: any) => {
+      this.clients.forEach((client: Client, index: number) => {
+        client.send('GET_STATE', this.state);
+      });
     });
   }
 
