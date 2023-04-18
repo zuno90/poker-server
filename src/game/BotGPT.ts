@@ -6,6 +6,7 @@ import { ERole, EStatement, Player } from './schemas/player.schema';
 import { removePlayer, sortedArr } from './modules/handlePlayer';
 import { ALL, FRIEND_REQUEST, KICK_PLAYER } from './constants/room.constant';
 import Config from './config';
+import { type } from 'os';
 
 type TCurrentBetInfo = {
   turn: number;

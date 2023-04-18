@@ -1,7 +1,7 @@
 import { Client, Presence, Room } from 'colyseus';
 import { Request } from 'express';
 import { ERound, RoomState } from './schemas/room.schema';
-import { ERole, EStatement, Player } from './schemas/player.schema';
+import { EPos, ERole, EStatement, Player } from './schemas/player.schema';
 import {
   ALL,
   FRIEND_CHECK,
@@ -14,7 +14,13 @@ import {
 import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
 import { RANK, RESULT } from './constants/server-emit.constant';
 import { deal } from './modules/handleCard';
-import { arrangeSeat, arrangeTurn, getNonDupItem, sortedArr } from './modules/handlePlayer';
+import {
+  arrangeSeat,
+  arrangeTurn,
+  definePos,
+  getNonDupItem,
+  sortedArr,
+} from './modules/handlePlayer';
 import {
   calculateAllinPlayer,
   calculateDraw,
@@ -103,7 +109,7 @@ export default class NoobRoom extends Room<RoomState> {
 
       // IS NOT HOST AND PLAYER NUMBER > 2
       if (this.state.players.size > 0) {
-        let playerSeatArr: number[] = [];
+        const playerSeatArr: number[] = [];
         this.state.players.forEach((player: Player, _) => playerSeatArr.push(player.seat));
         // find out next seat for this player
         const nextSeat = arrangeSeat(playerSeatArr); // next seat - 1 = 1
@@ -440,9 +446,7 @@ export default class NoobRoom extends Room<RoomState> {
   }
 
   private startGame(client: Client) {
-    console.log('state room 1', this.state.onReady);
     if (this.state.onReady) return; // check game is ready or not
-    console.log('state room 2', this.state.onReady);
     if (this.state.round !== ERound.WELCOME) return; // phai doi toi round welcome
     if (this.state.players.size < 2) return; // allow start game when > 2 players
     // check accept only host
@@ -459,22 +463,32 @@ export default class NoobRoom extends Room<RoomState> {
     this.state.onReady = true; // change room state -> TRUE
     this.state.potSize = this.state.players.size * this.MIN_BET;
     this.state.remainingPlayer = this.state.players.size;
-    const randomTurn = Math.round((Math.random() * 10) % (this.state.players.size - 1));
-    this.state.currentTurn = randomTurn - 1;
+
+    // this.state.currentTurn = randomTurn - 1;
 
     // initialize state of player
 
     const playerSeatArr: number[] = [];
-    this.state.players.forEach((player: Player, _) => {
-      player.statement = EStatement.Playing;
-      player.accumulatedBet += this.MIN_BET;
-      player.chips -= this.MIN_BET;
-      playerSeatArr.push(player.seat);
-    });
+    this.state.players.forEach((player: Player, _) => playerSeatArr.push(player.seat));
 
     // gán turn vào
+    const { big, small, currentTurn } = definePos(playerSeatArr);
+    this.state.currentTurn = currentTurn;
+
     this.state.players.forEach((player: Player, _) => {
+      player.statement = EStatement.Playing;
       player.turn = <number>arrangeTurn(player.seat, playerSeatArr);
+      if (player.turn === big) {
+        player.pos === EPos.big;
+        player.chips -= this.MIN_BET;
+        player.accumulatedBet += this.MIN_BET;
+      }
+      if (player.turn === small) {
+        player.pos === EPos.small;
+        player.chips -= this.MIN_BET / 2;
+        player.accumulatedBet += this.MIN_BET / 2;
+      }
+
       this.remainingPlayerArr = sortedArr([...this.remainingPlayerArr, player.turn]);
     });
     this.emitDealCards();
@@ -531,6 +545,7 @@ export default class NoobRoom extends Room<RoomState> {
         isHost: player.isHost,
         chips: player.chips,
         action: null,
+        pos: player.pos,
         accumulatedBet: 0,
         betEachAction: 0,
         turn: player.turn,

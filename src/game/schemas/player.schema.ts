@@ -10,6 +10,12 @@ export enum EStatement {
   Waiting = 'Waiting',
 }
 
+export enum EPos {
+  big = 'big',
+  small = 'small',
+  none = 'none',
+}
+
 export class Player extends Schema {
   @type('string') id: string;
 
@@ -26,6 +32,8 @@ export class Player extends Schema {
   @type('number') betEachAction: number = 0;
 
   @type('number') accumulatedBet: number = 0;
+
+  @type('string') pos: EPos = EPos.none;
 
   @type('number') turn: number;
 

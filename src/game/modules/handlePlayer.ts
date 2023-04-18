@@ -34,3 +34,19 @@ export const sortedArr = (arr: number[]) => [...arr].sort((a: number, b: number)
 export const getNonDupItem = (arr: any[]) => {
   return arr.filter(num => arr.indexOf(num) === arr.lastIndexOf(num));
 };
+
+export const definePos = (arr: number[]) => {
+  const randomBig = Math.round((Math.random() * 10) % (arr.length - 1)); // [0,1,2,3]
+  let small: number;
+  let goFirst: number;
+
+  if (randomBig === 0) {
+    small = Math.max(...arr);
+    goFirst = 1;
+  } else {
+    small = randomBig - 1;
+    goFirst = randomBig + 1;
+  }
+
+  return { big: randomBig, small: small, currentTurn: goFirst - 1 };
+};
