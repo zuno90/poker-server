@@ -1,6 +1,6 @@
 import express, { Express, Request, Response } from 'express';
 import rateLimit from 'express-rate-limit';
-import dotenv from 'dotenv';
+// import dotenv from 'dotenv';
 import cors from 'cors';
 import { MongooseDriver, RedisPresence, Server } from 'colyseus';
 import { monitor } from '@colyseus/monitor';
@@ -12,12 +12,13 @@ import MidRoom from './game/MidRoom';
 import ProRoom from './game/ProRoom';
 import TestRoom from './game/TestRoom';
 
-dotenv.config();
+// dotenv.config();
 
 const Hand = require('pokersolver').Hand;
 
 async function bootstrap() {
   const app: Express = express();
+  app.set('trust proxy', 1);
 
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
@@ -27,8 +28,11 @@ async function bootstrap() {
     max: 10000000,
     message: "You can't make any more requests at the moment. Try again later",
   });
-  app.use('/matchmake/', apiLimiter);
-  app.set('trust proxy', 1);
+  app.use('/matchmake', apiLimiter);
+
+  app.use('/test', (req: Request, res: Response) => {
+    res.send('work ' + process.env.PORT);
+  });
 
   app.use('/assets', express.static('./src/assets')); // public file if you need some static file (url, image,...)
 
@@ -36,7 +40,6 @@ async function bootstrap() {
 
   // welcome
   app.use('/', async (req: Request, res: Response) => {
-    console.log(req.body);
     try {
       const [h1, h2, h3, h4, h5] = req.body;
       let listCardsGame = [];
@@ -101,14 +104,15 @@ async function bootstrap() {
 
   // init game server
   const gameServer = new Server({
-    transport: new WebSocketTransport({ server: createServer(app), pingInterval: 0 }),
+    transport: new WebSocketTransport({ server: createServer(app) }),
     presence: new RedisPresence({
-      url: process.env.NODE_ENV === 'production' ? process.env.REDIS_URL : 'redis://localhost:6379',
+      url:
+        process.env.NODE_ENV === 'production' ? process.env.REDIS_URL : 'redis://poker_redis:6379',
     }),
     driver: new MongooseDriver(
       process.env.NODE_ENV === 'production'
         ? process.env.MONGO_URI
-        : 'mongodb://zuno:zunohandsome@localhost:27017/poker?authSource=admin',
+        : 'mongodb://zuno:zunohandsome@poker_mongo:27017/poker?authSource=admin',
     ),
   });
 

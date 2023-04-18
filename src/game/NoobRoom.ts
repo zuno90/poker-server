@@ -313,6 +313,7 @@ export default class NoobRoom extends Room<RoomState> {
 
       // if (chips >= player.chips) return this.allinAction(client.sessionId, player, player.chips); // trường hợp này chuyển sang allin
       // if (this.currentBet > chips + player.accumulatedBet + this.MIN_BET) return; // chỉ cho phép raise lệnh cao hơn current bet + min bet
+      this.broadcast(RAISE);
       this.raiseAction(player, chips);
     });
     // CALL
@@ -328,19 +329,8 @@ export default class NoobRoom extends Room<RoomState> {
 
       // after check
       let callValue = 0;
-      console.log({
-        currentBet: this.currentBet,
-        chips: player.chips,
-        accu: player.accumulatedBet,
-      });
-      // if (this.currentBet < player.chips + player.accumulatedBet) {
-      //   callValue = this.currentBet - player.accumulatedBet;
-      // }
-      // else {
-      // callValue = player.chips;// buo allin
-      // return this.allinAction(client.sessionId, player, callValue);
-      // }
       callValue = this.currentBet - player.accumulatedBet;
+      this.broadcast(CALL);
       this.callAction(player, callValue);
     });
     // CHECK
@@ -351,6 +341,7 @@ export default class NoobRoom extends Room<RoomState> {
       if (player.statement !== EStatement.Playing) return;
       if (player.isFold) return; // block folded player
 
+      this.broadcast(CHECK);
       this.checkAction(player);
     });
     // ALLIN
@@ -361,6 +352,7 @@ export default class NoobRoom extends Room<RoomState> {
       if (player.statement !== EStatement.Playing) return;
       if (player.isFold) return; // block folded player
 
+      this.broadcast(ALLIN);
       this.allinAction(client.sessionId, player, player.chips);
     });
     // FOLD
@@ -371,6 +363,7 @@ export default class NoobRoom extends Room<RoomState> {
       if (player.statement !== EStatement.Playing) return;
       if (player.isFold) return; // block folded player
 
+      this.broadcast(FOLD);
       this.foldAction(player);
     });
   }
@@ -481,7 +474,7 @@ export default class NoobRoom extends Room<RoomState> {
 
     // gán turn vào
     this.state.players.forEach((player: Player, _) => {
-      player.turn = arrangeTurn(player.seat, playerSeatArr) as number;
+      player.turn = <number>arrangeTurn(player.seat, playerSeatArr);
       this.remainingPlayerArr = sortedArr([...this.remainingPlayerArr, player.turn]);
     });
     this.emitDealCards();
@@ -901,7 +894,9 @@ export default class NoobRoom extends Room<RoomState> {
   private async addBot() {
     if (this.clients.length === this.maxClients) return;
     const bot = new BotClient(
-      process.env.NODE_ENV === 'production' ? `${process.env.WS_SERVER}` : 'ws://localhost:9000',
+      process.env.NODE_ENV === 'production'
+        ? `${process.env.WS_SERVER}`
+        : 'ws://poker_load_loadbalancer:8080',
     );
     await bot.joinRoom(this.roomId, this.roomName);
     this.bot?.set(bot.sessionId, bot);
@@ -915,7 +910,7 @@ export default class NoobRoom extends Room<RoomState> {
 
   private handleGetState() {
     this.onMessage('GET_STATE', (_: Client, __: any) => {
-      this.clients.forEach((client: Client, index: number) => {
+      this.clients.forEach((client: Client, _) => {
         client.send('GET_STATE', this.state);
       });
     });
