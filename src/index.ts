@@ -18,7 +18,7 @@ const Hand = require('pokersolver').Hand;
 
 async function bootstrap() {
   const app: Express = express();
-  app.set('trust proxy', 1);
+  app.set('trust proxy', 1)
 
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
