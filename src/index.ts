@@ -1,6 +1,6 @@
 import express, { Express, Request, Response } from 'express';
 import rateLimit from 'express-rate-limit';
-// import dotenv from 'dotenv';
+import dotenv from 'dotenv';
 import cors from 'cors';
 import { MongooseDriver, RedisPresence, Server } from 'colyseus';
 import { monitor } from '@colyseus/monitor';
@@ -12,13 +12,13 @@ import MidRoom from './game/MidRoom';
 import ProRoom from './game/ProRoom';
 import TestRoom from './game/TestRoom';
 
-// dotenv.config();
+dotenv.config();
 
 const Hand = require('pokersolver').Hand;
 
 async function bootstrap() {
   const app: Express = express();
-  app.set('trust proxy', 1)
+  app.set('trust proxy', 1);
 
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
