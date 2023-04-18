@@ -40,9 +40,15 @@ export const definePos = (arr: number[]) => {
   let small: number;
   let goFirst: number;
 
-  if (randomBig === 0) {
-    small = Math.max(...arr);
-    goFirst = 1;
+  const turnArr: number[] = [];
+  arr.forEach((_, i) => turnArr.push(i));
+
+  if (randomBig === Math.min(...turnArr)) {
+    small = Math.max(...turnArr);
+    goFirst = randomBig + 1;
+  } else if (randomBig === Math.max(...turnArr)) {
+    small = randomBig - 1;
+    goFirst = Math.min(...turnArr);
   } else {
     small = randomBig - 1;
     goFirst = randomBig + 1;

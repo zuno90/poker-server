@@ -107,12 +107,12 @@ async function bootstrap() {
     transport: new WebSocketTransport({ server: createServer(app) }),
     presence: new RedisPresence({
       url:
-        process.env.NODE_ENV === 'production' ? process.env.REDIS_URL : 'redis://poker_redis:6379',
+        process.env.NODE_ENV === 'production' ? process.env.REDIS_URL : 'redis://localhost:6379',
     }),
     driver: new MongooseDriver(
       process.env.NODE_ENV === 'production'
         ? process.env.MONGO_URI
-        : 'mongodb://zuno:zunohandsome@poker_mongo:27017/poker?authSource=admin',
+        : 'mongodb://zuno:zunohandsome@localhost:27017/poker?authSource=admin',
     ),
   });
 

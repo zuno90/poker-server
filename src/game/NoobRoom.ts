@@ -464,8 +464,6 @@ export default class NoobRoom extends Room<RoomState> {
     this.state.potSize = this.state.players.size * this.MIN_BET;
     this.state.remainingPlayer = this.state.players.size;
 
-    // this.state.currentTurn = randomTurn - 1;
-
     // initialize state of player
 
     const playerSeatArr: number[] = [];
@@ -478,13 +476,14 @@ export default class NoobRoom extends Room<RoomState> {
     this.state.players.forEach((player: Player, _) => {
       player.statement = EStatement.Playing;
       player.turn = <number>arrangeTurn(player.seat, playerSeatArr);
+
       if (player.turn === big) {
-        player.pos === EPos.big;
+        player.pos = EPos.big;
         player.chips -= this.MIN_BET;
         player.accumulatedBet += this.MIN_BET;
       }
       if (player.turn === small) {
-        player.pos === EPos.small;
+        player.pos = EPos.small;
         player.chips -= this.MIN_BET / 2;
         player.accumulatedBet += this.MIN_BET / 2;
       }
@@ -909,9 +908,7 @@ export default class NoobRoom extends Room<RoomState> {
   private async addBot() {
     if (this.clients.length === this.maxClients) return;
     const bot = new BotClient(
-      process.env.NODE_ENV === 'production'
-        ? `${process.env.WS_SERVER}`
-        : 'ws://poker_load_loadbalancer:8080',
+      process.env.NODE_ENV === 'production' ? `${process.env.WS_SERVER}` : 'ws://localhost:9000',
     );
     await bot.joinRoom(this.roomId, this.roomName);
     this.bot?.set(bot.sessionId, bot);
