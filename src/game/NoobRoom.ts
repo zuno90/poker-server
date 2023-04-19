@@ -461,7 +461,7 @@ export default class NoobRoom extends Room<RoomState> {
     console.log({ banker: this.banker5Cards, player: this.player2Cards });
 
     this.state.onReady = true; // change room state -> TRUE
-    this.state.potSize = this.state.players.size * this.MIN_BET;
+    this.state.potSize = this.MIN_BET * 1.5;
     this.state.remainingPlayer = this.state.players.size;
 
     // initialize state of player
