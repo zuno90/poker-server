@@ -406,8 +406,12 @@ export default class NoobRoom extends Room<RoomState> {
     this.currentBet = 0;
     this.remainingTurn = this.state.remainingPlayer;
     this.allinArr = [];
-    for (const player of this.state.players.values())
-      if (player.statement === 'Playing') player.betEachAction = 0;
+    for (const player of this.state.players.values()) {
+      if (player.statement === 'Playing') {
+        player.betEachAction = 0;
+        player.action = '';
+      }
+    }
     // preflop -> flop
     if (round === ERound.PREFLOP) {
       this.state.round = ERound.FLOP;
