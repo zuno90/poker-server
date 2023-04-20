@@ -334,8 +334,7 @@ export default class NoobRoom extends Room<RoomState> {
       if (!actionArr.length) return;
 
       // after check
-      let callValue = 0;
-      callValue = this.currentBet - player.accumulatedBet;
+      const callValue = this.currentBet - player.accumulatedBet;
       this.broadcast(CALL);
       this.callAction(player, callValue);
     });
@@ -461,6 +460,12 @@ export default class NoobRoom extends Room<RoomState> {
     this.banker5Cards = banker5Cards; // cache 5 cards of banker first
     this.player2Cards = onHandCards; // chia bai
     this.remainingTurn = this.state.players.size;
+
+    if (this.state.players.size === 2) {
+      this.currentBet = this.MIN_BET / 2;
+    } else if (this.state.players.size > 2) {
+      this.currentBet = this.MIN_BET;
+    }
 
     console.log({ banker: this.banker5Cards, player: this.player2Cards });
 
