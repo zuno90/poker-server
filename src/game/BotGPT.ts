@@ -13,6 +13,7 @@ type TCurrentBetInfo = {
   action: string | undefined;
   chips: number;
   betEachAction: number;
+  accumulatedBet: number;
 };
 
 export class BotClient {
@@ -108,6 +109,7 @@ export class BotClient {
               action: player.action,
               chips: player.chips,
               betEachAction: player.betEachAction,
+              accumulatedBet: player.accumulatedBet,
             };
         }
       }
@@ -182,6 +184,7 @@ export class BotClient {
         return this.emit(CALL);
       } else if (this.currentBetInfo.action === CALL) {
         console.log('bot call/allin sau khi player call/allin');
+        if (this.currentBetInfo.accumulatedBet === bot.accumulatedBet) return this.emit(CHECK);
         if (this.currentBetInfo.betEachAction >= bot.chips) return this.emit(ALLIN);
         return this.emit(CALL);
       } else if (this.currentBetInfo.action === CHECK) {
