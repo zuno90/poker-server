@@ -459,13 +459,8 @@ export default class NoobRoom extends Room<RoomState> {
     const { onHandCards, banker5Cards } = deal(this.state.players.size);
     this.banker5Cards = banker5Cards; // cache 5 cards of banker first
     this.player2Cards = onHandCards; // chia bai
+    this.currentBet = this.MIN_BET;
     this.remainingTurn = this.state.players.size;
-
-    if (this.state.players.size === 2) {
-      this.currentBet = this.MIN_BET / 2;
-    } else if (this.state.players.size > 2) {
-      this.currentBet = this.MIN_BET;
-    }
 
     console.log({ banker: this.banker5Cards, player: this.player2Cards });
 
@@ -510,7 +505,7 @@ export default class NoobRoom extends Room<RoomState> {
     const host = <Player>this.state.players.get(client.sessionId);
     if (!host.isHost) return; // ko phai host ko cho rs
     // global variables
-    this.currentBet = 0;
+    this.currentBet = this.MIN_BET;
     this.banker5Cards = [];
     this.player2Cards = [];
     this.remainingPlayerArr = [];
