@@ -329,9 +329,9 @@ export default class NoobRoom extends Room<RoomState> {
       if (player.turn === this.state.currentTurn) return;
       if (player.statement !== EStatement.Playing) return;
       if (player.isFold) return; // block folded player
-      const actionArr = [];
-      for (let p of this.state.players.values()) p.action && actionArr.push(p.action);
-      if (!actionArr.length) return;
+      // const actionArr = [];
+      // for (let p of this.state.players.values()) p.action && actionArr.push(p.action);
+      // if (!actionArr.length) return;
 
       // after check
       const callValue = this.currentBet - player.accumulatedBet;
