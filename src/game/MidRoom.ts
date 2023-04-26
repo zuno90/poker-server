@@ -1,7 +1,7 @@
 import { Client, Presence, Room } from 'colyseus';
 import { Request } from 'express';
 import { ERound, RoomState } from './schemas/room.schema';
-import { ERole, EStatement, Player } from './schemas/player.schema';
+import { EPos, ERole, EStatement, Player } from './schemas/player.schema';
 import {
   ALL,
   FRIEND_CHECK,
@@ -14,7 +14,13 @@ import {
 import { ALLIN, CALL, CHECK, FOLD, RAISE } from './constants/action.constant';
 import { RANK, RESULT } from './constants/server-emit.constant';
 import { deal } from './modules/handleCard';
-import { arrangeSeat, arrangeTurn, getNonDupItem, sortedArr } from './modules/handlePlayer';
+import {
+  arrangeSeat,
+  arrangeTurn,
+  definePos,
+  getNonDupItem,
+  sortedArr,
+} from './modules/handlePlayer';
 import {
   calculateAllinPlayer,
   calculateDraw,
@@ -92,9 +98,11 @@ export default class MidRoom extends Room<RoomState> {
         // is HOST
         return {
           id: existedPlayer._id,
-          name: existedPlayer.username ?? existedPlayer.name ?? existedPlayer.email,
+          name: existedPlayer.name ?? existedPlayer.username ?? existedPlayer.email,
           avatar: existedPlayer.avatar,
           chips: existedPlayer.chips,
+          allowAddFriend: existedPlayer.privacy.allowAddFriend,
+          allowWatchProfile: existedPlayer.privacy.allowWatchProfile,
           isHost: true,
           seat: 1,
           turn: 0,
@@ -103,16 +111,18 @@ export default class MidRoom extends Room<RoomState> {
 
       // IS NOT HOST AND PLAYER NUMBER > 2
       if (this.state.players.size > 0) {
-        let playerSeatArr: number[] = [];
+        const playerSeatArr: number[] = [];
         this.state.players.forEach((player: Player, _) => playerSeatArr.push(player.seat));
         // find out next seat for this player
         const nextSeat = arrangeSeat(playerSeatArr); // next seat - 1 = 1
 
         return {
           id: existedPlayer._id,
-          name: existedPlayer.username ?? existedPlayer.name ?? existedPlayer.email,
+          name: existedPlayer.name ?? existedPlayer.username ?? existedPlayer.email,
           avatar: existedPlayer.avatar,
           chips: existedPlayer.chips,
+          allowAddFriend: existedPlayer.privacy.allowAddFriend,
+          allowWatchProfile: existedPlayer.privacy.allowWatchProfile,
           isHost: false,
           seat: nextSeat,
           role: ERole.Player,
@@ -141,6 +151,9 @@ export default class MidRoom extends Room<RoomState> {
 
       // HANDLE ALL ACTION FROM PLAYER
       this.handleAction();
+
+      // HANDLE GET_STATE FROM CLIENT
+      this.handleGetState();
     } catch (err) {
       console.error('error:::::', err);
       await this.disconnect();
@@ -268,7 +281,7 @@ export default class MidRoom extends Room<RoomState> {
       const isFriend = await getSubChannel(this.presence, `cms:friend:check:${reqUser.id}`);
       this.clients.forEach((c: Client, _: number) => {
         if (c.sessionId === acceptUser.sessionId)
-          isFriend && c.send(FRIEND_CHECK, `You and ${acceptUser.username} already were friend!`);
+          isFriend && c.send(FRIEND_CHECK, `You and ${acceptUser.name} already were friend!`);
       });
     });
 
@@ -288,7 +301,7 @@ export default class MidRoom extends Room<RoomState> {
             ? c.send(FRIEND_REQUEST, {
                 notificationId,
                 reqUserId: reqUser.id,
-                reqUsername: reqUser.username,
+                reqUsername: reqUser.name,
               })
             : c.send(FRIEND_REQUEST, 'Bad request!');
       });
@@ -310,6 +323,7 @@ export default class MidRoom extends Room<RoomState> {
 
       // if (chips >= player.chips) return this.allinAction(client.sessionId, player, player.chips); // trường hợp này chuyển sang allin
       // if (this.currentBet > chips + player.accumulatedBet + this.MIN_BET) return; // chỉ cho phép raise lệnh cao hơn current bet + min bet
+      this.broadcast(RAISE);
       this.raiseAction(player, chips);
     });
     // CALL
@@ -319,25 +333,13 @@ export default class MidRoom extends Room<RoomState> {
       if (player.turn === this.state.currentTurn) return;
       if (player.statement !== EStatement.Playing) return;
       if (player.isFold) return; // block folded player
-      const actionArr = [];
-      for (let p of this.state.players.values()) p.action && actionArr.push(p.action);
-      if (!actionArr.length) return;
+      // const actionArr = [];
+      // for (let p of this.state.players.values()) p.action && actionArr.push(p.action);
+      // if (!actionArr.length) return;
 
       // after check
-      let callValue = 0;
-      console.log({
-        currentBet: this.currentBet,
-        chips: player.chips,
-        accu: player.accumulatedBet,
-      });
-      // if (this.currentBet < player.chips + player.accumulatedBet) {
-      //   callValue = this.currentBet - player.accumulatedBet;
-      // }
-      // else {
-      // callValue = player.chips;// buo allin
-      // return this.allinAction(client.sessionId, player, callValue);
-      // }
-      callValue = this.currentBet - player.accumulatedBet;
+      const callValue = this.currentBet - player.accumulatedBet;
+      this.broadcast(CALL);
       this.callAction(player, callValue);
     });
     // CHECK
@@ -348,6 +350,7 @@ export default class MidRoom extends Room<RoomState> {
       if (player.statement !== EStatement.Playing) return;
       if (player.isFold) return; // block folded player
 
+      this.broadcast(CHECK);
       this.checkAction(player);
     });
     // ALLIN
@@ -358,6 +361,7 @@ export default class MidRoom extends Room<RoomState> {
       if (player.statement !== EStatement.Playing) return;
       if (player.isFold) return; // block folded player
 
+      this.broadcast(ALLIN);
       this.allinAction(client.sessionId, player, player.chips);
     });
     // FOLD
@@ -368,6 +372,7 @@ export default class MidRoom extends Room<RoomState> {
       if (player.statement !== EStatement.Playing) return;
       if (player.isFold) return; // block folded player
 
+      this.broadcast(FOLD);
       this.foldAction(player);
     });
   }
@@ -404,8 +409,12 @@ export default class MidRoom extends Room<RoomState> {
     this.currentBet = 0;
     this.remainingTurn = this.state.remainingPlayer;
     this.allinArr = [];
-    for (const player of this.state.players.values())
-      if (player.statement === 'Playing') player.betEachAction = 0;
+    for (const player of this.state.players.values()) {
+      if (player.statement === 'Playing') {
+        player.betEachAction = 0;
+        player.action = '';
+      }
+    }
     // preflop -> flop
     if (round === ERound.PREFLOP) {
       this.state.round = ERound.FLOP;
@@ -444,9 +453,7 @@ export default class MidRoom extends Room<RoomState> {
   }
 
   private startGame(client: Client) {
-    console.log('state room 1', this.state.onReady);
     if (this.state.onReady) return; // check game is ready or not
-    console.log('state room 2', this.state.onReady);
     if (this.state.round !== ERound.WELCOME) return; // phai doi toi round welcome
     if (this.state.players.size < 2) return; // allow start game when > 2 players
     // check accept only host
@@ -454,37 +461,41 @@ export default class MidRoom extends Room<RoomState> {
     if (!host.isHost) return;
 
     const { onHandCards, banker5Cards } = deal(this.state.players.size);
-    // this.banker5Cards = banker5Cards; // cache 5 cards of banker first
-    // this.player2Cards = onHandCards; // chia bai
-    this.banker5Cards = ['9s', '7c', 'Ad', 'Kd', '7s'];
-    this.player2Cards = [
-      ['2s', 'Kc'],
-      ['Tc', '5d'],
-      ['Kh', 'Jd'],
-    ];
+    this.banker5Cards = banker5Cards; // cache 5 cards of banker first
+    this.player2Cards = onHandCards; // chia bai
+    this.currentBet = this.MIN_BET;
     this.remainingTurn = this.state.players.size;
 
     console.log({ banker: this.banker5Cards, player: this.player2Cards });
 
     this.state.onReady = true; // change room state -> TRUE
-    this.state.potSize = this.state.players.size * this.MIN_BET;
+    this.state.potSize = this.MIN_BET * 1.5;
     this.state.remainingPlayer = this.state.players.size;
-    const randomTurn = Math.round((Math.random() * 10) % (this.state.players.size - 1));
-    this.state.currentTurn = randomTurn - 1;
 
     // initialize state of player
 
     const playerSeatArr: number[] = [];
-    this.state.players.forEach((player: Player, _) => {
-      player.statement = EStatement.Playing;
-      player.accumulatedBet += this.MIN_BET;
-      player.chips -= this.MIN_BET;
-      playerSeatArr.push(player.seat);
-    });
+    this.state.players.forEach((player: Player, _) => playerSeatArr.push(player.seat));
 
     // gán turn vào
+    const { big, small, currentTurn } = definePos(playerSeatArr);
+    this.state.currentTurn = currentTurn;
+
     this.state.players.forEach((player: Player, _) => {
-      player.turn = arrangeTurn(player.seat, playerSeatArr) as number;
+      player.statement = EStatement.Playing;
+      player.turn = <number>arrangeTurn(player.seat, playerSeatArr);
+
+      if (player.turn === big) {
+        player.pos = EPos.big;
+        player.chips -= this.MIN_BET;
+        player.accumulatedBet += this.MIN_BET;
+      }
+      if (player.turn === small) {
+        player.pos = EPos.small;
+        player.chips -= this.MIN_BET / 2;
+        player.accumulatedBet += this.MIN_BET / 2;
+      }
+
       this.remainingPlayerArr = sortedArr([...this.remainingPlayerArr, player.turn]);
     });
     this.emitDealCards();
@@ -498,7 +509,7 @@ export default class MidRoom extends Room<RoomState> {
     const host = <Player>this.state.players.get(client.sessionId);
     if (!host.isHost) return; // ko phai host ko cho rs
     // global variables
-    this.currentBet = 0;
+    this.currentBet = this.MIN_BET;
     this.banker5Cards = [];
     this.player2Cards = [];
     this.remainingPlayerArr = [];
@@ -541,6 +552,7 @@ export default class MidRoom extends Room<RoomState> {
         isHost: player.isHost,
         chips: player.chips,
         action: null,
+        pos: player.pos,
         accumulatedBet: 0,
         betEachAction: 0,
         turn: player.turn,
@@ -913,6 +925,14 @@ export default class MidRoom extends Room<RoomState> {
   private sendNewState() {
     this.clients.forEach((client: Client, index: number) => {
       client.send(ALL, this.state);
+    });
+  }
+
+  private handleGetState() {
+    this.onMessage('GET_STATE', (_: Client, __: any) => {
+      this.clients.forEach((client: Client, _) => {
+        client.send('GET_STATE', this.state);
+      });
     });
   }
 

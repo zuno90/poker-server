@@ -27,6 +27,10 @@ export class Player extends Schema {
 
   @type('number') chips: number;
 
+  @type('boolean') allowAddFriend: boolean;
+
+  @type('boolean') allowWatchProfile: boolean;
+
   @type('string') action: string;
 
   @type('number') betEachAction: number = 0;
