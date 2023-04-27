@@ -31,6 +31,7 @@ import {
 import { BotClient } from './BotGPT';
 import { botInfo } from './constants/bot.constant';
 import _ from 'lodash';
+import { redisMaster } from './init/redis.init';
 
 const Hand = require('pokersolver').Hand; // func handle winner
 
@@ -76,9 +77,12 @@ export default class NoobRoom extends Room<RoomState> {
   private foldArr: number[] = [];
 
   private bot: Map<string, BotClient> | null = new Map<string, BotClient>(); // new bot
-
+  private ipAddress: any = '';
   async onAuth(client: Client, options: TJwtAuth, req: Request) {
     try {
+      this.ipAddress = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+      console.log("IP NE: ", this.ipAddress);
+      
       // is BOT
       if (options.isBot && !options.jwt) return botInfo(this.roomName);
       // IS REAL PLAYER -> CHECK AUTH
@@ -163,6 +167,8 @@ export default class NoobRoom extends Room<RoomState> {
   async onJoin(client: Client, options: TJwtAuth, player: Player) {
     // SET INITIAL PLAYER STATE
     try {
+      // redisMaster.pfadd("poker:report")
+      
       this.state.players.set(client.sessionId, new Player(player)); // set player every joining
       if (player.isHost) {
         await this.sleep(2);
