@@ -79,9 +79,6 @@ export default class NoobRoom extends Room<RoomState> {
   private ipAddress: any = '';
   async onAuth(client: Client, options: TJwtAuth, req: Request) {
     try {
-      this.ipAddress = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
-      console.log("IP NE: ", this.ipAddress);
-      
       // is BOT
       if (options.isBot && !options.jwt) return botInfo(this.roomName);
       // IS REAL PLAYER -> CHECK AUTH
