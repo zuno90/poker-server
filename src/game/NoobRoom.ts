@@ -31,7 +31,6 @@ import {
 import { BotClient } from './BotGPT';
 import { botInfo } from './constants/bot.constant';
 import _ from 'lodash';
-import { redisMaster } from './init/redis.init';
 
 const Hand = require('pokersolver').Hand; // func handle winner
 
