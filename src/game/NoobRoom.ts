@@ -31,6 +31,7 @@ import {
 import { BotClient } from './BotGPT';
 import { botInfo } from './constants/bot.constant';
 import _ from 'lodash';
+import { HistoryPlayer, PreviousGameState } from './schemas/previous-game.schema';
 
 const Hand = require('pokersolver').Hand; // func handle winner
 
@@ -61,7 +62,8 @@ const getSubChannel = (redis: Presence, channel: string) => {
   });
 };
 
-export default class NoobRoom extends Room<RoomState> {
+export default class NoobRoom extends Room<RoomState, PreviousGameState> {
+  private prevGameState = new PreviousGameState();
   public readonly maxClients: number = 5;
   private readonly MIN_BET = 1000;
   private readonly MIN_CHIP = 50000;
@@ -75,8 +77,11 @@ export default class NoobRoom extends Room<RoomState> {
   private allinList: TAllinPlayer[] = [];
   private foldArr: number[] = [];
 
+  private initChipArr: any = [];
+
   private bot: Map<string, BotClient> | null = new Map<string, BotClient>(); // new bot
   private ipAddress: any = '';
+
   async onAuth(client: Client, options: TJwtAuth, req: Request) {
     try {
       // is BOT
@@ -154,6 +159,9 @@ export default class NoobRoom extends Room<RoomState> {
 
       // HANDLE GET_STATE FROM CLIENT
       this.handleGetState();
+
+      // HANDLE GET_HISTORY FROM CLIENT
+      this.handleGetHistory();
     } catch (err) {
       console.error('error:::::', err);
       await this.disconnect();
@@ -164,7 +172,7 @@ export default class NoobRoom extends Room<RoomState> {
     // SET INITIAL PLAYER STATE
     try {
       // redisMaster.pfadd("poker:report")
-      
+
       this.state.players.set(client.sessionId, new Player(player)); // set player every joining
       if (player.isHost) {
         await this.sleep(2);
@@ -477,7 +485,10 @@ export default class NoobRoom extends Room<RoomState> {
     // initialize state of player
 
     const playerSeatArr: number[] = [];
-    this.state.players.forEach((player: Player, _) => playerSeatArr.push(player.seat));
+    this.state.players.forEach((player: Player, _) => {
+      playerSeatArr.push(player.seat); // handle seat
+      this.initChipArr.push(player.chips); // handle init chip
+    });
 
     // gán turn vào
     const { big, small, currentTurn } = definePos(playerSeatArr);
@@ -510,6 +521,10 @@ export default class NoobRoom extends Room<RoomState> {
     if (this.state.round !== ERound.SHOWDOWN) return; // phai doi toi round welcome
     const host = <Player>this.state.players.get(client.sessionId);
     if (!host.isHost) return; // ko phai host ko cho rs
+    // save previous game
+    this.updatePrevGameState();
+
+    /* RESET STATE GAME */
     // global variables
     this.currentBet = this.MIN_BET;
     this.banker5Cards = [];
@@ -931,10 +946,14 @@ export default class NoobRoom extends Room<RoomState> {
   }
 
   private handleGetState() {
-    this.onMessage('GET_STATE', (_: Client, __: any) => {
-      this.clients.forEach((client: Client, _) => {
-        client.send('GET_STATE', this.state);
-      });
+    this.onMessage('GET_STATE', (client: Client, __: any) => {
+      client.send('GET_STATE', this.state);
+    });
+  }
+
+  private handleGetHistory() {
+    this.onMessage('GET_HISTORY', (client: Client, __: any) => {
+      client.send('GET_HISTORY', this.prevGameState);
     });
   }
 
@@ -952,5 +971,21 @@ export default class NoobRoom extends Room<RoomState> {
     if (!reqUser || !acceptUser) return;
 
     return { reqUser, acceptUser };
+  }
+
+  private updatePrevGameState() {
+    this.prevGameState.roomId = this.roomId;
+    this.prevGameState.bankerCards = this.banker5Cards;
+    this.state.players.forEach((player: Player, sessionId: string) => {
+      if (player.connected) {
+        const p = <HistoryPlayer>{
+          id: player.id,
+          name: player.name,
+          cards: this.player2Cards[player.turn],
+          revenue: player.chips - this.initChipArr[player.turn],
+        };
+        this.prevGameState.players.push(p);
+      }
+    });
   }
 }

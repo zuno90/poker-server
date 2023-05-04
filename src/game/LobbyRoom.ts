@@ -46,9 +46,10 @@ export default class CustomLobbyRoom extends Room<RoomState> {
 
   private readonly reconnectTimeOut = 60;
   private ipAddress: any;
+
   onAuth(client: Client, options: any, request?: Request) {
-    this.ipAddress = request?.headers["x-forwarded-for"] || request?.socket.remoteAddress;
-    redisPub.publish("poker:report:ccu", JSON.stringify({ipAddress: this.ipAddress}))
+    this.ipAddress = request?.headers['x-forwarded-for'] || request?.socket.remoteAddress;
+    redisPub.publish('poker:report:ccu', JSON.stringify({ ipAddress: this.ipAddress }));
 
     const { _id, name, avatar } = options;
     return { _id, displayName: name, avatar };
