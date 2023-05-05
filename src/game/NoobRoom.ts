@@ -973,7 +973,17 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
     return { reqUser, acceptUser };
   }
 
+  private clearPrevGameState() {
+    this.prevGameState.roomId = '';
+    this.prevGameState.bankerCards = [];
+    this.prevGameState.players.clear();
+  }
+
   private updatePrevGameState() {
+    // clear prev state
+    this.clearPrevGameState();
+
+    // update prev state
     this.prevGameState.roomId = this.roomId;
     this.prevGameState.bankerCards = this.banker5Cards;
     this.state.players.forEach((player: Player, sessionId: string) => {
