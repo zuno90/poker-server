@@ -159,9 +159,6 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
 
       // HANDLE GET_STATE FROM CLIENT
       this.handleGetState();
-
-      // HANDLE GET_HISTORY FROM CLIENT
-      this.handleGetHistory();
     } catch (err) {
       console.error('error:::::', err);
       await this.disconnect();
@@ -521,8 +518,9 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
     if (this.state.round !== ERound.SHOWDOWN) return; // phai doi toi round welcome
     const host = <Player>this.state.players.get(client.sessionId);
     if (!host.isHost) return; // ko phai host ko cho rs
-    // save previous game
+    // update then broadcast previous game
     this.updatePrevGameState();
+    this.broadcast('GET_HISTORY', this.prevGameState);
 
     /* RESET STATE GAME */
     // global variables
@@ -951,12 +949,6 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
     });
   }
 
-  private handleGetHistory() {
-    this.onMessage('GET_HISTORY', (client: Client, __: any) => {
-      client.send('GET_HISTORY', this.prevGameState);
-    });
-  }
-
   private sleep(s: number) {
     return new Promise(resolve => setTimeout(resolve, s * 1000));
   }
@@ -986,7 +978,7 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
     // update prev state
     this.prevGameState.roomId = this.roomId;
     this.prevGameState.bankerCards = this.banker5Cards;
-    this.state.players.forEach((player: Player, sessionId: string) => {
+    this.state.players.forEach((player: Player, _) => {
       if (player.connected) {
         const p = <HistoryPlayer>{
           id: player.id,
