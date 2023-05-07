@@ -984,7 +984,7 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
     this.prevGameState.bankerCards = this.banker5Cards;
 
     this.state.players.forEach((player: Player, __) => {
-      if (player.connected) {
+      if (player.connected && !player.isFold) {
         const p = <HistoryPlayer>{
           id: player.id,
           name: player.name,
