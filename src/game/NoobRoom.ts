@@ -983,15 +983,13 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
     this.prevGameState.roomId = this.roomId;
     this.prevGameState.bankerCards = this.banker5Cards;
 
-    // sort cards by player turn
-
-    this.state.players.forEach((player: Player, _) => {
+    this.state.players.forEach((player: Player, __) => {
       if (player.connected) {
         const p = <HistoryPlayer>{
           id: player.id,
           name: player.name,
-          rank: 'wtf',
-          cards: this.player2Cards[player.turn],
+          rank: this.result[player.turn].d,
+          cards: this.result[player.turn].c,
           revenue: player.chips - this.initChipArr[player.turn],
         };
         this.prevGameState.players.push(p);
