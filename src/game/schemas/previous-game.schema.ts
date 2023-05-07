@@ -3,6 +3,7 @@ import { ArraySchema, Schema, type } from '@colyseus/schema';
 export class HistoryPlayer extends Schema {
   @type('string') id: string;
   @type('string') name: string;
+  @type('string') rank: string;
   @type(['string']) cards: string[];
   @type('number') revenue: number;
 }

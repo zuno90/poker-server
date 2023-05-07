@@ -77,6 +77,8 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
   private allinList: TAllinPlayer[] = [];
   private foldArr: number[] = [];
 
+  private result: any[] = [];
+
   private initChipArr: any = [];
 
   private bot: Map<string, BotClient> | null = new Map<string, BotClient>(); // new bot
@@ -531,6 +533,7 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
     this.allinArr = [];
     this.allinList = [];
     this.foldArr = [];
+    this.result = [];
 
     // room state
     this.state.onReady = false;
@@ -898,6 +901,7 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
 
   private endGame(result: any[]) {
     console.log('end game', result);
+    this.result = result;
     this.emitResult(result);
     this.state.round = ERound.SHOWDOWN;
     this.state.players.forEach((player: Player, _: string) => {
@@ -978,11 +982,15 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
     // update prev state
     this.prevGameState.roomId = this.roomId;
     this.prevGameState.bankerCards = this.banker5Cards;
+
+    // sort cards by player turn
+
     this.state.players.forEach((player: Player, _) => {
       if (player.connected) {
         const p = <HistoryPlayer>{
           id: player.id,
           name: player.name,
+          rank: 'wtf',
           cards: this.player2Cards[player.turn],
           revenue: player.chips - this.initChipArr[player.turn],
         };
