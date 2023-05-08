@@ -988,8 +988,8 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
         const p = <HistoryPlayer>{
           id: player.id,
           name: player.name,
-          rank: this.result[player.turn].d,
-          cards: this.result[player.turn].c,
+          rank: this.result[player.turn]?.d,
+          cards: this.result[player.turn]?.c,
           revenue: player.chips - this.initChipArr[player.turn],
         };
         this.prevGameState.players.push(p);
