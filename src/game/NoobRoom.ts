@@ -981,7 +981,7 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
 
     // update prev state
     this.prevGameState.roomId = this.roomId;
-    this.prevGameState.bankerCards = this.banker5Cards;
+    this.prevGameState.bankerCards = this.state.bankerCards;
 
     this.state.players.forEach((player: Player, __) => {
       if (player.connected) {
