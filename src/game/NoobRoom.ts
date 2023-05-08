@@ -534,6 +534,7 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
     this.allinList = [];
     this.foldArr = [];
     this.result = [];
+    this.initChipArr = [];
 
     // room state
     this.state.onReady = false;
