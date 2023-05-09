@@ -11,6 +11,7 @@ import NoobRoom from './game/NoobRoom';
 import MidRoom from './game/MidRoom';
 import ProRoom from './game/ProRoom';
 import TestRoom from './game/TestRoom';
+import { consumeQueue, initQueue, sendQueue } from './game/init/rabbitmq.init';
 
 dotenv.config();
 
@@ -37,6 +38,11 @@ async function bootstrap() {
   app.use('/assets', express.static('./src/assets')); // public file if you need some static file (url, image,...)
 
   app.use('/monitor', monitor()); // room monitor
+
+  // rabbitmq initiation history channel
+  await initQueue('history');
+  // await sendQueue('history', { text: 'zuno', concat: 'hahaha' });
+  // await consumeQueue('history');
 
   // welcome
   app.use('/', async (req: Request, res: Response) => {
@@ -106,8 +112,7 @@ async function bootstrap() {
   const gameServer = new Server({
     transport: new WebSocketTransport({ server: createServer(app) }),
     presence: new RedisPresence({
-      url:
-        process.env.NODE_ENV === 'production' ? process.env.REDIS_URL : 'redis://localhost:6379',
+      url: process.env.NODE_ENV === 'production' ? process.env.REDIS_URL : 'redis://localhost:6379',
     }),
     driver: new MongooseDriver(
       process.env.NODE_ENV === 'production'

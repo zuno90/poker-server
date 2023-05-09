@@ -32,6 +32,7 @@ import { BotClient } from './BotGPT';
 import { botInfo } from './constants/bot.constant';
 import _ from 'lodash';
 import { HistoryPlayer, PreviousGameState } from './schemas/previous-game.schema';
+import { sendQueue } from './init/rabbitmq.init';
 
 const Hand = require('pokersolver').Hand; // func handle winner
 
@@ -52,6 +53,14 @@ export interface TAllinPlayer {
   v: number;
   w?: boolean;
 }
+
+type TActionQueue = {
+  roomId: string;
+  roomLvl: string;
+  id: string;
+  action: string;
+  chips: number;
+};
 
 const getSubChannel = (redis: Presence, channel: string) => {
   return new Promise(resolve => {
@@ -601,6 +610,7 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
     this.remainingTurn = this.state.remainingPlayer - 1;
     console.log('RAISE, turn con', this.remainingTurn);
 
+    this.sendActionToQueue(this.modifyAction(player.id, RAISE, chip)); // send action to queue
     this.sendNewState(); // send state before raise
 
     if (this.state.remainingPlayer === 1) {
@@ -628,6 +638,7 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
     this.remainingTurn--;
     console.log('CALL, turn con', this.remainingTurn);
 
+    this.sendActionToQueue(this.modifyAction(player.id, CALL, chip)); // send action to queue
     this.sendNewState(); // send state before call
 
     if (this.state.remainingPlayer === 1) {
@@ -652,6 +663,7 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
     this.remainingTurn--;
     console.log('CHECK, turn con', this.remainingTurn);
 
+    this.sendActionToQueue(this.modifyAction(player.id, CHECK, 0)); // send action to queue
     this.sendNewState(); // send state before check
 
     if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
@@ -678,6 +690,7 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
 
     console.log('ALLIN, turn con', this.remainingTurn);
 
+    this.sendActionToQueue(this.modifyAction(player.id, ALLIN, chip)); // send action to queue
     this.sendNewState(); // send state before allin
 
     this.allinArr.push(player.turn);
@@ -750,6 +763,7 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
 
     console.log('FOLD, turn con', this.remainingTurn);
 
+    this.sendActionToQueue(this.modifyAction(player.id, FOLD, 0)); // send action to queue
     this.sendNewState(); // send state before fold
 
     this.foldArr.push(player.turn);
@@ -996,5 +1010,20 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
         this.prevGameState.players.push(p);
       }
     });
+  }
+
+  // deliver to rabbitMQ
+  private modifyAction(id: string, action: string, chips: number): TActionQueue {
+    return {
+      roomId: this.roomId,
+      roomLvl: this.roomName,
+      id,
+      action,
+      chips,
+    };
+  }
+
+  private async sendActionToQueue(data: TActionQueue) {
+    await sendQueue('history', data);
   }
 }
