@@ -26,6 +26,7 @@ jobs:
                 -e HOST=172.31.31.206 \
                 -e WS_SERVER=${{ secrets.WS_SERVER }} \
                 -e REDIS_URL=${{ secrets.REDIS_URL }} \
+                -e RMQ_URI=${{ secrets.RMQ_URI }} \
                 -e MONGO_URI=${{ secrets.MONGO_URI }} \
                 -e CMS_URL=${{ secrets.CMS_URL }} \
                 -e COLYSEUS_SEAT_RESERVATION_TIME=300 \
