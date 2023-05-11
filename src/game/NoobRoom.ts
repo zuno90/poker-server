@@ -32,7 +32,7 @@ import { BotClient } from './BotGPT';
 import { botInfo } from './constants/bot.constant';
 import _ from 'lodash';
 import { HistoryPlayer, PreviousGameState } from './schemas/previous-game.schema';
-import { sendQueue } from './init/rabbitmq.init';
+import { initQueue, sendQueue } from './init/rabbitmq.init';
 
 const Hand = require('pokersolver').Hand; // func handle winner
 
@@ -153,6 +153,9 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
 
   async onCreate(options: TJwtAuth) {
     try {
+      // INIT QUEUE CHANNEL
+      await initQueue('history');
+
       // CREATE AN INITIAL ROOM STATE
       this.setState(new RoomState());
 

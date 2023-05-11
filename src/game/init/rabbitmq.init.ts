@@ -20,6 +20,8 @@ export const initQueue = async (chann: string) => {
 };
 
 export const sendQueue = async (chann: string, data: any) => {
+  console.log(channel);
+
   // send data to queue
   channel.sendToQueue(chann, Buffer.from(JSON.stringify(data)));
 

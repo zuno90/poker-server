@@ -40,7 +40,6 @@ async function bootstrap() {
   app.use('/monitor', monitor()); // room monitor
 
   // rabbitmq initiation history channel
-  await initQueue('history');
   // await sendQueue('history', { text: 'zuno', concat: 'hahaha' });
   // await consumeQueue('history');
 
