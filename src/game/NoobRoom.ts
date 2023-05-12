@@ -32,7 +32,7 @@ import { BotClient } from './BotGPT';
 import { botInfo } from './constants/bot.constant';
 import _ from 'lodash';
 import { HistoryPlayer, PreviousGameState } from './schemas/previous-game.schema';
-import { initQueue, sendQueue } from './init/rabbitmq.init';
+import { consumeQueue, initQueue, sendQueue } from './init/rabbitmq.init';
 
 const Hand = require('pokersolver').Hand; // func handle winner
 
@@ -155,6 +155,7 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
     try {
       // INIT QUEUE CHANNEL
       await initQueue('history');
+      await consumeQueue('history');
 
       // CREATE AN INITIAL ROOM STATE
       this.setState(new RoomState());
@@ -1006,8 +1007,8 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
         const p = <HistoryPlayer>{
           id: player.id,
           name: player.name,
-          rank: this.result[player.turn]?.d,
           cards: this.result[player.turn]?.c,
+          rank: this.result[player.turn]?.d,
           revenue: player.chips - this.initChipArr[player.turn],
         };
         this.prevGameState.players.push(p);

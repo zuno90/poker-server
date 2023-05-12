@@ -47,7 +47,7 @@ export const botInfo = (level: string) => {
     isHost: false,
     seat: 5,
     role: ERole.Bot,
-    connected: false,
+    connected: true,
   };
 };
 
@@ -61,6 +61,6 @@ export const botTest = (index: number) => {
     isHost: false,
     seat: index,
     role: ERole.Bot,
-    connected: false,
+    connected: true,
   };
 };
