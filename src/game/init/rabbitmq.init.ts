@@ -22,10 +22,6 @@ export const initQueue = async (chann: string) => {
 export const sendQueue = async (chann: string, data: any) => {
   // send data to queue
   channel.sendToQueue(chann, Buffer.from(JSON.stringify(data)));
-
-  // close the channel and connection
-  // await channel.close();
-  // await connection.close();
 };
 
 export const consumeQueue = async (chann: string) => {
@@ -33,4 +29,10 @@ export const consumeQueue = async (chann: string) => {
     console.log(`data:::::${Buffer.from(data.content)}`);
     channel.ack(data);
   });
+};
+
+export const closeQueue = async (chann: string) => {
+  // close the channel and connection
+  await channel.close();
+  await connection.close();
 };

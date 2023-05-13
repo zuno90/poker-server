@@ -32,7 +32,7 @@ import { BotClient } from './BotGPT';
 import { botInfo } from './constants/bot.constant';
 import _ from 'lodash';
 import { HistoryPlayer, PreviousGameState } from './schemas/previous-game.schema';
-import { consumeQueue, initQueue, sendQueue } from './init/rabbitmq.init';
+import { closeQueue, consumeQueue, initQueue, sendQueue } from './init/rabbitmq.init';
 
 const Hand = require('pokersolver').Hand; // func handle winner
 
@@ -257,6 +257,7 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
   async onDispose() {
     console.log('room ', this.roomId, ' is disposing...');
     this.bot = null;
+    await closeQueue('history');
   }
 
   // HANDLE ALL ACTIONS
@@ -920,7 +921,7 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
 
   private endGame(result: any[]) {
     console.log('end game', result);
-    this.result = result;
+    this.result = _.sortBy(result, 't');
     this.emitResult(result);
     this.state.round = ERound.SHOWDOWN;
     this.state.players.forEach((player: Player, _: string) => {
