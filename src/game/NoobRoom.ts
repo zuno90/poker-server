@@ -1012,6 +1012,8 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
           rank: this.result[player.turn]?.d,
           revenue: player.chips - this.initChipArr[player.turn],
         };
+        console.log('result after sorted:::::', this.result);
+        console.log('history P:::::', p);
         this.prevGameState.players.push(p);
       }
     });
