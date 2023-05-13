@@ -921,7 +921,9 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
 
   private endGame(result: any[]) {
     console.log('end game', result);
-    this.result = _.sortBy(result, 't');
+    // handle result for prev game
+    this.result = this.handleResultForPrevGame(result);
+
     this.emitResult(result);
     this.state.round = ERound.SHOWDOWN;
     this.state.players.forEach((player: Player, _: string) => {
@@ -993,6 +995,18 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
     this.prevGameState.roomId = '';
     this.prevGameState.bankerCards = [];
     this.prevGameState.players.clear();
+  }
+
+  private handleResultForPrevGame(result: any[]) {
+    let playingCount: number = 0;
+    for (const player of this.state.players.values()) {
+      if (player.statement === EStatement.Playing) playingCount++;
+    }
+    for (let i = 0; i < playingCount; i++) {
+      if (!_.find(result, { t: i })) result.push({ t: i });
+    }
+
+    return _.sortBy(result, 't');
   }
 
   private updatePrevGameState() {
