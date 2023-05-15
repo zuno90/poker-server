@@ -153,10 +153,6 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
 
   async onCreate(options: TJwtAuth) {
     try {
-      // INIT QUEUE CHANNEL
-      await initQueue('history');
-      await consumeQueue('history');
-
       // CREATE AN INITIAL ROOM STATE
       this.setState(new RoomState());
 
@@ -1027,8 +1023,8 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
           rank: this.result[player.turn]?.d,
           revenue: player.chips - this.initChipArr[player.turn],
         };
-        console.log('result after sorted:::::', this.result);
-        console.log('history P:::::', p);
+        // console.log('result after sorted:::::', this.result);
+        // console.log('history P:::::', p);
         this.prevGameState.players.push(p);
       }
     });

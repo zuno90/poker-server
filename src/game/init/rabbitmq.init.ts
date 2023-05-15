@@ -19,9 +19,9 @@ export const initQueue = async (chann: string) => {
   }
 };
 
-export const sendQueue = async (chann: string, data: any) => {
+export const sendQueue = async (queue: string, data: any) => {
   // send data to queue
-  channel.sendToQueue(chann, Buffer.from(JSON.stringify(data)));
+  channel.sendToQueue(queue, Buffer.from(JSON.stringify(data)));
 };
 
 export const consumeQueue = async (chann: string) => {
@@ -31,7 +31,7 @@ export const consumeQueue = async (chann: string) => {
   });
 };
 
-export const closeQueue = async (chann: string) => {
+export const closeQueue = async () => {
   // close the channel and connection
   await channel.close();
   await connection.close();
