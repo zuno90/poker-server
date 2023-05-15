@@ -11,7 +11,7 @@ import NoobRoom from './game/NoobRoom';
 import MidRoom from './game/MidRoom';
 import ProRoom from './game/ProRoom';
 import TestRoom from './game/TestRoom';
-import { consumeQueue, sendQueue } from './game/init/rabbitmq.init';
+import { sendQueue } from './game/init/rabbitmq.init';
 
 dotenv.config();
 
@@ -31,7 +31,8 @@ async function bootstrap() {
   });
   app.use('/matchmake', apiLimiter);
 
-  app.use('/test', (req: Request, res: Response) => {
+  app.use('/test', async (req: Request, res: Response) => {
+    await sendQueue('history', { who: 'zuno', do: 'test' });
     res.send('work ' + process.env.PORT);
   });
 
@@ -45,68 +46,68 @@ async function bootstrap() {
   // await consumeQueue('history');
 
   // welcome
-  app.use('/', async (req: Request, res: Response) => {
-    try {
-      const [h1, h2, h3, h4, h5] = req.body;
-      let listCardsGame = [];
-      let hand1 = Hand.solve(h1.cards);
-      hand1.color = h1.color;
-
-      let hand2 = Hand.solve(h2.cards);
-      hand2.color = h2.color;
-      let hand3 = Hand.solve(h3.cards);
-      hand3.color = h3.color;
-      let hand4 = Hand.solve(h4.cards);
-      hand4.color = h4.color;
-      let hand5 = Hand.solve(h5.cards);
-      hand5.color = h5.color;
-      const winner = Hand.winners([hand1, hand2, hand3, hand4, hand5]); // hand2
-      listCardsGame.push(hand1.cards, hand2.cards, hand3.cards, hand4.cards, hand5.cards);
-      const winnerCards = winner[0].cards;
-      const winnArr: any[] = [];
-      for (let c of winnerCards) winnArr.push(c.value);
-      let drawPlayer: number = 0;
-
-      let result: string = '';
-      y(listCardsGame);
-
-      function y(cards: any[]) {
-        let a = [];
-        for (let i = 0; i < cards.length; i++) a.push([]);
-        let count = 0;
-        console.log('COMBO CARD WIN: ', winnArr);
-
-        console.log(cards.length);
-        for (let j = 0; j < cards.length; j++) {
-          a[j] = cards[j].map((card: any) => card.value);
-          console.log(a[j]);
-          if (a[j].toString() === winnArr.toString()) {
-            console.log('USER HAVE COMBO CARD WIN: ', a[j]);
-            a = a[j];
-            count++;
-          }
-        }
-        drawPlayer = count;
-        if (drawPlayer === 1) {
-          result = `màu ${winner[0].color} thắng, rank: ${winner[0].descr}`;
-        } else {
-          const x = winner.map((v: any) => v.color);
-          result = `kết quả có ${drawPlayer} hoà, màu ${x.join(' & ')}. Rank: ${winner[0].descr}`;
-        }
-      }
-
-      res.status(200).json({
-        success: true,
-        data: {
-          winnArr,
-          result,
-        },
-      });
-    } catch (e) {
-      console.error(e);
-      res.status(404).json({ err: 404, msg: 'bad request!' });
-    }
-  });
+  // app.use('/', async (req: Request, res: Response) => {
+  //   try {
+  //     const [h1, h2, h3, h4, h5] = req.body;
+  //     let listCardsGame = [];
+  //     let hand1 = Hand.solve(h1.cards);
+  //     hand1.color = h1.color;
+  //
+  //     let hand2 = Hand.solve(h2.cards);
+  //     hand2.color = h2.color;
+  //     let hand3 = Hand.solve(h3.cards);
+  //     hand3.color = h3.color;
+  //     let hand4 = Hand.solve(h4.cards);
+  //     hand4.color = h4.color;
+  //     let hand5 = Hand.solve(h5.cards);
+  //     hand5.color = h5.color;
+  //     const winner = Hand.winners([hand1, hand2, hand3, hand4, hand5]); // hand2
+  //     listCardsGame.push(hand1.cards, hand2.cards, hand3.cards, hand4.cards, hand5.cards);
+  //     const winnerCards = winner[0].cards;
+  //     const winnArr: any[] = [];
+  //     for (let c of winnerCards) winnArr.push(c.value);
+  //     let drawPlayer: number = 0;
+  //
+  //     let result: string = '';
+  //     y(listCardsGame);
+  //
+  //     function y(cards: any[]) {
+  //       let a = [];
+  //       for (let i = 0; i < cards.length; i++) a.push([]);
+  //       let count = 0;
+  //       console.log('COMBO CARD WIN: ', winnArr);
+  //
+  //       console.log(cards.length);
+  //       for (let j = 0; j < cards.length; j++) {
+  //         a[j] = cards[j].map((card: any) => card.value);
+  //         console.log(a[j]);
+  //         if (a[j].toString() === winnArr.toString()) {
+  //           console.log('USER HAVE COMBO CARD WIN: ', a[j]);
+  //           a = a[j];
+  //           count++;
+  //         }
+  //       }
+  //       drawPlayer = count;
+  //       if (drawPlayer === 1) {
+  //         result = `màu ${winner[0].color} thắng, rank: ${winner[0].descr}`;
+  //       } else {
+  //         const x = winner.map((v: any) => v.color);
+  //         result = `kết quả có ${drawPlayer} hoà, màu ${x.join(' & ')}. Rank: ${winner[0].descr}`;
+  //       }
+  //     }
+  //
+  //     res.status(200).json({
+  //       success: true,
+  //       data: {
+  //         winnArr,
+  //         result,
+  //       },
+  //     });
+  //   } catch (e) {
+  //     console.error(e);
+  //     res.status(404).json({ err: 404, msg: 'bad request!' });
+  //   }
+  // });
 
   // init game server
   const gameServer = new Server({

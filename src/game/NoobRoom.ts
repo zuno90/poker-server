@@ -1041,6 +1041,6 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
   }
 
   private async sendActionToQueue(data: TActionQueue) {
-    await sendQueue('history', data);
+    await sendQueue('history', { pattern: 'history', data });
   }
 }

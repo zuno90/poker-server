@@ -23,6 +23,8 @@ export const sendQueue = async (queue: string, data: any) => {
   await ProducerChannel.assertQueue(queue);
   // send data to queue
   ProducerChannel.sendToQueue(queue, Buffer.from(JSON.stringify(data)), { persistent: true });
+  await ProducerChannel.close();
+  await connection.close();
 };
 
 export const consumeQueue = async (queue: string) => {
