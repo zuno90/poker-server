@@ -921,10 +921,8 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
 
   private endGame(result: any[]) {
     console.log('end game', result);
-    // handle result for prev game
-    this.result = this.handleResultForPrevGame(result);
-
     this.emitResult(result);
+
     this.state.round = ERound.SHOWDOWN;
     this.state.players.forEach((player: Player, _: string) => {
       if (player.role === ERole.Player) {
@@ -935,6 +933,9 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
       }
     });
     this.sendNewState();
+
+    // handle result for prev game
+    this.result = this.handleResultForPrevGame([...result]);
   }
 
   private actionFoldPlayer() {
