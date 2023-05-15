@@ -11,7 +11,7 @@ import NoobRoom from './game/NoobRoom';
 import MidRoom from './game/MidRoom';
 import ProRoom from './game/ProRoom';
 import TestRoom from './game/TestRoom';
-import { consumeQueue, initQueue, sendQueue } from './game/init/rabbitmq.init';
+import { consumeQueue, sendQueue } from './game/init/rabbitmq.init';
 
 dotenv.config();
 
@@ -41,7 +41,6 @@ async function bootstrap() {
 
   // rabbitmq initiation history channe
   // INIT QUEUE CHANNEL
-  await initQueue('history');
   // await sendQueue('history', { text: 'zuno', concat: 'hahaha' });
   // await consumeQueue('history');
 
