@@ -253,7 +253,6 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
   async onDispose() {
     console.log('room ', this.roomId, ' is disposing...');
     this.bot = null;
-    await closeQueue('history');
   }
 
   // HANDLE ALL ACTIONS
