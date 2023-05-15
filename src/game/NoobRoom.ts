@@ -32,7 +32,7 @@ import { BotClient } from './BotGPT';
 import { botInfo } from './constants/bot.constant';
 import _ from 'lodash';
 import { HistoryPlayer, PreviousGameState } from './schemas/previous-game.schema';
-import { closeQueue, consumeQueue, initQueue, sendQueue } from './init/rabbitmq.init';
+import { sendQueue } from './init/rabbitmq.init';
 
 const Hand = require('pokersolver').Hand; // func handle winner
 
