@@ -57,7 +57,7 @@ export interface TAllinPlayer {
 type TActionQueue = {
   roomId: string;
   roomLvl: string;
-  id: string;
+  userId: string;
   action: string;
   chips: number;
 };
@@ -1029,11 +1029,11 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
   }
 
   // deliver to rabbitMQ
-  private modifyAction(id: string, action: string, chips: number): TActionQueue {
+  private modifyAction(userId: string, action: string, chips: number): TActionQueue {
     return {
       roomId: this.roomId,
       roomLvl: this.roomName,
-      id,
+      userId,
       action,
       chips,
     };
