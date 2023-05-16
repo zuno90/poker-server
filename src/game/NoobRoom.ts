@@ -616,7 +616,8 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
     this.remainingTurn = this.state.remainingPlayer - 1;
     console.log('RAISE, turn con', this.remainingTurn);
 
-    this.sendActionToQueue(this.modifyAction(player.id, RAISE, chip)); // send action to queue
+    player.role === ERole.Player &&
+      this.sendActionToQueue(this.modifyAction(player.id, RAISE, chip)); // send action to queue
     this.sendNewState(); // send state before raise
 
     if (this.state.remainingPlayer === 1) {
@@ -644,7 +645,8 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
     this.remainingTurn--;
     console.log('CALL, turn con', this.remainingTurn);
 
-    this.sendActionToQueue(this.modifyAction(player.id, CALL, chip)); // send action to queue
+    player.role === ERole.Player &&
+      this.sendActionToQueue(this.modifyAction(player.id, CALL, chip)); // send action to queue
     this.sendNewState(); // send state before call
 
     if (this.state.remainingPlayer === 1) {
@@ -669,7 +671,7 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
     this.remainingTurn--;
     console.log('CHECK, turn con', this.remainingTurn);
 
-    this.sendActionToQueue(this.modifyAction(player.id, CHECK, 0)); // send action to queue
+    player.role === ERole.Player && this.sendActionToQueue(this.modifyAction(player.id, CHECK, 0)); // send action to queue
     this.sendNewState(); // send state before check
 
     if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
@@ -696,7 +698,8 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
 
     console.log('ALLIN, turn con', this.remainingTurn);
 
-    this.sendActionToQueue(this.modifyAction(player.id, ALLIN, chip)); // send action to queue
+    player.role === ERole.Player &&
+      this.sendActionToQueue(this.modifyAction(player.id, ALLIN, chip)); // send action to queue
     this.sendNewState(); // send state before allin
 
     this.allinArr.push(player.turn);
@@ -769,7 +772,7 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
 
     console.log('FOLD, turn con', this.remainingTurn);
 
-    this.sendActionToQueue(this.modifyAction(player.id, FOLD, 0)); // send action to queue
+    player.role === ERole.Player && this.sendActionToQueue(this.modifyAction(player.id, FOLD, 0)); // send action to queue
     this.sendNewState(); // send state before fold
 
     this.foldArr.push(player.turn);
