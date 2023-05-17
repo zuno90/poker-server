@@ -31,6 +31,8 @@ import {
 import { BotClient } from './BotGPT';
 import { botInfo } from './constants/bot.constant';
 import _ from 'lodash';
+import { sendQueue } from './init/rabbitmq.init';
+import { PreviousGameState } from './schemas/previous-game.schema';
 
 const Hand = require('pokersolver').Hand; // func handle winner
 
@@ -43,6 +45,14 @@ type TRoomChat = {
   username: string;
   avatar: string;
   message: string;
+};
+
+type TActionQueue = {
+  roomId: string;
+  roomLvl: string;
+  userId: string;
+  action: string;
+  chips: number;
 };
 
 export interface TAllinPlayer {
@@ -62,6 +72,7 @@ const getSubChannel = (redis: Presence, channel: string) => {
 };
 
 export default class MidRoom extends Room<RoomState> {
+  private prevGameState = new PreviousGameState();
   public readonly maxClients: number = 5;
   private readonly MIN_BET = 5000;
   private readonly MIN_CHIP = 200000;
@@ -75,7 +86,12 @@ export default class MidRoom extends Room<RoomState> {
   private allinList: TAllinPlayer[] = [];
   private foldArr: number[] = [];
 
+  private result: any[] = [];
+
+  private initChipArr: any = [];
+
   private bot: Map<string, BotClient> | null = new Map<string, BotClient>(); // new bot
+  private ipAddress: any = '';
 
   async onAuth(client: Client, options: TJwtAuth, req: Request) {
     try {
@@ -163,6 +179,8 @@ export default class MidRoom extends Room<RoomState> {
   async onJoin(client: Client, options: TJwtAuth, player: Player) {
     // SET INITIAL PLAYER STATE
     try {
+      // redisMaster.pfadd("poker:report")
+
       this.state.players.set(client.sessionId, new Player(player)); // set player every joining
       if (player.isHost) {
         await this.sleep(2);
@@ -228,6 +246,12 @@ export default class MidRoom extends Room<RoomState> {
     } catch (err) {
       console.log('client ' + client.sessionId + ' has just left ngay lập tức');
       this.state.players.delete(client.sessionId);
+    }
+    if (leavingPlayer.role === ERole.Player) {
+      this.presence.publish(
+        'poker:update:balance',
+        JSON.stringify({ id: leavingPlayer.id, chips: leavingPlayer.chips }),
+      );
     }
     this.sendNewState();
   }
@@ -475,7 +499,10 @@ export default class MidRoom extends Room<RoomState> {
     // initialize state of player
 
     const playerSeatArr: number[] = [];
-    this.state.players.forEach((player: Player, _) => playerSeatArr.push(player.seat));
+    this.state.players.forEach((player: Player, _) => {
+      playerSeatArr.push(player.seat); // handle seat
+      this.initChipArr.push(player.chips); // handle init chip
+    });
 
     // gán turn vào
     const { big, small, currentTurn } = definePos(playerSeatArr);
@@ -508,6 +535,11 @@ export default class MidRoom extends Room<RoomState> {
     if (this.state.round !== ERound.SHOWDOWN) return; // phai doi toi round welcome
     const host = <Player>this.state.players.get(client.sessionId);
     if (!host.isHost) return; // ko phai host ko cho rs
+    // update then broadcast previous game
+    this.updatePrevGameState();
+    this.broadcast('GET_HISTORY', this.prevGameState);
+
+    /* RESET STATE GAME */
     // global variables
     this.currentBet = this.MIN_BET;
     this.banker5Cards = [];
@@ -516,6 +548,8 @@ export default class MidRoom extends Room<RoomState> {
     this.allinArr = [];
     this.allinList = [];
     this.foldArr = [];
+    this.result = [];
+    this.initChipArr = [];
 
     // room state
     this.state.onReady = false;
@@ -582,6 +616,8 @@ export default class MidRoom extends Room<RoomState> {
     this.remainingTurn = this.state.remainingPlayer - 1;
     console.log('RAISE, turn con', this.remainingTurn);
 
+    player.role === ERole.Player &&
+      this.sendActionToQueue(this.modifyAction(player.id, RAISE, chip)); // send action to queue
     this.sendNewState(); // send state before raise
 
     if (this.state.remainingPlayer === 1) {
@@ -609,6 +645,8 @@ export default class MidRoom extends Room<RoomState> {
     this.remainingTurn--;
     console.log('CALL, turn con', this.remainingTurn);
 
+    player.role === ERole.Player &&
+      this.sendActionToQueue(this.modifyAction(player.id, CALL, chip)); // send action to queue
     this.sendNewState(); // send state before call
 
     if (this.state.remainingPlayer === 1) {
@@ -633,6 +671,7 @@ export default class MidRoom extends Room<RoomState> {
     this.remainingTurn--;
     console.log('CHECK, turn con', this.remainingTurn);
 
+    player.role === ERole.Player && this.sendActionToQueue(this.modifyAction(player.id, CHECK, 0)); // send action to queue
     this.sendNewState(); // send state before check
 
     if (this.remainingTurn === 0) return this.changeNextRound(this.state.round);
@@ -659,6 +698,8 @@ export default class MidRoom extends Room<RoomState> {
 
     console.log('ALLIN, turn con', this.remainingTurn);
 
+    player.role === ERole.Player &&
+      this.sendActionToQueue(this.modifyAction(player.id, ALLIN, chip)); // send action to queue
     this.sendNewState(); // send state before allin
 
     this.allinArr.push(player.turn);
@@ -731,6 +772,7 @@ export default class MidRoom extends Room<RoomState> {
 
     console.log('FOLD, turn con', this.remainingTurn);
 
+    player.role === ERole.Player && this.sendActionToQueue(this.modifyAction(player.id, FOLD, 0)); // send action to queue
     this.sendNewState(); // send state before fold
 
     this.foldArr.push(player.turn);
@@ -884,16 +926,13 @@ export default class MidRoom extends Room<RoomState> {
   private endGame(result: any[]) {
     console.log('end game', result);
     this.emitResult(result);
+
     this.state.round = ERound.SHOWDOWN;
-    this.state.players.forEach((player: Player, _: string) => {
-      if (player.role === ERole.Player) {
-        this.presence.publish(
-          'poker:update:balance',
-          JSON.stringify({ id: player.id, chips: player.chips }),
-        );
-      }
-    });
+
     this.sendNewState();
+
+    // handle result for prev game
+    this.result = this.handleResultForPrevGame([...result]);
   }
 
   private actionFoldPlayer() {
@@ -929,10 +968,8 @@ export default class MidRoom extends Room<RoomState> {
   }
 
   private handleGetState() {
-    this.onMessage('GET_STATE', (_: Client, __: any) => {
-      this.clients.forEach((client: Client, _) => {
-        client.send('GET_STATE', this.state);
-      });
+    this.onMessage('GET_STATE', (client: Client, __: any) => {
+      client.send('GET_STATE', this.state);
     });
   }
 
@@ -950,5 +987,62 @@ export default class MidRoom extends Room<RoomState> {
     if (!reqUser || !acceptUser) return;
 
     return { reqUser, acceptUser };
+  }
+
+  private clearPrevGameState() {
+    this.prevGameState.roomId = '';
+    this.prevGameState.bankerCards = [];
+    this.prevGameState.players.clear();
+  }
+
+  private handleResultForPrevGame(result: any[]) {
+    let playingCount: number = 0;
+    for (const player of this.state.players.values()) {
+      if (player.statement === EStatement.Playing) playingCount++;
+    }
+    for (let i = 0; i < playingCount; i++) {
+      if (!_.find(result, { t: i })) result.push({ t: i });
+    }
+
+    return _.sortBy(result, 't');
+  }
+
+  private updatePrevGameState() {
+    // clear prev state
+    this.clearPrevGameState();
+
+    // update prev state
+    this.prevGameState.roomId = this.roomId;
+    this.prevGameState.bankerCards = this.state.bankerCards;
+
+    this.state.players.forEach((player: Player, __) => {
+      if (player.connected) {
+        const p = <HistoryPlayer>{
+          id: player.id,
+          name: player.name,
+          cards: this.result[player.turn]?.c,
+          rank: this.result[player.turn]?.d,
+          revenue: player.chips - this.initChipArr[player.turn],
+        };
+        // console.log('result after sorted:::::', this.result);
+        // console.log('history P:::::', p);
+        this.prevGameState.players.push(p);
+      }
+    });
+  }
+
+  // deliver to rabbitMQ
+  private modifyAction(userId: string, action: string, chips: number): TActionQueue {
+    return {
+      roomId: this.roomId,
+      roomLvl: this.roomName,
+      userId,
+      action,
+      chips,
+    };
+  }
+
+  private async sendActionToQueue(data: TActionQueue) {
+    await sendQueue('history', { pattern: 'history', data });
   }
 }
