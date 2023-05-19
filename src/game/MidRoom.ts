@@ -195,6 +195,12 @@ export default class MidRoom extends Room<RoomState> {
   async onLeave(client: Client, consented: boolean) {
     const leavingPlayer = <Player>this.state.players.get(client.sessionId);
     leavingPlayer.connected = false;
+    if (leavingPlayer.role === ERole.Player) {
+      this.presence.publish(
+        'poker:update:balance',
+        JSON.stringify({ id: leavingPlayer.id, chips: leavingPlayer.chips }),
+      );
+    }
 
     const playerInRoom: any[] = [];
     if (leavingPlayer.isHost) {
@@ -247,12 +253,7 @@ export default class MidRoom extends Room<RoomState> {
       console.log('client ' + client.sessionId + ' has just left ngay lập tức');
       this.state.players.delete(client.sessionId);
     }
-    if (leavingPlayer.role === ERole.Player) {
-      this.presence.publish(
-        'poker:update:balance',
-        JSON.stringify({ id: leavingPlayer.id, chips: leavingPlayer.chips }),
-      );
-    }
+
     this.sendNewState();
   }
 

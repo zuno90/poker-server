@@ -196,6 +196,14 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
     const leavingPlayer = <Player>this.state.players.get(client.sessionId);
     leavingPlayer.connected = false;
 
+    // update balance of player
+    if (leavingPlayer.role === ERole.Player) {
+      this.presence.publish(
+        'poker:update:balance',
+        JSON.stringify({ id: leavingPlayer.id, chips: leavingPlayer.chips }),
+      );
+    }
+
     const playerInRoom: any[] = [];
     if (leavingPlayer.isHost) {
       this.state.players.forEach((player: Player, sessionId: string) => {
@@ -247,12 +255,7 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
       console.log('client ' + client.sessionId + ' has just left ngay lập tức');
       this.state.players.delete(client.sessionId);
     }
-    if (leavingPlayer.role === ERole.Player) {
-      this.presence.publish(
-        'poker:update:balance',
-        JSON.stringify({ id: leavingPlayer.id, chips: leavingPlayer.chips }),
-      );
-    }
+
     this.sendNewState();
   }
 
