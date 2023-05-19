@@ -194,10 +194,10 @@ export default class ProRoom extends Room<RoomState> {
     const leavingPlayer = <Player>this.state.players.get(client.sessionId);
     leavingPlayer.connected = false;
     if (leavingPlayer.role === ERole.Player) {
-      this.presence.publish(
-        'poker:update:balance',
-        JSON.stringify({ id: leavingPlayer.id, chips: leavingPlayer.chips }),
-      );
+      this.presence.publish('poker:update:balance', {
+        id: leavingPlayer.id,
+        chips: leavingPlayer.chips,
+      });
     }
 
     const playerInRoom: any[] = [];

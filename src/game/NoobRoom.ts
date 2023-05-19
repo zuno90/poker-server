@@ -198,10 +198,10 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
 
     // update balance of player
     if (leavingPlayer.role === ERole.Player) {
-      this.presence.publish(
-        'poker:update:balance',
-        JSON.stringify({ id: leavingPlayer.id, chips: leavingPlayer.chips }),
-      );
+      this.presence.publish('poker:update:balance', {
+        id: leavingPlayer.id,
+        chips: leavingPlayer.chips,
+      });
     }
 
     const playerInRoom: any[] = [];
