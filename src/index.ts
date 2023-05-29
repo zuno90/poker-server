@@ -12,6 +12,7 @@ import MidRoom from './game/MidRoom';
 import ProRoom from './game/ProRoom';
 import TestRoom from './game/TestRoom';
 import { sendQueue } from './game/init/rabbitmq.init';
+import { SystemReport } from './systemReport';
 
 dotenv.config();
 
@@ -139,7 +140,7 @@ async function bootstrap() {
   console.log(
     `🚀 Server is ready at https://${SERVER_URL} and wss://${SERVER_URL} port ${+PORT} 🚀`,
   );
-  gameServer.onShutdown(() => console.log('Master process is being shut down!'));
+  gameServer.onShutdown(() => { new SystemReport; });
 }
 
 bootstrap();
