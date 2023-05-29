@@ -947,7 +947,7 @@ export default class ProRoom extends Room<RoomState> {
     else nextTurn = currentTurn + 1;
 
     for (const fP of this.state.players.values()) {
-      if (!fP.connected && fP.turn === nextTurn) this.foldAction(fP);
+      if (!fP.connected && !fP.isFold && fP.turn === nextTurn) this.foldAction(fP);
     }
   }
 
