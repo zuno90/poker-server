@@ -773,6 +773,7 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
     this.state.remainingPlayer--;
     this.remainingTurn--;
 
+    console.log(`player ${player.name} FOLD`);
     console.log('FOLD, turn con', this.remainingTurn);
 
     player.role === ERole.Player && this.sendActionToQueue(this.modifyAction(player.id, FOLD, 0)); // send action to queue
