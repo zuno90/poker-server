@@ -3,9 +3,6 @@ import Redis from 'ioredis';
 const redisUri =
   process.env.NODE_ENV === 'production' ? `${process.env.REDIS_URL}` : `localhost:6379`;
 
-console.log(redisUri);
-
-
 const redisMaster = new Redis(redisUri);
 const redisPub = new Redis(redisUri);
 const redisSub = new Redis(redisUri);

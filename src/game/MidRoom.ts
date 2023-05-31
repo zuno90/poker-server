@@ -195,6 +195,8 @@ export default class MidRoom extends Room<RoomState> {
   async onLeave(client: Client, consented: boolean) {
     const leavingPlayer = <Player>this.state.players.get(client.sessionId);
     leavingPlayer.connected = false;
+
+    // update balance of player
     if (leavingPlayer.role === ERole.Player) {
       this.presence.publish('poker:update:balance', {
         id: leavingPlayer.id,
@@ -771,6 +773,7 @@ export default class MidRoom extends Room<RoomState> {
     this.state.remainingPlayer--;
     this.remainingTurn--;
 
+    console.log(`player ${player.name} FOLD`);
     console.log('FOLD, turn con', this.remainingTurn);
 
     player.role === ERole.Player && this.sendActionToQueue(this.modifyAction(player.id, FOLD, 0)); // send action to queue
@@ -784,10 +787,20 @@ export default class MidRoom extends Room<RoomState> {
     let result: any[] = [];
     const betP: any[] = [];
     this.state.players.forEach((p: Player, sessionId: string) => {
-      if (p.connected && p.statement === EStatement.Playing && !p.isFold)
+      if (p.connected && !p.isFold && p.statement === EStatement.Playing)
         betP.push({ i: sessionId, t: p.turn, v: p.accumulatedBet });
     });
     if (this.state.remainingPlayer === 1) {
+      // case còn lại 1 đứa out (nó chưa fold)
+      if (betP.length === 0) {
+        for (const p of this.state.players.values()) {
+          if (!p.connected && !p.isFold) {
+            p.chips += this.state.potSize;
+            result = [{ t: p.turn, w: true }];
+            return this.endGame(result);
+          }
+        }
+      }
       if (betP.length === 1) {
         const winner = <Player>this.state.players.get(betP[0].i);
         winner.chips += this.state.potSize;

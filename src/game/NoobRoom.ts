@@ -787,10 +787,20 @@ export default class NoobRoom extends Room<RoomState, PreviousGameState> {
     let result: any[] = [];
     const betP: any[] = [];
     this.state.players.forEach((p: Player, sessionId: string) => {
-      if (p.connected && p.statement === EStatement.Playing && !p.isFold)
+      if (p.connected && !p.isFold && p.statement === EStatement.Playing)
         betP.push({ i: sessionId, t: p.turn, v: p.accumulatedBet });
     });
     if (this.state.remainingPlayer === 1) {
+      // case còn lại 1 đứa out (nó chưa fold)
+      if (betP.length === 0) {
+        for (const p of this.state.players.values()) {
+          if (!p.connected && !p.isFold) {
+            p.chips += this.state.potSize;
+            result = [{ t: p.turn, w: true }];
+            return this.endGame(result);
+          }
+        }
+      }
       if (betP.length === 1) {
         const winner = <Player>this.state.players.get(betP[0].i);
         winner.chips += this.state.potSize;

@@ -75,6 +75,15 @@ export class BotClient {
 
   private listenEvents() {
     // HANDLE ALL BROADCAST DATA
+    this.room.onMessage(RAISE, () => {});
+    this.room.onMessage(CALL, () => {});
+    this.room.onMessage(CHECK, () => {});
+    this.room.onMessage(FOLD, () => {});
+    this.room.onMessage(ALLIN, () => {});
+
+    this.room.onMessage('GET_HISTORY', () => {});
+    this.room.onMessage('RESET_GAME', () => {});
+
     this.room.onMessage(RANK, data => {
       console.log('rank sau moi round from broadcast', data);
       if (data.c) this.cards = data.c; // send 2 cards when game has just been started
