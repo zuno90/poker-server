@@ -1058,4 +1058,3 @@ export default class ProRoom extends Room<RoomState> {
     await sendQueue('history', { pattern: 'history', data });
   }
 }
-} 
