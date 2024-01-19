@@ -5,29 +5,29 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - name: executing remote ssh commands using password
-        uses: supnobita/ssh-action@master
-        with:
-          host: 20.6.104.202
-          username: zuno
-          key: ${{ secrets.POKER_SECRET }}
-          port: 22
-          envs: GITHUB_RUN_NUMBER
-          script: |
-            cd code
-            rm -rf poker-server
-            git clone https://${{ secrets.POKER_TOKEN_SSH }}@github.com/zuno90/poker-server.git
-            cd poker-server
-            DOCKER_BUILDKIT=1 docker build -t poker-server:$GITHUB_RUN_NUMBER .
-            docker stop poker-server || echo "stop docker OK"
-            docker rm poker-server || echo "remove OK"
-            docker run -d --restart unless-stopped --name poker-server -p 9000:9000 \
-                -e NODE_ENV=production \
-                -e HOST= \
-                -e WS_SERVER=${{ secrets.WS_SERVER }} \
-                -e REDIS_URL=${{ secrets.REDIS_URL }} \
-                -e RMQ_URI=${{ secrets.RMQ_URI }} \
-                -e MONGO_URI=${{ secrets.MONGO_URI }} \
-                -e CMS_URL=${{ secrets.CMS_URL }} \
-                -e COLYSEUS_SEAT_RESERVATION_TIME=300 \
-                poker-server:$GITHUB_RUN_NUMBER
+    - name: executing remote ssh commands using password
+      uses: supnobita/ssh-action@master
+      with:
+        host: 20.6.104.202
+        username: zuno
+        key: ${{ secrets.POKER_SECRET }}
+        port: 22
+        envs: GITHUB_RUN_NUMBER
+        script: |
+          cd code
+          rm -rf poker-server
+          git clone https://${{ secrets.POKER_TOKEN_SSH }}@github.com/zuno90/poker-server.git
+          cd poker-server
+          DOCKER_BUILDKIT=1 docker build -t poker-server:$GITHUB_RUN_NUMBER .
+          docker stop poker-server || echo "stop docker OK"
+          docker rm poker-server || echo "remove OK"
+          docker run -d --network poker_network --restart unless-stopped --name poker-server -p 9000:9000 \
+              -e NODE_ENV=production \
+              -e HOST= \
+              -e WS_SERVER=${{ secrets.WS_SERVER }} \
+              -e REDIS_URL=${{ secrets.REDIS_URL }} \
+              -e RMQ_URI=${{ secrets.RMQ_URI }} \
+              -e MONGO_URI=${{ secrets.MONGO_URI }} \
+              -e CMS_URL=${{ secrets.CMS_URL }} \
+              -e COLYSEUS_SEAT_RESERVATION_TIME=300 \
+              poker-server:$GITHUB_RUN_NUMBER
