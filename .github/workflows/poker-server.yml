@@ -21,7 +21,7 @@ jobs:
           DOCKER_BUILDKIT=1 docker build -t poker-server:$GITHUB_RUN_NUMBER .
           docker stop poker-server || echo "stop docker OK"
           docker rm poker-server || echo "remove OK"
-          docker run -d --network poker_network --restart unless-stopped --name poker-server -p 9000:9000 \
+          docker run -d --network code_poker_network --restart unless-stopped --name poker-server -p 9000:9000 \
               -e NODE_ENV=production \
               -e HOST= \
               -e WS_SERVER=${{ secrets.WS_SERVER }} \
