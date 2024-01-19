@@ -23,7 +23,7 @@ jobs:
             docker rm poker-server || echo "remove OK"
             docker run -d --restart unless-stopped --name poker-server -p 9000:9000 \
                 -e NODE_ENV=production \
-                -e HOST=172.31.31.206 \
+                -e HOST= \
                 -e WS_SERVER=${{ secrets.WS_SERVER }} \
                 -e REDIS_URL=${{ secrets.REDIS_URL }} \
                 -e RMQ_URI=${{ secrets.RMQ_URI }} \
