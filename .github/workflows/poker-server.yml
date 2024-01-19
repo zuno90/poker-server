@@ -1,4 +1,4 @@
-name: deploy poker-server by ZUNO
+name: deploy poker-server by ZUNO to AZURE
 on: push
 jobs:
   build:
@@ -8,16 +8,16 @@ jobs:
       - name: executing remote ssh commands using password
         uses: supnobita/ssh-action@master
         with:
-          host: 175.41.154.239
+          host: 20.6.104.202
           username: ubuntu
           key: ${{ secrets.POKER_SECRET }}
           port: 22
           envs: GITHUB_RUN_NUMBER
           script: |
-            cd code/
-            rm -rf poker-server/
+            cd code
+            rm -rf poker-server
             git clone https://${{ secrets.POKER_TOKEN_SSH }}@github.com/zuno90/poker-server.git
-            cd poker-server/
+            cd poker-server
             DOCKER_BUILDKIT=1 docker build -t poker-server:$GITHUB_RUN_NUMBER .
             docker stop poker-server || echo "stop docker OK"
             docker rm poker-server || echo "remove OK"

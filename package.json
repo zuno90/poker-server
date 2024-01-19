@@ -2,8 +2,8 @@
   "name": "game-server",
   "version": "1.0.0",
   "main": "index.js",
-  "license": "MIT",
-  "scripts": {
+    "license": "MIT",
+    "scripts": {
     "dev": "nodemon src/index.ts",
     "start": "node dist/index.js",
     "test": "nodemon src/test.ts",
