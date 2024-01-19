@@ -9,7 +9,7 @@ jobs:
         uses: supnobita/ssh-action@master
         with:
           host: 20.6.104.202
-          username: ubuntu
+          username: zuno
           key: ${{ secrets.POKER_SECRET }}
           port: 22
           envs: GITHUB_RUN_NUMBER
