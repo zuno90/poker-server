@@ -10,7 +10,7 @@
 # Action
 1. Raise (remaining player turn = total remaining player - 1)
 - If this player raised at first round -> current bet = his bet
-- If this player raised after another raised player -> he will raised 2bet -> his bet = current bet x 2
+- If this player raised after another raised player -> he will raise 2bet -> his bet = current bet x 2
 2. Call (remaining player turn - 1)
 - If this player raised then call at this round -> he will call = (current bet - his last raise)
 - If this player call after raise -> he will call = current bet
